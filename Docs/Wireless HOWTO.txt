@@ -1,0 +1,169 @@
+Wireless HOWTO
+==============
+
+
+Bluetooth with Microchip RN41XV / RN42XV
+========================================
+The modules can be configured remotely for up to 60s after power-on.
+(See configuration timer settings in the manual).
+
+
+$$$           # Enter command mode
+
+X             # Check configuration
+H             # See list of commands
+
+L             # Toggle link quality display
+              # First byte : 00 .. FF (worst .. best) 
+              # Second byte: low watermark
+             
+SN,MyDevice   # Set device name
+SP,1234       # Set pin code (Default ist 1234)
+ST,255        # Enable local and remote config forever
+
+SU,921K       # 921600 Baud
+
+R,1           # Reboot.. or..
+
+---           # Exit command mode
+
+
+WLAN with Microchip WiFly RN171XV
+=================================
+
+
+General settings
+--------------------
+$$$
+
+get everything
+
+# Set up UART
+# - 921600 seems to loose bytes, but 460800 works fine.
+#
+get uart
+set uart baud 460800
+set uart flow 1
+
+# Disable status messages
+#
+get comm
+set comm remote 0
+set comm open 0
+set comm close 0
+
+# Send heartbeat every 2s
+#
+get broadcast
+set broadcast interval 1
+
+# TODO - try this!
+#
+# enable nagle's algorithm
+#
+# set ip flags 5
+#
+# slow rate for longest reach
+#
+# set wlan rate 0
+#
+
+Using the ad-hoc network
+------------------------
+$$$
+
+get wlan
+
+leave
+set wlan join 0
+
+set ip address 169.254.1.1
+set ip gateway 169.254.1.1
+set ip netmask 255.255.0.0
+
+
+For Firmware < 4.0.0
+----------------
+The old firmware doesn't support encryption in ad-hoc mode
+
+set ip dhcp 0
+
+set wlan ssid roving1
+set wlan chan 1
+set wlan join 4
+
+
+For Firmware >= 4.0.0
+---------------------
+
+# http://www.curiousmarc.com/r2-touch-r2-d2-remote-control-iphone-app/setting-up-the-wifly-radio
+
+
+set ip dhcp 4
+
+set wlan join 7
+set apmode ssid <SSID>
+set apmode pass <password>
+set apmode link_monitor 0
+
+
+save
+reboot
+
+
+
+How to join an existing WLAN
+----------------------------
+Spaces in the SSID or passphrase must be replaced with "$" characters
+
+$$$
+
+get wlan
+
+set wlan join 1
+set wlan ssid Datenschleuder$2.4GHz
+set wlan phrase xxxxx
+
+get ip
+set ip dhcp 1
+
+save
+
+reboot
+
+
+
+XBee X-CTU configuration
+========================
+
+The XBee USB Adapter will register itself as /dev/ttyUSB0 or similar 
+(check with dmesg). You will need to be in the dialout group to access
+the port:
+
+$ sudo addgroup thomask dialout
+
+
+PC side 
+-------
+  * ZNET 2.5 ROUTER/END DEVICE AT (Version 1247)
+  * DH, DL serial number of the DrQuad
+
+DrQuad side 
+-----------
+  * ZNET 2.5 COORDINATOR AT (Version 1047)
+  * DH, DL serial number of the PC
+
+Common settings
+---------------
+  ATBD=115200     # Baud rate
+  ATID=234        # PAN ID
+  ATD6=1          # RTS
+  ATD7=1          # CTS
+  ATWR            # Save settings
+
+
+
+
+
+
+
