@@ -26,7 +26,6 @@ SOURCES += Source/i2c_mpu9150.c
 SOURCES += Source/i2c_ak8975.c
 SOURCES += Source/i2c_bmp180.c
 SOURCES += Source/sensors.c
-SOURCES += Source/scope.c
 SOURCES += Source/debug_dac.c
 
 SOURCES += Source/dma_io_driver.c
