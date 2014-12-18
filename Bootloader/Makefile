@@ -1,7 +1,9 @@
 # Optimization level, can be [0, 1, 2, 3, s]. 
 #     0 = turn off optimization. s = optimize for size.
 # 
-OPT = s
+OPT = -Os -flto
+# OPT = -O1				# for debugging
+
 BOARD ?= REV_A
 
 # Object files directory
@@ -106,7 +108,7 @@ CPPFLAGS += -fsingle-precision-constant
 #  -Wall...:     warning level
 #  -save-temps:  preserve .s and .i-files
 #
-CFLAGS  = -O$(OPT)
+CFLAGS += $(OPT)
 CFLAGS += -std=gnu99
 CFLAGS += -gdwarf-2
 CFLAGS += -ffunction-sections
@@ -171,8 +173,7 @@ GENDEPFLAGS = -MMD -MP
 # Combine all necessary flags and optional flags
 # Add target processor to flags.
 #
-CPU = -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
-# CPU = -mcpu=cortex-m4 -mthumb -mfloat-abi=softfp -mfpu=fpv4-sp-d16
+CPU = -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16
 
 CFLAGS   += $(CPU)
 CXXFLAGS += $(CPU)

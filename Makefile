@@ -2,6 +2,8 @@
 #     0 = turn off optimization. s = optimize for size.
 # 
 OPT = -O2 -flto
+# OPT = -O1				# for debugging
+
 BOARD ?= REV_A
 
 # Object files directory
@@ -262,8 +264,7 @@ GENDEPFLAGS = -MMD -MP
 # Combine all necessary flags and optional flags
 # Add target processor to flags.
 #
-# CPU = -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
-CPU = -mcpu=cortex-m4 -mthumb -mfloat-abi=softfp -mfpu=fpv4-sp-d16
+CPU = -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16
 
 CFLAGS   += $(CPU)
 CXXFLAGS += $(CPU)
