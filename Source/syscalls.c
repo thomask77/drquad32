@@ -158,14 +158,15 @@ int _getpid_r(struct _reent *r)
 
 void __malloc_lock(struct _reent *r)
 {
-    vPortEnterCritical();
+    vTaskSuspendAll();
 }
 
 
 void __malloc_unlock(struct _reent *r)
 {
-    vPortExitCritical();
+    xTaskResumeAll();
 }
+
 
 /* func can be NULL, in which case no function information is given.  */
 void __assert_func(const char *file, int line, const char *func, const char *failedexpr)
