@@ -118,35 +118,14 @@ static ssize_t xbee_chars_avail_r(struct _reent *r, int fd)
 }
 
 
-void xbee_poll_send(const char *ch)
+static void xbee_init_uart(void)
 {
-    while (*ch) {
-        if (*ch == '\n') {
-            while (!(USART3->SR & USART_FLAG_TXE));
-            USART3->DR = '\r';
-        }
-        while (!(USART3->SR & USART_FLAG_TXE));
-        USART3->DR = *ch++;
-    }
-}
+    static int is_initialized;
 
+    if (is_initialized)
+        return;
 
-
-struct file_ops term_xbee_ops = {
-    .read_r        = xbee_read_r,
-    .write_r       = xbee_write_r,
-    .chars_avail_r = xbee_chars_avail_r
-};
-
-
-/**
- * Initialize the XBee UART.
- *
- */
-void xbee_init(void)
-{
-    if (!rx_queue) rx_queue = xQueueCreate(RX_QUEUE_SIZE, 1);
-    if (!tx_queue) tx_queue = xQueueCreate(TX_QUEUE_SIZE, 1);
+    is_initialized = 1;
 
     // Enable peripheral clocks
     //
@@ -194,6 +173,36 @@ void xbee_init(void)
         .GPIO_PuPd  = GPIO_PuPd_DOWN
     });
 
+    USART_Cmd(USART3, ENABLE);
+}
+
+
+void xbee_poll_send(const char *ch)
+{
+    xbee_init_uart();
+
+    while (*ch) {
+        if (*ch == '\n') {
+            while (!(USART3->SR & USART_FLAG_TXE));
+            USART3->DR = '\r';
+        }
+        while (!(USART3->SR & USART_FLAG_TXE));
+        USART3->DR = *ch++;
+    }
+}
+
+
+/**
+ * Initialize the XBee UART.
+ *
+ */
+void xbee_init(void)
+{
+    xbee_init_uart();
+
+    if (!rx_queue) rx_queue = xQueueCreate(RX_QUEUE_SIZE, 1);
+    if (!tx_queue) tx_queue = xQueueCreate(TX_QUEUE_SIZE, 1);
+
     NVIC_Init(&(NVIC_InitTypeDef) {
         .NVIC_IRQChannel = USART3_IRQn,
         .NVIC_IRQChannelPreemptionPriority =
@@ -204,10 +213,15 @@ void xbee_init(void)
 
     USART_ITConfig(USART3, USART_IT_RXNE, ENABLE);
 
-    USART_Cmd(USART3, ENABLE);
-
     dev_register("xbee", &term_xbee_ops);
 }
+
+
+struct file_ops term_xbee_ops = {
+    .read_r        = xbee_read_r,
+    .write_r       = xbee_write_r,
+    .chars_avail_r = xbee_chars_avail_r
+};
 
 
 // -------------------- Shell commands --------------------
