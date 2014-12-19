@@ -5,7 +5,6 @@
  * \author    Thomas Kindler <mail@t-kindler.de>
  */
 #include "ustime.h"
-#include "FreeRTOS.h"
 #include "stm32f4xx.h"
 
 /**
@@ -23,7 +22,7 @@ uint64_t get_us_time64(void)
     static uint16_t t0;
     static uint64_t tickcount;
 
-    vPortEnterCritical();
+    __disable_irq();
 
     uint16_t  t = TIM7->CNT;
     if (t < t0)
@@ -33,7 +32,7 @@ uint64_t get_us_time64(void)
 
     t0 = t;
 
-    vPortExitCritical();
+    __enable_irq();
 
     return tickcount;
 }
@@ -90,7 +89,7 @@ void init_us_timer(void)
 
     // Timer 6 runs at SYSCLK/4 * 2 = 84 MHz
     //
-    TIM7->PSC = (configCPU_CLOCK_HZ / 2 / 1000000) - 1;
+    TIM7->PSC = (SystemCoreClock / 2 / 1000000) - 1;
     TIM7->ARR = 0xFFFF;
     TIM7->CR1 = TIM_CR1_CEN;
 }
