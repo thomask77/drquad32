@@ -38,8 +38,8 @@
 struct ringbuf {
     char        *buf;
     size_t      buf_size;
-    unsigned    read_pos;
-    unsigned    write_pos;
+    volatile unsigned read_pos;
+    volatile unsigned write_pos;
 };
 
 
