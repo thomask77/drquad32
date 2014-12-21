@@ -8,7 +8,7 @@
  */
 #define SHELL_CMD(name, cmd, help)                          \
     const struct cmd_info __shell_cmd_##name                \
-    __attribute__((unused, section (".cmd_tbl."#name)))     \
+    __attribute__((used, section (".cmd_tbl."#name)))     \
         = {(#name), (cmd), (help)};
 
 typedef   int (*cmdfunc_t)(int, char *[]);
