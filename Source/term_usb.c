@@ -52,7 +52,7 @@ static uint16_t VCP_DataTx(uint8_t *buf, uint32_t len)
 {
     portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 
-    for (int i=0; i<uxQueueMessagesWaiting(tx_queue); i++)
+    for (int i=0; i<uxQueueMessagesWaitingFromISR(tx_queue); i++)
     {
         char c;
         xQueueReceiveFromISR(tx_queue, &c, &xHigherPriorityTaskWoken);
