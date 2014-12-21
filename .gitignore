@@ -1,11 +1,10 @@
 *~
 *.bak
 *.tmp
-obj_app
 .project
 .cproject
-Source/git_version.h
-obj_boot
 .settings
 .pydevproject
+obj_app
+obj_boot
 Trash

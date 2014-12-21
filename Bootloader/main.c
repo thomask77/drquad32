@@ -3,6 +3,7 @@
 #include "crc32_sm.h"
 #include "msg_packet.h"
 #include "stm32f4xx.h"
+#include "version.h"
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -339,9 +340,14 @@ int main(void)
 
     uart_init(XBEE_BAUDRATE);
 
+    msg_printf("\n\n");
+
     msg_printf(
-        "\n\n\033[1;36mSTM32 f00b00t\033[0;39m v1.0.0 "
-            __DATE__ " " __TIME__ "\n"
+        "\033[1;36m%s\033[0;39m %s %s %s %s\n"
+        "Copyright (c)2014 Thomas Kindler <mail@t-kindler.de>\n\n",
+        version_info.product_name, version_info.string, 
+        version_info.git_version, version_info.build_date,
+        version_info.build_time
     );
 
     // Sigh.  Flash loader demonstrator 2.5.0
