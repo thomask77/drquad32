@@ -1,29 +1,28 @@
-import traceback
-from datetime import datetime, timedelta
-from serial.tools import list_ports
-
-from Connection import connection
-
+from ConnectionWindow_ui import *
+from Dispatcher import dispatcher
+from WiFlyListener import WiFlyListener
 from Connection import (
+    connection,
     SerialStream,
     TCPStream
 )
 
-from Dispatcher import dispatcher
-from WiFlyListener import WiFlyListener
-
-from PyQt4 import uic
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+
+import traceback
+from datetime import datetime, timedelta
+from serial.tools import list_ports
+
 
 # TODO: Handle WM_DEVICECHANGE
 # Select old selection
 #
 
-class ConnectionWindow(QMainWindow):
+class ConnectionWindow(QMainWindow, Ui_ConnectionWindow):
     def __init__(self):
         QMainWindow.__init__(self)
-        uic.loadUi("DockWindows/ConnectionWindow.ui", self)
+        self.setupUi(self)
 
         self.setContextMenuPolicy(Qt.NoContextMenu)
 

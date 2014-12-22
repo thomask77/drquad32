@@ -1,26 +1,18 @@
-import sys
-from datetime import datetime
-from Queue import Queue
-from msg_structs import *
-from Dispatcher import dispatcher
+from GLWindow_ui import *
+from GLTools import *
 
-from PyQt4 import uic
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.QtOpenGL import *
 
-from OpenGL.GL import *
-from OpenGL.GLU import *
 from OpenGL.GLUT import *
-from GLTools import *
-
-import math
+from datetime import datetime
 
 
-class GLWindow(QMainWindow):
+class GLWindow(QMainWindow, Ui_GLWindow):
     def __init__(self):
         QMainWindow.__init__(self)
-        uic.loadUi("DockWindows/GLWindow.ui", self)
+        self.setupUi(self)
 
         # exchange placeholder
         #

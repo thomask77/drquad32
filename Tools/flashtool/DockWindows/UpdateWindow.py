@@ -1,25 +1,26 @@
-import traceback
-from Queue import Queue
+from UpdateWindow_ui import *
+from Connection import connection
 from BootProtocol import BootProtocol
 from msg_structs import *
 from Dispatcher import dispatcher
 
-from Connection import connection
-
-from PyQt4 import uic
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+
+import traceback
+from Queue import Queue
+
 
 # TODO:
 # * Auto Update
 
 
-class UpdateWindow(QMainWindow):
+class UpdateWindow(QMainWindow, Ui_UpdateWindow):
     KEY_FILENAME = "update_filename"
 
     def __init__(self):
         QMainWindow.__init__(self)
-        uic.loadUi("DockWindows/UpdateWindow.ui", self)
+        self.setupUi(self)
 
         fn = QSettings().value(self.KEY_FILENAME).toString()
         self.lineEdit.setText(fn)

@@ -1,15 +1,14 @@
+from ConsoleWindow_ui import *
 from msg_structs import *
 from Dispatcher import dispatcher
 from AnsiParser import AnsiParser
 
-from PyQt4 import uic
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 import sys
 from datetime import datetime
 from Queue import Queue
-
 
 ansi_palette = {
     0:  QBrush(QColor("#000")),
@@ -52,10 +51,11 @@ test = """
 #   qInstallMsgHandler() for qWarning(), qDebug()
 # * Text Input
 #
-class ConsoleWindow(QMainWindow):
+class ConsoleWindow(QMainWindow, Ui_ConsoleWindow):
     def __init__(self):
         QMainWindow.__init__(self)
-        uic.loadUi("DockWindows/ConsoleWindow.ui", self)
+        self.setupUi(self)
+
         self.setContextMenuPolicy(Qt.NoContextMenu)
 
         self.action_save.triggered.connect(self.action_save_triggered)

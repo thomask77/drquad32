@@ -1,15 +1,16 @@
-from Connection import connection
+from MainWindow_ui import *
+from DockWindows import *
+
 from Dispatcher import dispatcher
+
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 
 from copy import copy
 from datetime import datetime
 
-from PyQt4 import uic
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from DockWindows import *
 
-class MainWindow(QMainWindow):
+class MainWindow(QMainWindow, Ui_MainWindow):
     # TODO:
     # * Layout Load/Save with recently used list
     # * Lock Layout
@@ -18,7 +19,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         QMainWindow.__init__(self)
-        uic.loadUi("MainWindow.ui", self)
+        self.setupUi(self)
 
         self.setDockNestingEnabled(True)
 
