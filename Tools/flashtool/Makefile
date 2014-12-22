@@ -23,10 +23,13 @@ PYUIC = /cygdrive/c/Python27/Lib/site-packages/PyQt4/pyuic4.bat
 
 
 # Convert Qt .ui files to python.  
-# Filter out "Created: <date>" to prevent git merge conflicts
+# - Filter out "Created: <date>" to prevent git merge conflicts
+# - Rewrite Image paths
 #
 %_ui.py: %.ui
 	@echo
 	@echo Converting ui file: $@
-	$(PYUIC) -x $< | grep -v "^# Created" > $@
+	$(PYUIC) -x $< | \
+	    grep -v "^# Created" | \
+	    sed "s/\.\.\/Images/Images/g" > $@
 
