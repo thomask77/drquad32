@@ -30,6 +30,7 @@ PYUIC = /cygdrive/c/Python27/Lib/site-packages/PyQt4/pyuic4.bat
 	@echo
 	@echo Converting ui file: $@
 	$(PYUIC) -x $< | \
-	    grep -v "^# Created" | \
+	    grep -v "^# *Created:" | \
+	    grep -v "^# *by:" | \
 	    sed "s/\.\.\/Images/Images/g" > $@
 
