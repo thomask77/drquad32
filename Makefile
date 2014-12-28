@@ -209,6 +209,7 @@ CFLAGS += -ffunction-sections
 CFLAGS += -fdata-sections
 CFLAGS += -Wall
 CFLAGS += -Wstrict-prototypes
+CFLAGS += -Wsign-compare
 #CFLAGS += -Wextra
 #CFLAGS += -Wpointer-arith
 #CFLAGS += -Winline

@@ -20,7 +20,7 @@ static void edge(uint32_t t, int ch, int rising)
 }
 
 
-void dma_io_decode_servo(const void *dma_buf, int dma_len, uint8_t mask)
+void dma_io_decode_servo(const void *dma_buf, unsigned int dma_len, uint8_t mask)
 {
     // TODO: filter edges
     // TODO: detect timeouts
@@ -31,12 +31,12 @@ void dma_io_decode_servo(const void *dma_buf, int dma_len, uint8_t mask)
     const uint32_t *src = dma_buf;
     uint32_t  mask32 = (mask<<24) | (mask<<16) | (mask<<8) | mask;
 
-    for (int i=0; i < dma_len / 4; i++) {
+    for (unsigned int i=0; i < dma_len / 4; i++) {
         uint32_t state = *src++ & mask32;
         uint32_t diff  = last_state ^ state;
 
         if (diff) {
-            for (int j=0; j<32; j++) {
+            for (unsigned int j=0; j<32; j++) {
                 if (diff & (1UL << j))
                     edge(t + (j>>3), j & 7, state & (1UL << j));
             }
