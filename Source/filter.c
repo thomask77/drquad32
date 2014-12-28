@@ -142,7 +142,7 @@ void avg_reset(struct avg_filter *f, int32_t x)
 {
     f->index = 0;
     f->acc   = x * f->size;
-    for (int i=0; i<f->size; i++)
+    for (uint32_t i=0; i<f->size; i++)
         f->buf[i] = x;
 }
 

@@ -211,7 +211,7 @@ static void cmd_sensor_show(int argc, char *argv[])
             break;
 
         case MODE_CSV:
-             for (int i=0; i<ARRAY_SIZE(values); i++) {
+             for (unsigned int i=0; i<ARRAY_SIZE(values); i++) {
                  if (d.clipflags & (1<<i))
                      printf(ANSI_BG_RED);
 
@@ -224,7 +224,7 @@ static void cmd_sensor_show(int argc, char *argv[])
              break;
 
         case MODE_RAW:
-            for (int i=0; i<ARRAY_SIZE(values); i++) {
+            for (unsigned int i=0; i<ARRAY_SIZE(values); i++) {
                 uint32_t i32;
                 memcpy(&i32, &values[i], 4);
                 printf("%08lx", i32);
