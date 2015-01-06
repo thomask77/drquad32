@@ -7,8 +7,11 @@
 #include "../../Libraries/crc/crc16.h"
 
 Connection::Connection(QObject *parent) :
-    QObject(parent), stats()
+    QObject(parent)
 {
+    connect(&timer, &QTimer::timeout, this, &Connection::pollMessages);
+
+    timer.setInterval(10);
 }
 
 Connection::~Connection()
@@ -20,6 +23,7 @@ bool Connection::open(const QSerialPortInfo &serialPortInfo)
     close();
 
     serialPort.setPort(serialPortInfo);
+    serialPort.setBaudRate(115200);
 
     if (!serialPort.open(QIODevice::ReadWrite)) {
         qDebug() << serialPort.errorString();
@@ -27,6 +31,7 @@ bool Connection::open(const QSerialPortInfo &serialPortInfo)
     }
 
     emit connectionChanged();
+    timer.start();
     return true;
 }
 
@@ -35,6 +40,7 @@ void Connection::close()
     if (!serialPort.isOpen())
         return;
 
+    timer.stop();
     serialPort.close();
     emit connectionChanged();
 }
@@ -52,6 +58,10 @@ QString Connection::portName()
 void Connection::sendMessage(const QByteArray &message)
 {
     auto packet = encodeMessage(message);
+
+    packet.append((char)0);
+
+    qDebug() << packet.toHex();
 
     if (serialPort.write(packet) >= 0) {
         stats.tx_bytes += packet.size();

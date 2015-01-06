@@ -5,6 +5,7 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QProgressDialog>
+#include "BootProtocol.h"
 
 namespace Ui {
 class UpdateWindow;
@@ -23,14 +24,15 @@ private:
     class MainWindow *mainWindow;
 
     QProgressDialog progressDialog;
+    BootProtocol    bootProtocol;
 
     void lineEdit_textChanged();
     void browseButton_clicked();
     void updateButton_clicked();
     void connectionChanged();
 
-    void progress(int value, const QString &text);
-    void writeHexFile(const QString &fileName);
+
+    void bootProtocol_showProgress(int value, const QString &text);
 
     virtual void dragEnterEvent(QDragEnterEvent *event) override;
     virtual void dropEvent(QDropEvent *event) override;

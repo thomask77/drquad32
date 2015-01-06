@@ -9,28 +9,28 @@
 class IntelHexFile
 {
 public:
-    struct Section {
-        uint32_t    offset;
-        QByteArray  data;
-    };
-
-    QList<Section>  sections;
-
     IntelHexFile();
     IntelHexFile(const QString &fileName);
     IntelHexFile(QTextStream &stream);
 
     ~IntelHexFile();
 
+    struct Section {
+        uint  offset;
+        QByteArray  data;
+    };
+
+    QList<Section>  sections;
+
     bool loadHex(const QString &fileName);
     bool loadHex(QTextStream &stream);
 
 private:
-    uint startAddress;
-    uint highAddress;
+    uint startAddress = 0;
+    uint highAddress = 0;
 
     int  checksum(const QString &line);
-    void addData(uint32_t address, const QByteArray &data);
+    void addData(uint address, const QByteArray &data);
     bool parseLine(const QString &line);
 };
 

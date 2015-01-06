@@ -3,12 +3,16 @@
 
 #include <QObject>
 #include <QSerialPort>
+#include <QTimer>
 
 class Connection : public QObject
 {
     Q_OBJECT
 
 public:
+    explicit Connection(QObject *parent = 0);
+    ~Connection();
+
     struct Statistics {
         uint    rx_bytes;
         uint    rx_packets;
@@ -18,26 +22,26 @@ public:
         uint    tx_errors;
     };
 
-    Statistics  stats;
-    QSerialPort serialPort;
+    Statistics stats = Statistics();
 
-    explicit Connection(QObject *parent = 0);
-    ~Connection();
-
-    void sendMessage(const QByteArray &message);
-    void pollMessages();
+    QString portName();
 
     bool open(const QSerialPortInfo &serialPortInfo);
     void close();
     bool isOpen();
-    QString portName();
+
+    void sendMessage(const QByteArray &message);
 
 signals:
     void messageReceived(const QByteArray &message);
     void connectionChanged();
 
 private:
+    QSerialPort serialPort;
     QByteArray rx_buf;
+    QTimer timer;
+
+    void pollMessages();
 
     static QByteArray encodeMessage(const QByteArray &message);
     static QByteArray decodeMessage(const QByteArray &packet);

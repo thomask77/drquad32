@@ -9,7 +9,7 @@
 
 
 AnsiParser::AnsiParser(QObject *parent) :
-    QObject(parent), state()
+    QObject(parent)
 {
 }
 

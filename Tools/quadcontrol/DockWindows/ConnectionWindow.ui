@@ -67,9 +67,6 @@
       </column>
      </widget>
     </item>
-    <item>
-     <widget class="QLineEdit" name="lineEdit"/>
-    </item>
    </layout>
   </widget>
   <widget class="QToolBar" name="toolBar">
@@ -133,6 +130,9 @@
    </property>
   </action>
   <action name="actionAdd">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>&amp;Add</string>
    </property>
@@ -141,6 +141,9 @@
    </property>
   </action>
   <action name="actionRemove">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>&amp;Remove</string>
    </property>

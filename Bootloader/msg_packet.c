@@ -33,7 +33,7 @@ static crc16_t msg_calc_crc(const struct msg_header *msg)
 }
 
 
-int msg_recv(struct msg_header *msg)
+msg_err  msg_recv(struct msg_header *msg)
 {
     uint32_t t0 = tickcount;
 
@@ -61,11 +61,11 @@ int msg_recv(struct msg_header *msg)
         if (tickcount - t0 > PACKET_TIMEOUT) {
             // packet timed out
             //
-            return -1;
+            return MSG_ERR_TIMEOUT;
         }
 
         if (rx_len >= MAX_BUF_LENGTH)
-            return -1;
+            return MSG_ERR_TOO_LONG;
     }
 
     // decode COBS/R
@@ -78,23 +78,23 @@ int msg_recv(struct msg_header *msg)
     );
 
     if (cobsr_res.status != COBSR_DECODE_OK)
-        return -1;
+        return MSG_ERR_COBS;
 
     if (cobsr_res.out_len < 2 + 2)
-        return -1;
+        return MSG_ERR_TOO_SHORT;
 
     msg->data_len = cobsr_res.out_len -2 -2;     // -CRC -ID
 
     // Check CRC
     //
     if (msg_calc_crc(msg) != msg->crc)
-        return -1;
+        return MSG_ERR_CRC;
 
-    return 1;
+    return MSG_ERR_OK;
 }
 
 
-int msg_send(struct msg_header *msg)
+msg_err  msg_send(struct msg_header *msg)
 {
     msg->crc = msg_calc_crc(msg);
 
@@ -104,11 +104,30 @@ int msg_send(struct msg_header *msg)
     );
 
     if (cobsr_res.status != COBSR_ENCODE_OK)
-        return -1;
+        return MSG_ERR_COBS;
 
     // add end-of-packet marker
     //
     tx_buf[cobsr_res.out_len++] = 0;
 
-    return uart_write(tx_buf, cobsr_res.out_len);
+    uart_write(tx_buf, cobsr_res.out_len);
+
+    return MSG_ERR_OK;
 }
+
+
+const char *msg_strerr(msg_err err)
+{
+    if (err >= 0)
+        return "MSG_ERR_OK";
+
+    switch(err) {
+    case MSG_ERR_TIMEOUT:   return "MSG_ERR_TIMEOUT";
+    case MSG_ERR_TOO_LONG:  return "MSG_ERR_TOO_LONG";
+    case MSG_ERR_COBS:      return "MSG_ERR_COBS";
+    case MSG_ERR_TOO_SHORT: return "MSG_ERR_TOO_SHORT";
+    case MSG_ERR_CRC:       return "MSG_ERR_CRC";
+    default:                return "MSG_ERR_UNKNOWN";
+    }
+}
+

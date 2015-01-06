@@ -1,10 +1,6 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "DockWindows/ConnectionWindow.h"
-#include "DockWindows/UpdateWindow.h"
-#include "DockWindows/ConsoleWindow.h"
-#include "DockWindows/GLWindow.h"
 #include "Connection.h"
 
 #include <QMainWindow>
@@ -41,12 +37,12 @@ private:
     QLabel connectionLabel;
     QTimer timer;
 
-    Connection::Statistics  old_stats;
-    QTime   old_stats_t;
+    QTime old_stats_t;
+    Connection::Statistics old_stats;
 
     void addDockWindow(Qt::DockWidgetArea area, QMainWindow *window);
-    void timerTimeout();
-    void actionFullscreenTriggered();
+    void timer_timeout();
+    void actionFullscreen_triggered();
 
     virtual void closeEvent(QCloseEvent *event) override;
     virtual bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;

@@ -1,20 +1,16 @@
 #include "MainWindow.h"
 #include <QApplication>
 
-
-MainWindow *mainWindow;
-
-
 int main(int argc, char *argv[])
 {
-    QApplication app(argc, argv);
+    QApplication a(argc, argv);
 
-    app.setApplicationName("QuadControl");
-    app.setOrganizationName("t-kindler");
-    app.setOrganizationDomain("t-kindler.de");
+    a.setApplicationName("QuadControl");
+    a.setOrganizationName("t-kindler");
+    a.setOrganizationDomain("t-kindler.de");
 
-    mainWindow = new MainWindow();
-    mainWindow->show();
+    MainWindow w;
+    w.show();
 
-    return app.exec();
+    return a.exec();
 }

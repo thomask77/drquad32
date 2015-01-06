@@ -8,27 +8,19 @@ class AnsiParser : public QObject
     Q_OBJECT
 
 public:
-    explicit AnsiParser(QObject *parent = 0);
+    AnsiParser(QObject *parent = 0);
     ~AnsiParser();
 
     struct Attributes {
-        int foreground;
-        int background;
-        bool bold;
-        bool underline;
-        bool blink;
-        bool reverse;
-
-        Attributes() :
-            foreground(7),
-            background(),
-            bold(),
-            underline(),
-            blink(),
-            reverse()
-        {
-        }
+        int foreground = 7;
+        int background = 0;
+        bool bold = 0;
+        bool underline = 0;
+        bool blink = 0;
+        bool reverse = 0;
     };
+
+    Attributes  attributes;
 
     void parse(const QString &text);
 
@@ -37,9 +29,8 @@ signals:
     void printText(const QString &text);
 
 private:
-    int         state;
+    int         state = 0;
     QString     buffer;
-    Attributes  attributes;
 
     void parseSgr(const QString &seq);
     void parseMulti(const QString &seq);

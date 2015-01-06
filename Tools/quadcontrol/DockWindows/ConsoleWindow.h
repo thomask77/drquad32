@@ -24,19 +24,22 @@ private:
     Ui::ConsoleWindow *ui;
     class MainWindow *mainWindow;
 
-    void action_clear_triggered();
-    void action_save_triggered();
-    void action_wrap_triggered();
-
+    void actionClear_triggered();
+    void actionSave_triggered();
+    void actionWrap_triggered();
+    void connection_messageReceived(const QByteArray &message);
     void timer_timeout();
 
-    void ansi_attrib_changed(const AnsiParser::Attributes &attr);
+    void ansi_attributesChanged(const AnsiParser::Attributes &attr);
     void ansi_print_text(const QString &text);
 
-    QTimer timer;
+    AnsiParser ansiParser;
+
+    QTextCharFormat ansiFormat;
     QTextCursor cursor;
-    QTextCharFormat ansi_format;
-    AnsiParser ansi_parser;
+
+    QTimer timer;
+    QString rx_buf;
 };
 
 #endif // CONSOLEWINDOW_H

@@ -92,7 +92,6 @@ void ConnectionWindow::actionConnect_triggered()
 
 void ConnectionWindow::actionDisconnect_triggered()
 {
-    extern MainWindow *mainWindow;
     mainWindow->connection.close();
 }
 

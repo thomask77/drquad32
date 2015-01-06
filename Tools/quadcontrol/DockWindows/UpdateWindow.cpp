@@ -14,13 +14,13 @@
 
 #include "MainWindow.h"
 #include "IntelHexFile.h"
-#include "BootProtocol.h"
 
 UpdateWindow::UpdateWindow(MainWindow *parent) :
     QMainWindow(parent),
     ui(new Ui::UpdateWindow),
     mainWindow(parent),
-    progressDialog(this)
+    progressDialog(this),
+    bootProtocol(this, parent->connection)
 {
     ui->setupUi(this);
 
@@ -33,6 +33,7 @@ UpdateWindow::UpdateWindow(MainWindow *parent) :
     connect(ui->browseButton, &QPushButton::clicked, this, &UpdateWindow::browseButton_clicked);
     connect(ui->updateButton, &QPushButton::clicked, this, &UpdateWindow::updateButton_clicked);
     connect(&mainWindow->connection, &Connection::connectionChanged, this, &UpdateWindow::connectionChanged);
+    connect(&bootProtocol, &BootProtocol::showProgress, this, &UpdateWindow::bootProtocol_showProgress);
 
     auto model = new QFileSystemModel(this);
     model->setRootPath(QDir::currentPath());
@@ -80,31 +81,13 @@ void UpdateWindow::browseButton_clicked()
 
 void UpdateWindow::updateButton_clicked()
 {
-    writeHexFile(ui->lineEdit->text());
-
-    QApplication::beep();
+    bootProtocol.startUpdate( ui->lineEdit->text() );
 
 //    QMessageBox::critical(
 //        this, "Firmware Update Failed",
 //        "Something went wrong!!1"
 //    );
-
-/*
-fn = str(self.lineEdit.text())
-proto = BootProtocol()
-
-try:
-    proto.write_hex_file(fn, progress)
-    QApplication.beep()
-except CancelError:
-    pass
-except:
-    pd.close()
-    QMessageBox.critical(self, "Firmware Update Failed", traceback.format_exc(), "&OK")
-*/
-
 }
-
 
 void UpdateWindow::lineEdit_textChanged()
 {
@@ -124,18 +107,15 @@ void UpdateWindow::connectionChanged()
 }
 
 
-void UpdateWindow::progress(int value, const QString &text)
+void UpdateWindow::bootProtocol_showProgress(int value, const QString &text)
 {
     qDebug("%d: %s", value, qPrintable(text));
 
     progressDialog.setValue(value);
     progressDialog.setLabelText(text);
 
-    // QApplication::processEvents();
-
-    if (progressDialog.wasCanceled()) {
-        // TODO
-    }
+    if (progressDialog.wasCanceled())
+        bootProtocol.cancelUpdate();
 }
 
 
@@ -170,9 +150,8 @@ def write_data(self, addr, data, ack_window=0, progress=None):
 */
 
 
-void UpdateWindow::writeHexFile(const QString &fileName)
-{
-    BootProtocol boot(mainWindow->connection);
+/*
+    BootProtocol boot(this, mainWindow->connection);
 
     progressDialog.show();
 
@@ -211,7 +190,7 @@ void UpdateWindow::writeHexFile(const QString &fileName)
     for (int i=4; i<12; i++) {
         int p = 10 + 10 * (i-4) / (12-4);
         progress(p, QString().sprintf("Erasing sector %d...", i));
-        boot.erase_sector(i);
+        boot.eraseSector(i);
     }
 
     auto t_erase = QTime::currentTime();
@@ -219,7 +198,7 @@ void UpdateWindow::writeHexFile(const QString &fileName)
     // skip initial 8 bytes (written after verify)
     // TODO: Progress callback
     //
-    boot.write_data( start_addr + 8, data.mid(8) );
+    boot.writeData( start_addr + 8, data.mid(8) );
 
 //    self.write_data(
 //        start_addr + 8, data[8:], ack_window=10,
@@ -237,7 +216,7 @@ void UpdateWindow::writeHexFile(const QString &fileName)
     auto t_verify = QTime::currentTime();
 
     progress(90, "Writing first 8 bytes");
-    boot.write_data(start_addr, data.left(8));
+    boot.writeData(start_addr, data.left(8));
 
     progress(95, "Starting application");
     boot.exit();
@@ -250,4 +229,5 @@ void UpdateWindow::writeHexFile(const QString &fileName)
     qDebug("  Write:  %d ms", t_erase.msecsTo(t_write));
     qDebug("  Verify: %d ms", t_write.msecsTo(t_verify));
     qDebug("  Total:  %d ms", t0.msecsTo(t_total));
-}
+*/
+

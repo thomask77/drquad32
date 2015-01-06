@@ -1,13 +1,18 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 
+#include "DockWindows/ConnectionWindow.h"
+#include "DockWindows/UpdateWindow.h"
+#include "DockWindows/ConsoleWindow.h"
+#include "DockWindows/GLWindow.h"
+
+#include "Connection.h"
+
 #include <QAction>
 #include <QDockWidget>
 #include <QSettings>
 #include <QCloseEvent>
 #include <QDebug>
-
-#include "Connection.h"
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -19,7 +24,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     connect(ui->actionExit, &QAction::triggered, this, &MainWindow::close);
-    connect(ui->actionFullscreen, &QAction::triggered, this, &MainWindow::actionFullscreenTriggered);
+    connect(ui->actionFullscreen, &QAction::triggered, this, &MainWindow::actionFullscreen_triggered);
 
     ui->statusBar->addPermanentWidget(&statisticsLabel);
     ui->statusBar->addWidget(&connectionLabel);
@@ -40,7 +45,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->actionFullscreen->setChecked(windowState() & Qt::WindowFullScreen);
 
-    connect(&timer, &QTimer::timeout, this, &MainWindow::timerTimeout);
+    connect(&timer, &QTimer::timeout, this, &MainWindow::timer_timeout);
     timer.start(500);
 }
 
@@ -74,10 +79,8 @@ bool MainWindow::nativeEvent(const QByteArray &, void *, long *)
 
 #endif
 
-void MainWindow::timerTimeout()
+void MainWindow::timer_timeout()
 {
-    connection.sendMessage(QByteArray("Hallo"));
-
     if (connection.isOpen())
         connectionLabel.setText(connection.portName());
     else
@@ -130,15 +133,13 @@ void MainWindow::addDockWindow(Qt::DockWidgetArea area, QMainWindow *window)
     );
 }
 
-
-void MainWindow::actionFullscreenTriggered()
+void MainWindow::actionFullscreen_triggered()
 {
     if (ui->actionFullscreen->isChecked())
         this->showFullScreen();
     else
         this->showNormal();
 }
-
 
 MainWindow::~MainWindow()
 {

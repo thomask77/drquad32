@@ -24,13 +24,13 @@
 #define RAM_END         0x20020000
 #define RAM_SIZE        (RAM_END - RAM_START)
 
-#define BOOT_TIMEOUT    2000           // [ms]
-// #define BOOT_TIMEOUT    2000000000     // [ms]
+// #define BOOT_TIMEOUT    2000           // [ms]
+#define BOOT_TIMEOUT    2000000000     // [ms]
 #define BOOT_MAGIC      0xB00710AD
 
 
-#define DBG_PRINTF(...)
-// #define DBG_PRINTF  msg_printf
+// #define DBG_PRINTF(...)
+#define DBG_PRINTF  msg_printf
 
 
 struct sector {
@@ -217,7 +217,7 @@ static void handle_boot_read_data(struct msg_boot_read_data *msg)
 }
 
 
-static void handle_boot_verify(struct msg_boot_verify_data *msg)
+static void handle_boot_verify(struct msg_boot_verify *msg)
 {
     msg_printf("boot_verify(0x%04lx, %lu): ",
         msg->address, msg->length
@@ -309,7 +309,9 @@ static void msg_loop(void)
            .h.data_len = sizeof(msg) - sizeof(struct msg_header)
         };
 
-        if (msg_recv(&msg.h) < 0) {
+        int err = msg_recv(&msg.h);
+        if (err < 0) {
+            DBG_PRINTF("msg_recv(): %s\n", msg_strerr(err));
             msg_printf(".");
             continue;
         }
