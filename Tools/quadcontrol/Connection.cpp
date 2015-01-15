@@ -57,11 +57,11 @@ QString Connection::portName()
 
 void Connection::sendMessage(const QByteArray &message)
 {
-    auto packet = encodeMessage(message);
+    // TODO: mid(4) stört.
+    //
+    auto packet = encodeMessage(message .mid(4) );
 
     packet.append((char)0);
-
-    qDebug() << packet.toHex();
 
     if (serialPort.write(packet) >= 0) {
         stats.tx_bytes += packet.size();

@@ -311,8 +311,11 @@ static void msg_loop(void)
 
         int err = msg_recv(&msg.h);
         if (err < 0) {
-            DBG_PRINTF("msg_recv(): %s\n", msg_strerr(err));
-            msg_printf(".");
+            if (err == MSG_ERR_TIMEOUT)
+                msg_printf(".");
+            else
+                DBG_PRINTF("msg_recv(): %s\n", msg_strerr(err));
+
             continue;
         }
 

@@ -23,16 +23,12 @@ private:
     Ui::UpdateWindow *ui;
     class MainWindow *mainWindow;
 
-    QProgressDialog progressDialog;
     BootProtocol    bootProtocol;
 
     void lineEdit_textChanged();
     void browseButton_clicked();
     void updateButton_clicked();
     void connectionChanged();
-
-
-    void bootProtocol_showProgress(int value, const QString &text);
 
     virtual void dragEnterEvent(QDragEnterEvent *event) override;
     virtual void dropEvent(QDropEvent *event) override;
