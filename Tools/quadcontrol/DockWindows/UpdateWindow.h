@@ -23,8 +23,6 @@ private:
     Ui::UpdateWindow *ui;
     class MainWindow *mainWindow;
 
-    BootProtocol    bootProtocol;
-
     void lineEdit_textChanged();
     void browseButton_clicked();
     void updateButton_clicked();

@@ -18,8 +18,7 @@
 UpdateWindow::UpdateWindow(MainWindow *parent) :
     QMainWindow(parent),
     ui(new Ui::UpdateWindow),
-    mainWindow(parent),
-    bootProtocol(this, parent->connection)
+    mainWindow(parent)
 {
     ui->setupUi(this);
 
@@ -75,6 +74,8 @@ void UpdateWindow::browseButton_clicked()
 
 void UpdateWindow::updateButton_clicked()
 {
+    BootProtocol bootProtocol(this, mainWindow->connection);
+
     bootProtocol.writeHexFile(ui->lineEdit->text());
 }
 

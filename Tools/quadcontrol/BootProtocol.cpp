@@ -1,6 +1,7 @@
 #include "BootProtocol.h"
 #include "../../Bootloader/msg_structs.h"
 #include "IntelHexFile.h"
+#include "MainWindow.h"
 
 #include <QDebug>
 #include <QApplication>
@@ -10,8 +11,8 @@
 static const int TIMEOUT_MS = 2000;
 
 BootProtocol::BootProtocol(QWidget *parent, Connection &connection) :
-    QObject(parent),
-    progressDialog(parent),
+    QWidget(parent),
+    progressDialog(this),
     connection(connection)
 {
     progressDialog.setWindowModality(Qt::WindowModal);
@@ -149,6 +150,7 @@ void BootProtocol::showProgress(int value, const QString &text)
     if (progressDialog.wasCanceled())   \
         goto cancel;                    \
 
+#include "MainWindow.h"
 
 void BootProtocol::writeHexFile(const QString &fileName)
 {

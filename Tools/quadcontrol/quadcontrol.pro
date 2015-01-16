@@ -8,6 +8,7 @@ QT += core gui
 QT += serialport
 QT += widgets
 QT += opengl
+QT += winextras
 
 TARGET = quadcontrol
 TEMPLATE = app
@@ -44,7 +45,8 @@ HEADERS  += MainWindow.h \
     IntelHexFile.h \
     DockWindows/MyGLWidget.h \
     BootProtocol.h \
-    glut_teapot.h
+    glut_teapot.h \
+    QProgressDialogEx.h
 
 FORMS    += MainWindow.ui \
     DockWindows/ConnectionWindow.ui \

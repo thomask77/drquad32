@@ -6,11 +6,11 @@
 #include <QString>
 #include <QTimer>
 #include <QQueue>
-#include <QProgressDialog>
 
 #include "Connection.h"
+#include "QProgressDialogEx.h"
 
-class BootProtocol : public QObject
+class BootProtocol : public QWidget
 {
     Q_OBJECT
 
@@ -21,7 +21,7 @@ public:
     void writeHexFile(const QString &fileName);
 
 private:
-    QProgressDialog progressDialog;
+    QProgressDialogEx progressDialog;
     QQueue<QByteArray> messageQueue;
 
     Connection &connection;

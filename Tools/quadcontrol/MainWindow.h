@@ -8,6 +8,7 @@
 #include <QTimer>
 #include <QTime>
 
+
 namespace Ui {
 class MainWindow;
 }
@@ -47,5 +48,6 @@ private:
     virtual void closeEvent(QCloseEvent *event) override;
     virtual bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
 };
+
 
 #endif // MAINWINDOW_H

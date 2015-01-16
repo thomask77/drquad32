@@ -29,10 +29,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->statusBar->addPermanentWidget(&statisticsLabel);
     ui->statusBar->addWidget(&connectionLabel);
 
-    connectionWindow = new ConnectionWindow(this);
-    updateWindow     = new UpdateWindow(this);
-    consoleWindow    = new ConsoleWindow(this);
-    glWindow         = new GLWindow(this);
+    connectionWindow = new class ConnectionWindow(this);
+    updateWindow     = new class UpdateWindow(this);
+    consoleWindow    = new class ConsoleWindow(this);
+    glWindow         = new class GLWindow(this);
 
     addDockWindow(Qt::LeftDockWidgetArea, connectionWindow);
     addDockWindow(Qt::RightDockWidgetArea, updateWindow);
