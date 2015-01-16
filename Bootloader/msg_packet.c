@@ -3,6 +3,7 @@
 #include "uart.h"
 #include "board.h"
 #include "cobsr.h"
+#include "errors.h"
 
 #define PACKET_TIMEOUT  1000     // [ms]
 
@@ -33,7 +34,7 @@ static crc16_t msg_calc_crc(const struct msg_header *msg)
 }
 
 
-msg_err  msg_recv(struct msg_header *msg)
+int msg_recv(struct msg_header *msg)
 {
     uint32_t t0 = tickcount;
 
@@ -59,13 +60,14 @@ msg_err  msg_recv(struct msg_header *msg)
         }
 
         if (tickcount - t0 > PACKET_TIMEOUT) {
-            // packet timed out
-            //
-            return MSG_ERR_TIMEOUT;
+            errno = EMSG_TIMEOUT;
+            return -1;
         }
 
-        if (rx_len >= MAX_BUF_LENGTH)
-            return MSG_ERR_TOO_LONG;
+        if (rx_len >= MAX_BUF_LENGTH) {
+            errno = EMSG_TOO_LONG;
+            return -1;
+        }
     }
 
     // decode COBS/R
@@ -77,24 +79,28 @@ msg_err  msg_recv(struct msg_header *msg)
         dst_buf, dst_len, rx_buf, rx_len
     );
 
-    if (cobsr_res.status != COBSR_DECODE_OK)
-        return MSG_ERR_COBS;
+    if (cobsr_res.status != COBSR_DECODE_OK) {
+        errno = EMSG_COBSR;
+        return -1;
+    }
 
-    if (cobsr_res.out_len < 2 + 2)
-        return MSG_ERR_TOO_SHORT;
+    if (cobsr_res.out_len < 2 + 2) {
+        errno = EMSG_TOO_SHORT;
+        return -1;
+    }
 
     msg->data_len = cobsr_res.out_len -2 -2;     // -CRC -ID
 
-    // Check CRC
-    //
-    if (msg_calc_crc(msg) != msg->crc)
-        return MSG_ERR_CRC;
+    if (msg_calc_crc(msg) != msg->crc) {
+        errno = EMSG_CRC;
+        return -1;
+    }
 
-    return MSG_ERR_OK;
+    return msg->data_len;
 }
 
 
-msg_err  msg_send(struct msg_header *msg)
+int  msg_send(struct msg_header *msg)
 {
     msg->crc = msg_calc_crc(msg);
 
@@ -103,8 +109,10 @@ msg_err  msg_send(struct msg_header *msg)
         (uint8_t*)&msg->crc, 2 + 2 + msg->data_len  // +CRC +ID
     );
 
-    if (cobsr_res.status != COBSR_ENCODE_OK)
-        return MSG_ERR_COBS;
+    if (cobsr_res.status != COBSR_ENCODE_OK) {
+        errno = EMSG_COBSR;
+        return -1;
+    }
 
     // add end-of-packet marker
     //
@@ -112,22 +120,5 @@ msg_err  msg_send(struct msg_header *msg)
 
     uart_write(tx_buf, cobsr_res.out_len);
 
-    return MSG_ERR_OK;
+    return msg->data_len;
 }
-
-
-const char *msg_strerr(msg_err err)
-{
-    if (err >= 0)
-        return "MSG_ERR_OK";
-
-    switch(err) {
-    case MSG_ERR_TIMEOUT:   return "MSG_ERR_TIMEOUT";
-    case MSG_ERR_TOO_LONG:  return "MSG_ERR_TOO_LONG";
-    case MSG_ERR_COBS:      return "MSG_ERR_COBS";
-    case MSG_ERR_TOO_SHORT: return "MSG_ERR_TOO_SHORT";
-    case MSG_ERR_CRC:       return "MSG_ERR_CRC";
-    default:                return "MSG_ERR_UNKNOWN";
-    }
-}
-

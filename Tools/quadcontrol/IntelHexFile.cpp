@@ -1,4 +1,5 @@
 /**
+ * Intel HEX file reader
  * Copyright (C)2015 Thomas Kindler <mail_drquad@t-kindler.de>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,7 +17,7 @@
  */
 
 #include "IntelHexFile.h"
-#include <QDebug>
+#include <QFile>
 
 IntelHexFile::IntelHexFile()
 {
@@ -40,7 +41,7 @@ bool IntelHexFile::loadHex(const QString &fileName)
 {
     QFile file(fileName);
     if (!file.open(QIODevice::ReadOnly)) {
-        qDebug() << file.errorString();
+        m_errorString = file.errorString();
         return false;
     }
 
@@ -51,19 +52,24 @@ bool IntelHexFile::loadHex(const QString &fileName)
 bool IntelHexFile::loadHex(QTextStream &stream)
 {
     int lineNumber = 0;
-    highAddress = 0;
+    m_highAddress = 0;
 
     while (!stream.atEnd()) {
         auto line = stream.readLine();
         lineNumber++;
 
         if (!parseLine(line)) {
-            qDebug("Invalid data in line %d", lineNumber);
+            m_errorString = QString().sprintf("Invalid data in line %d", lineNumber);
             return false;
         }
     }
 
     return true;
+}
+
+QString IntelHexFile::errorString() const
+{
+    return m_errorString;
 }
 
 int IntelHexFile::checksum(const QString &line)
@@ -107,7 +113,7 @@ bool IntelHexFile::parseLine(const QString &line)
     if (!ok)
         return false;
 
-    uint address = line.mid(3, 4).toUInt(&ok, 16) + highAddress;
+    uint address = line.mid(3, 4).toUInt(&ok, 16) + m_highAddress;
     if (!ok)
         return false;
 
@@ -137,26 +143,26 @@ bool IntelHexFile::parseLine(const QString &line)
     case 2:
         // extended segment address
         //
-        highAddress = (((uint)data[0] << 8) | (uint)data[1]) * 16;
+        m_highAddress = (((uint)data[0] << 8) | (uint)data[1]) * 16;
         return true;
 
     case 3:
         // start segment address
         //
-        startAddress = (((uint)data[0] << 8) | (uint)data[1]) * 16 +
+        m_startAddress = (((uint)data[0] << 8) | (uint)data[1]) * 16 +
                        (((uint)data[2] << 8) | (uint)data[3]);
         return true;
 
     case 4:
         // extended linear address
         //
-        highAddress = ((uint)data[0] << 24) | ((uint)data[1] << 16);
+        m_highAddress = ((uint)data[0] << 24) | ((uint)data[1] << 16);
         return true;
 
     case 5:
         // start linear address
         //
-        startAddress = ((uint)data[0] << 24) | ((uint)data[1] << 16) |
+        m_startAddress = ((uint)data[0] << 24) | ((uint)data[1] << 16) |
                        ((uint)data[2] <<  8) | ((uint)data[3] <<  0) ;
         return true;
 

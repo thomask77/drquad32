@@ -1,9 +1,7 @@
 #ifndef INTELHEXFILE_H
 #define INTELHEXFILE_H
 
-#include <QFile>
 #include <QString>
-#include <QByteArray>
 #include <QTextStream>
 
 class IntelHexFile
@@ -25,9 +23,13 @@ public:
     bool loadHex(const QString &fileName);
     bool loadHex(QTextStream &stream);
 
+    QString errorString() const;
+
 private:
-    uint startAddress = 0;
-    uint highAddress = 0;
+    QString m_errorString;
+
+    uint m_startAddress = 0;
+    uint m_highAddress = 0;
 
     int  checksum(const QString &line);
     void addData(uint address, const QByteArray &data);

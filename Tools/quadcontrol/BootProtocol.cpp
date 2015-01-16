@@ -17,6 +17,7 @@
 
 #include "BootProtocol.h"
 #include "../../Bootloader/msg_structs.h"
+#include "../../Libraries/crc/crc32.h"
 #include "IntelHexFile.h"
 #include "MainWindow.h"
 
@@ -44,29 +45,48 @@ BootProtocol::~BootProtocol()
 
 void BootProtocol::connection_messageReceived(const QByteArray &message)
 {
-    auto id = *(uint16_t*)message.constData();
-
-    if (id == MSG_ID_BOOT_RESPONSE) {
-        qDebug() << "BOOT_RESPONSE: " << message.mid(2).toHex();
-        messageQueue.enqueue(message);
-    }
+    messageQueue.enqueue(message);
 }
 
-void BootProtocol::bootGetResponse(int timeout)
+void BootProtocol::showProgress(int value, const QString &text)
+{
+    // qDebug("%2d: %s", value, qPrintable(text));
+    progressDialog.setValue(value);
+    progressDialog.setLabelText(text);
+}
+
+
+/********** Low level functions **********/
+
+QByteArray BootProtocol::bootGetResponse(int timeout)
 {
     while (timeout > 0) {
+        if (progressDialog.wasCanceled()) {
+            m_errorString = "User canceled";
+            return QByteArray();
+        }
+
+        while (!messageQueue.isEmpty()) {
+            auto msg = messageQueue.dequeue();
+            auto id = *(uint16_t*)msg.constData();
+
+            if (id == MSG_ID_BOOT_RESPONSE) {
+                // qDebug() << "BOOT_RESPONSE: " << msg.mid(2).toHex();
+                return msg;
+            }
+        }
+
+        QApplication::processEvents();
         int t = std::min(10, timeout);
         QThread::msleep(t);
         timeout -= t;
-
-        QApplication::processEvents();
-
-        if (progressDialog.wasCanceled())
-            return;
     }
+
+    m_errorString = "Time out";
+    return QByteArray();
 }
 
-void BootProtocol::bootEnter()
+int BootProtocol::bootEnter()
 {
     // Hack: CTRL-C\nreset\n
     //
@@ -77,109 +97,155 @@ void BootProtocol::bootEnter()
     msg.magic = 0xB00710AD;
 
     connection.sendMessage( QByteArray((char*)&msg, sizeof(msg)) );
+
+    auto response = bootGetResponse(1000);
+    if (response.isNull())
+        return -1;
+
+    return *(char*)response.mid(2).constData();
 }
 
-void BootProtocol::bootExit()
+int BootProtocol::bootExit()
 {
     msg_boot_exit msg;
     msg.h.id = MSG_ID_BOOT_EXIT;
     msg.h.data_len = 0;
 
     connection.sendMessage( QByteArray((char*)&msg, sizeof(msg)) );
+
+    auto response = bootGetResponse(100);
+    if (response.isNull())
+        return -1;
+
+    return *(char*)response.mid(2).constData();
 }
 
-void BootProtocol::bootEraseSector(uint sector)
+int BootProtocol::bootEraseSector(uint sector)
 {
     msg_boot_erase_sector msg;
     msg.h.id = MSG_ID_BOOT_ERASE_SECTOR;
     msg.sector = sector;
 
     connection.sendMessage( QByteArray((char*)&msg, sizeof(msg)) );
+
+    auto response = bootGetResponse(2000);
+    if (response.isNull())
+        return -1;
+
+    return *(char*)response.mid(2).constData();
 }
 
-void BootProtocol::bootWriteData(uint addr, const QByteArray &data)
+int BootProtocol::bootWriteDataAsync(uint addr, const QByteArray &data, size_t size, off_t  offset)
+{
+    msg_boot_write_data msg;
+
+    msg.h.id = MSG_ID_BOOT_WRITE_DATA;
+    msg.address = addr;
+    msg.length = std::min(size, sizeof(msg.data));
+    memcpy(msg.data, data.constData() + offset, msg.length);
+
+    connection.sendMessage( QByteArray((char*)&msg, sizeof(msg)) );
+
+    return msg.length;
+}
+
+int BootProtocol::bootWriteData(uint addr, const QByteArray &data, size_t size, off_t offset)
 {
     static const int ACK_WINDOW = 16;
-
-    int offset = 0;
     int pending = 0;
 
-    while (offset < data.length()) {
+    while ((unsigned)offset < size) {
         showProgress(
             offset * 100 / data.length(),
-            QString().sprintf("Writing 0x%08x", addr + offset)
+            QString().sprintf("Writing 0x%08x", addr)
         );
 
-        if (progressDialog.wasCanceled())
-            return;
+        int res = bootWriteDataAsync(addr, data, data.size() - offset, offset);
+        if (res < 0)
+            return -1;
 
-        msg_boot_write_data msg;
-
-        auto chunk = data.mid(offset, sizeof(msg.data));
-
-        msg.h.id = MSG_ID_BOOT_WRITE_DATA;
-        msg.address = addr + offset;
-        msg.length = chunk.size();
-
-        memcpy(msg.data, chunk.constData(), chunk.size());
-
-        connection.sendMessage( QByteArray((char*)&msg, sizeof(msg)) );
-
-        offset += chunk.size();
+        offset += res;
+        addr   += res;
 
         // queue requests to mask the connection latency
         //
-        if (pending >= ACK_WINDOW)
-            bootGetResponse(100);
-        else
+        if (pending >= ACK_WINDOW) {
+            auto response = bootGetResponse(100);
+            if (response.isNull())
+                return -1;
+        }
+        else {
             pending += 1;
+        }
     }
 
     // wait for pending responses
     //
     while (pending > 0) {
-        bootGetResponse(100);
+        auto response = bootGetResponse(100);
+        if (response.isNull())
+            return -1;
+
         pending--;
     }
+
+    return size;
 }
 
-void BootProtocol::bootVerify(uint addr, const QByteArray &data)
+int BootProtocol::bootVerifyData(uint addr, const QByteArray &data, size_t size, off_t offset)
 {
     msg_boot_verify msg;
     msg.h.id = MSG_ID_BOOT_VERIFY;
     msg.h.data_len = 4 + 4;
 
     msg.address = addr;
-    msg.length = data.size();
+    msg.length = size;
 
     connection.sendMessage( QByteArray((char*)&msg, sizeof(msg)) );
+
+    auto response = bootGetResponse(250);
+    if (response.isNull())
+        return -1;
+
+    auto local_crc = crc32_init();
+    local_crc = crc32_update(local_crc, (const uchar*)data.constData() + offset, size);
+    local_crc = crc32_finalize(local_crc);
+
+    auto remote_crc = *(uint*)response.mid(2).constData();
+
+    // qDebug("Local CRC : %08x", local_crc);
+    // qDebug("Remote CRC: %08x", remote_crc);
+
+    if  (remote_crc != local_crc) {
+        m_errorString = "CRC check failed";
+        return -1;
+    }
+
+    return 1;
 }
 
-void BootProtocol::showProgress(int value, const QString &text)
-{
-    qDebug("%d: %s", value,  qPrintable(text));
-    progressDialog.setValue(value);
-    progressDialog.setLabelText(text);
-}
 
+/********** Firmware update functions **********/
 
 #define CHECK_CANCEL()    \
     if (progressDialog.wasCanceled())   \
         goto cancel;                    \
 
-#include "MainWindow.h"
 
-void BootProtocol::writeHexFile(const QString &fileName)
+bool BootProtocol::sendHexFile(const QString &fileName)
 {
     QTime t0, t_enter, t_erase, t_write, t_verify, t_total;
 
     progressDialog.reset();
+    progressDialog.show();
 
     showProgress(0, "Loading " + fileName);
 
     IntelHexFile ih;
-    if (!ih.loadHex(fileName))
-        return;
+    if (!ih.loadHex(fileName)) {
+        m_errorString = ih.errorString();
+        return false;
+    }
 
     uint start_addr  = ih.sections[0].offset;
     uint end_addr    = ih.sections[0].offset +  ih.sections[0].data.size();
@@ -192,10 +258,8 @@ void BootProtocol::writeHexFile(const QString &fileName)
 
     for (int i=0; i<5; i++) {
         showProgress(i, "Entering bootloader");
-        CHECK_CANCEL();
-
         bootEnter();
-        bootGetResponse(100);
+        CHECK_CANCEL();
     }
 
     t_enter = QTime::currentTime();
@@ -205,37 +269,32 @@ void BootProtocol::writeHexFile(const QString &fileName)
             10 + 10 * (i-4) / (12-4),
             QString().sprintf("Erasing sector %d...", i)
         );
-        CHECK_CANCEL();
-
         bootEraseSector(i);
-        bootGetResponse(2000);
+        CHECK_CANCEL();
     }
 
     t_erase = QTime::currentTime();
 
     // skip initial 8 bytes (written after verify)
     //
-    bootWriteData(start_addr + 8, data.mid(8));
+    bootWriteData(start_addr + 8, data, data.size() - 8, 8);
     CHECK_CANCEL();
 
     t_write = QTime::currentTime();
 
     showProgress(85, "Verifying");
+    bootVerifyData(start_addr + 8, data, data.size() - 8, 8);
     CHECK_CANCEL();
-
-    bootVerify(start_addr + 8, data.mid(8));
 
     t_verify = QTime::currentTime();
 
     showProgress(90, "Writing first 8 bytes");
+    bootWriteData(start_addr, data, 8, 0);
     CHECK_CANCEL();
-
-    bootWriteData(start_addr, data.mid(0, 8));
 
     showProgress(95, "Starting application");
-    CHECK_CANCEL();
-
     bootExit();
+    CHECK_CANCEL();
 
     showProgress(100, "Done.");
 
@@ -246,9 +305,14 @@ void BootProtocol::writeHexFile(const QString &fileName)
     qDebug("  Write:  %d ms", t_erase.msecsTo(t_write));
     qDebug("  Verify: %d ms", t_write.msecsTo(t_verify));
     qDebug("  Total:  %d ms", t0.msecsTo(t_total));
-    return;
+    return true;
 
 cancel:
-    return;
+    return true;
 }
 
+
+QString BootProtocol::errorString() const
+{
+    return m_errorString;
+}

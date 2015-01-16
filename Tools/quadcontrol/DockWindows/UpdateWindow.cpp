@@ -96,9 +96,19 @@ void UpdateWindow::browseButton_clicked()
 
 void UpdateWindow::updateButton_clicked()
 {
-    BootProtocol bootProtocol(this, mainWindow->connection);
+    for (;;) {
+        BootProtocol bp(this, mainWindow->connection);
 
-    bootProtocol.writeHexFile(ui->lineEdit->text());
+        if (bp.sendHexFile(ui->lineEdit->text()))
+            return;
+
+        if (QMessageBox::critical(
+                this, "Firmware update failed", bp.errorString(),
+                QMessageBox::Abort | QMessageBox::Retry
+        ) != QMessageBox::Retry) {
+            return;
+        }
+    }
 }
 
 void UpdateWindow::lineEdit_textChanged()

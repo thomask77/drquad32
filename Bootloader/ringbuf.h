@@ -63,7 +63,7 @@ typedef enum {
  * \param   buf_size    requested buffer size
  * \return  pointer to allocated buffer or NULL
  */
-static struct ringbuf *rb_alloc(size_t buf_size)
+static inline struct ringbuf *rb_alloc(size_t buf_size)
 {
     struct ringbuf *rb;
 
@@ -85,7 +85,7 @@ static struct ringbuf *rb_alloc(size_t buf_size)
  * \param   rb      pointer to ringbuf struct
  * \return  number of bytes available
  */
-static size_t rb_bytes_used(const struct ringbuf *rb)
+static inline size_t rb_bytes_used(const struct ringbuf *rb)
 {
     int ret = rb->write_pos - rb->read_pos;
     if (ret < 0)
@@ -101,7 +101,7 @@ static size_t rb_bytes_used(const struct ringbuf *rb)
  * \param   rb      pointer to ringbuf struct
  * \return  number of bytes available
  */
-static size_t rb_bytes_free(const struct ringbuf *rb)
+static inline size_t rb_bytes_free(const struct ringbuf *rb)
 {
     // One byte must be left unused to differentiate
     // between full and empty buffers.
@@ -124,14 +124,14 @@ static size_t rb_bytes_free(const struct ringbuf *rb)
  * \param   len2    where to store wrap-around length   (will receive 0 if not wrapped around)
  * \return  number of bytes available
  */
-static size_t rb_get_pointers(
+static inline size_t rb_get_pointers(
     const struct ringbuf *rb,
     rb_ptrmode mode, size_t nbyte,
     void **ptr1, size_t *len1,
     void **ptr2, size_t *len2
 )
 {
-    const unsigned *pos;
+    const volatile unsigned *pos;
 	size_t max_bytes;
 
     if (mode == RB_READ) {
@@ -175,9 +175,9 @@ static size_t rb_get_pointers(
  * \param   nbyte   number of bytes to commit
  * \return  number of bytes committed
  */
-static size_t rb_commit(struct ringbuf *rb, rb_ptrmode mode, size_t nbyte)
+static inline size_t rb_commit(struct ringbuf *rb, rb_ptrmode mode, size_t nbyte)
 {
-    unsigned *pos = (mode == RB_READ) ? &rb->read_pos : &rb->write_pos;
+    volatile unsigned *pos = (mode == RB_READ) ? &rb->read_pos : &rb->write_pos;
 
     unsigned new_pos = *pos + nbyte;
     if (new_pos >= rb->buf_size)
@@ -196,7 +196,7 @@ static size_t rb_commit(struct ringbuf *rb, rb_ptrmode mode, size_t nbyte)
  * \param   nbyte   maximum number of bytes to read
  * \return  number of bytes read
  */
-static size_t rb_read(struct ringbuf *rb, void *data, size_t nbyte)
+static inline size_t rb_read(struct ringbuf *rb, void *data, size_t nbyte)
 {
     void *ptr1, *ptr2;
     size_t len1, len2;
@@ -218,7 +218,7 @@ static size_t rb_read(struct ringbuf *rb, void *data, size_t nbyte)
  * \param   nbyte   maximum number of bytes to write
  * \return  number of bytes written
  */
-static size_t rb_write(struct ringbuf *rb, const void *data, size_t nbyte)
+static inline size_t rb_write(struct ringbuf *rb, const void *data, size_t nbyte)
 {
     void *ptr1, *ptr2;
     size_t len1, len2;
@@ -238,7 +238,7 @@ static size_t rb_write(struct ringbuf *rb, const void *data, size_t nbyte)
  * \param   rb      pointer to ringbuf struct
  * \return  byte read or -1 if buffer was empty
  */
-static int rb_getchar(struct ringbuf *rb)
+static inline int rb_getchar(struct ringbuf *rb)
 {
     unsigned char *ptr;
     size_t len;
@@ -261,7 +261,7 @@ static int rb_getchar(struct ringbuf *rb)
  * \param   data    byte to write
  * \return  byte written or -1 if buffer was full
  */
-static int rb_putchar(struct ringbuf *rb, int c)
+static inline int rb_putchar(struct ringbuf *rb, int c)
 {
     unsigned char *ptr;
     size_t len;

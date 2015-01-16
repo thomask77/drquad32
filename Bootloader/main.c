@@ -4,6 +4,7 @@
 #include "msg_packet.h"
 #include "stm32f4xx.h"
 #include "version.h"
+#include "errors.h"
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -24,7 +25,7 @@
 #define RAM_END         0x20020000
 #define RAM_SIZE        (RAM_END - RAM_START)
 
-// #define BOOT_TIMEOUT    2000           // [ms]
+//#define BOOT_TIMEOUT    2000           // [ms]
 #define BOOT_TIMEOUT    2000000000     // [ms]
 #define BOOT_MAGIC      0xB00710AD
 
@@ -195,12 +196,12 @@ static void handle_boot_enter(struct msg_boot_enter *msg)
     msg_printf("boot_enter(0x%08lx): ", msg->magic);
 
     if (msg->magic == 0xB00710AD) {
-        active = 1;
         msg_printf("ok.\n");
+        active = 1;
     }
     else {
+        msg_printf("wrong key.\n");
         active = 0;
-        msg_printf("failed.\n");
     }
 
     send_response((char[]){ active }, 1);
@@ -285,11 +286,9 @@ static void handle_boot_exit(struct msg_boot_exit *msg)
 
 static void handle_unknown_message(struct msg_generic *msg)
 {
-    msg_printf("unknown message: 0x%04x, %d bytes\n",
+    msg_printf("Unknown message: 0x%04x, %d bytes\n",
         msg->h.id, msg->h.data_len
     );
-
-    send_response(NULL, 0);
 }
 
 
@@ -309,15 +308,16 @@ static void msg_loop(void)
            .h.data_len = sizeof(msg) - sizeof(struct msg_header)
         };
 
-        int err = msg_recv(&msg.h);
-        if (err < 0) {
-            if (err == MSG_ERR_TIMEOUT)
+        int len = msg_recv(&msg.h);
+        if (len < 0) {
+            if (errno == EMSG_TIMEOUT)
                 msg_printf(".");
             else
-                DBG_PRINTF("msg_recv(): %s\n", msg_strerr(err));
+                msg_printf("%s\n", strerror(errno));
 
             continue;
         }
+
 
         toggle_led();
 
@@ -365,6 +365,8 @@ int main(void)
     board_set_leds(LED_RED | LED_GREEN);
     start_app(APP_START);
 
+    uart_flush();
     NVIC_SystemReset();
+
     for(;;);
 }

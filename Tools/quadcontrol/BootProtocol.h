@@ -18,9 +18,13 @@ public:
     BootProtocol(QWidget *parent, Connection &connection);
     ~BootProtocol();
 
-    void writeHexFile(const QString &fileName);
+    bool sendHexFile(const QString &fileName);
+
+    QString errorString() const;
 
 private:
+    QString m_errorString;
+
     QProgressDialogEx progressDialog;
     QQueue<QByteArray> messageQueue;
 
@@ -29,12 +33,15 @@ private:
 
     void showProgress(int value, const QString &text);
 
-    void bootGetResponse(int timeout);
-    void bootEnter();
-    void bootExit();
-    void bootEraseSector(uint sector);
-    void bootWriteData(uint addr, const QByteArray &data);
-    void bootVerify(uint addr, const QByteArray &data);
+    QByteArray bootGetResponse(int timeout);
+
+    int  bootEnter();
+    int  bootExit();
+    int  bootEraseSector(uint sector);
+    int  bootWriteDataAsync(uint addr, const QByteArray &data, size_t size, off_t offset);
+    int  bootWriteData(uint addr, const QByteArray &data, size_t size, off_t offset);
+    int  bootVerifyData(uint addr, const QByteArray &data, size_t size, off_t offset);
+
 };
 
 #endif // BOOTPROTOCOL_H
