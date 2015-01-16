@@ -1,3 +1,20 @@
+/**
+ * Copyright (C)2015 Thomas Kindler <mail_drquad@t-kindler.de>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "BootProtocol.h"
 #include "../../Bootloader/msg_structs.h"
 #include "IntelHexFile.h"
@@ -10,10 +27,10 @@
 
 static const int TIMEOUT_MS = 2000;
 
-BootProtocol::BootProtocol(QWidget *parent, Connection &connection) :
-    QWidget(parent),
-    progressDialog(this),
-    connection(connection)
+BootProtocol::BootProtocol(QWidget *parent, Connection &connection)
+    : QWidget(parent)
+    , progressDialog(this)
+    , connection(connection)
 {
     progressDialog.setWindowModality(Qt::WindowModal);
     progressDialog.setWindowTitle("Updating...");
@@ -140,7 +157,7 @@ void BootProtocol::bootVerify(uint addr, const QByteArray &data)
 
 void BootProtocol::showProgress(int value, const QString &text)
 {
-    qDebug("%d: %s", value,  qUtf8Printable(text));
+    qDebug("%d: %s", value,  qPrintable(text));
     progressDialog.setValue(value);
     progressDialog.setLabelText(text);
 }

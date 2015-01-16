@@ -8,7 +8,7 @@ QT += core gui
 QT += serialport
 QT += widgets
 QT += opengl
-QT += winextras
+win32:QT += winextras
 
 TARGET = quadcontrol
 TEMPLATE = app
@@ -57,6 +57,4 @@ FORMS    += MainWindow.ui \
 RESOURCES += \
     resources.qrc
 
-unix {
-    LIBS += -lGLU
-}
+unix:LIBS += -lGLU

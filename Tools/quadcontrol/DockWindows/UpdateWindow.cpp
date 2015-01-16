@@ -1,3 +1,20 @@
+/**
+ * Copyright (C)2015 Thomas Kindler <mail_drquad@t-kindler.de>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "UpdateWindow.h"
 #include "ui_UpdateWindow.h"
 
@@ -15,10 +32,10 @@
 #include "MainWindow.h"
 #include "IntelHexFile.h"
 
-UpdateWindow::UpdateWindow(MainWindow *parent) :
-    QMainWindow(parent),
-    ui(new Ui::UpdateWindow),
-    mainWindow(parent)
+UpdateWindow::UpdateWindow(MainWindow *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::UpdateWindow)
+    , mainWindow(parent)
 {
     ui->setupUi(this);
 
@@ -43,6 +60,11 @@ UpdateWindow::UpdateWindow(MainWindow *parent) :
     // that take a long time to load.
     //
     ui->lineEdit->setCompleter(completer);
+}
+
+UpdateWindow::~UpdateWindow()
+{
+    delete ui;
 }
 
 void UpdateWindow::dragEnterEvent(QDragEnterEvent *event)
@@ -82,12 +104,6 @@ void UpdateWindow::updateButton_clicked()
 void UpdateWindow::lineEdit_textChanged()
 {
     QSettings().setValue("update_filename", ui->lineEdit->text());
-}
-
-
-UpdateWindow::~UpdateWindow()
-{
-    delete ui;
 }
 
 void UpdateWindow::connectionChanged()
