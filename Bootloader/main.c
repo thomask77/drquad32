@@ -25,13 +25,12 @@
 #define RAM_END         0x20020000
 #define RAM_SIZE        (RAM_END - RAM_START)
 
-//#define BOOT_TIMEOUT    2000           // [ms]
-#define BOOT_TIMEOUT    2000000000     // [ms]
+#define BOOT_TIMEOUT    2000           // [ms]
 #define BOOT_MAGIC      0xB00710AD
 
 
-// #define DBG_PRINTF(...)
-#define DBG_PRINTF  msg_printf
+#define DBG_PRINTF(...)
+// #define DBG_PRINTF  msg_printf
 
 
 struct sector {
@@ -236,16 +235,16 @@ static void handle_boot_verify(struct msg_boot_verify *msg)
 
 static void handle_boot_write_data(struct msg_boot_write_data *msg)
 {
-    DBG_PRINTF("boot_write_data(0x%08lx, %d): ",
-        msg->address, msg->length
-    );
-
     uint32_t addr = msg->address;
-    if (addr >= APP_START && addr + msg->length < FLASH_END) {
+    uint32_t len  = msg->h.data_len - 4;
+
+    DBG_PRINTF("boot_write_data(0x%08lx, %lu): ", addr, len);
+
+    if (addr >= APP_START && addr + len < FLASH_END) {
         FLASH_Unlock();
 
         uint32_t *s = (uint32_t*)msg->data;
-        for (int i=0; i < msg->length; i+=4)
+        for (int i=0; i < len; i+=4)
             FLASH_ProgramWord(addr + i, *s++);
 
         FLASH_Lock();
@@ -263,13 +262,13 @@ static void handle_boot_erase_sector(struct msg_boot_erase_sector *msg)
 
     if (msg->sector > 4 || msg->sector < 11) {
         if (sector_empty_check(msg->sector)) {
-            msg_printf("already empty.\n");
+            msg_printf("already empty\n");
         }
         else {
             FLASH_Unlock();
             FLASH_EraseSector(msg->sector << 3, VoltageRange_3);
             FLASH_Lock();
-            msg_printf("done: %d\n", FLASH_GetStatus());
+            msg_printf("%d\n", FLASH_GetStatus());
         }
     }
 

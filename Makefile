@@ -204,7 +204,7 @@ CPPFLAGS += -g
 #  -Wall...       warning level
 #
 CFLAGS += $(OPT)
-CFLAGS += -std=gnu1x
+CFLAGS += -std=gnu11
 CFLAGS += -ffunction-sections
 CFLAGS += -fdata-sections
 CFLAGS += -Wall

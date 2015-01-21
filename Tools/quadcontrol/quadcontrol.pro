@@ -46,7 +46,8 @@ HEADERS  += MainWindow.h \
     DockWindows/MyGLWidget.h \
     BootProtocol.h \
     glut_teapot.h \
-    QProgressDialogEx.h
+    QProgressDialogEx.h \
+    ../../Bootloader/msg_structs.h
 
 FORMS    += MainWindow.ui \
     DockWindows/ConnectionWindow.ui \

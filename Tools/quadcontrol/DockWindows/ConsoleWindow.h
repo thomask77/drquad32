@@ -1,12 +1,13 @@
 #ifndef CONSOLEWINDOW_H
 #define CONSOLEWINDOW_H
 
+#include "AnsiParser.h"
+#include "../../Bootloader/msg_structs.h"
+
 #include <QMainWindow>
 #include <QTimer>
 #include <QTextCursor>
 #include <QTextCharFormat>
-
-#include "AnsiParser.h"
 
 namespace Ui {
 class ConsoleWindow;
@@ -27,7 +28,7 @@ private:
     void actionClear_triggered();
     void actionSave_triggered();
     void actionWrap_triggered();
-    void connection_messageReceived(const QByteArray &message);
+    void connection_messageReceived(const msg_generic &msg);
     void timer_timeout();
 
     void ansi_attributesChanged(const AnsiParser::Attributes &attr);

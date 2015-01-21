@@ -5,6 +5,9 @@
 #include <QSerialPort>
 #include <QTimer>
 
+#include "../../Bootloader/msg_structs.h"
+
+
 class Connection : public QObject
 {
     Q_OBJECT
@@ -25,27 +28,31 @@ public:
     Statistics stats = Statistics();
 
     QString portName();
+    QString errorString();
 
     bool open(const QSerialPortInfo &serialPortInfo);
     void close();
     bool isOpen();
 
-    void sendMessage(const QByteArray &message);
+    void sendMessage(msg_header *msg);
 
 signals:
-    void messageReceived(const QByteArray &message);
+    void messageReceived(const msg_generic &msg);
     void connectionChanged();
 
 private:
+    QString m_errorString;
     QSerialPort serialPort;
     QByteArray rx_buf;
     QTimer timer;
 
     void pollMessages();
 
-    static QByteArray encodeMessage(const QByteArray &message);
-    static QByteArray decodeMessage(const QByteArray &packet);
+    bool encodeMessage(msg_header *msg, QByteArray *packet);
+    bool decodeMessage(const QByteArray &packet, msg_generic *msg);
 };
+
+
 
 
 #endif // CONNECTION_H

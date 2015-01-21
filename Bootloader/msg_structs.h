@@ -1,9 +1,9 @@
 #pragma once
-#pragma pack(push, 1)
 
 #include <stdint.h>
+#include <assert.h>
 
-enum ids {
+enum msg_id {
     MSG_ID_NOP                  = 0x0000,
 
     MSG_ID_BOOT_ENTER           = 0xB000,
@@ -19,31 +19,41 @@ enum ids {
 };
 
 
+#pragma pack(push, 1)
+
+// XBee Series 1:           100 bytes
+// XBee Series 2 ZNet:      72 bytes
+// XBee Series 2 ZB Pro:    84 bytes
+//
+#define MSG_MAX_DATA_SIZE    (100 - 2 - 2)   // -crc -id
+
 /**
  * Message header
  *
  * The crc and id field are directly in front of the payload data
  * and are used during packet reception and transmission.
  *
- * Arbitrary data can be added before these fields (e.g. data_len,
- * timestamp, etc.), but care should be taken to maintain 4-byte
- * alignment for the actual payload.
- *
  */
 struct msg_header {
-    uint8_t     data_len;   //  length of payload data
-    uint8_t     reserved;
+    int         data_len;       //  length of payload data
 
     // fields below are transmitted in the packet
     //
-    uint16_t    crc;        //  message crc
-    uint16_t    id;         //  message id
+    uint16_t    crc;            //  message crc
+    uint16_t    id;             //  message id
+    uint8_t     data[/* data_len */];
 };
+
+
+static_assert(
+    offsetof(struct msg_header, crc) % 4 == 0,
+    "message fields must be aligned to 4 bytes"
+);
 
 
 struct msg_generic {
     struct msg_header h;
-    uint8_t     data[255];
+    uint8_t     data[MSG_MAX_DATA_SIZE];
 };
 
 
@@ -73,7 +83,7 @@ struct msg_boot_enter
 struct msg_boot_response
 {
     struct msg_header h;
-    uint8_t     data[255];
+    uint8_t     data[MSG_MAX_DATA_SIZE];
 };
 
 
@@ -95,8 +105,7 @@ struct msg_boot_write_data
 {
     struct msg_header h;
     uint32_t    address;
-    uint8_t     length;
-    uint8_t     data[240];
+    uint8_t     data[MSG_MAX_DATA_SIZE - 4];
 };
 
 
@@ -136,7 +145,7 @@ struct msg_boot_exit
 struct msg_shell_to_pc
 {
     struct msg_header h;
-    uint8_t     data[255];
+    uint8_t     data[MSG_MAX_DATA_SIZE];
 };
 
 
@@ -146,7 +155,7 @@ struct msg_shell_to_pc
 struct msg_shell_from_pc
 {
     struct msg_header h;
-    uint8_t     data[255];
+    uint8_t     data[MSG_MAX_DATA_SIZE];
 };
 
 

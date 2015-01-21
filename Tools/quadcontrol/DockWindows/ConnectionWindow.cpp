@@ -102,7 +102,11 @@ void ConnectionWindow::actionConnect_triggered()
     if (!item)
         return;
 
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+
     mainWindow->connection.open( QSerialPortInfo(item->text(0)) );
+
+    QApplication::restoreOverrideCursor();
 }
 
 void ConnectionWindow::actionDisconnect_triggered()

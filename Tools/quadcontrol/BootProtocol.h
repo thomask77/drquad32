@@ -20,28 +20,26 @@ public:
 
     bool sendHexFile(const QString &fileName);
 
-    QString errorString() const;
+    QString errorString();
 
 private:
     QString m_errorString;
 
     QProgressDialogEx progressDialog;
-    QQueue<QByteArray> messageQueue;
+    QQueue<msg_generic> messageQueue;
 
     Connection &connection;
-    void connection_messageReceived(const QByteArray &message);
-
+    void connection_messageReceived(const msg_generic &msg);
     void showProgress(int value, const QString &text);
 
-    QByteArray bootGetResponse(int timeout);
-
-    int  bootEnter();
-    int  bootExit();
-    int  bootEraseSector(uint sector);
-    int  bootWriteDataAsync(uint addr, const QByteArray &data, size_t size, off_t offset);
-    int  bootWriteData(uint addr, const QByteArray &data, size_t size, off_t offset);
-    int  bootVerifyData(uint addr, const QByteArray &data, size_t size, off_t offset);
-
+    bool bootGetResponse(msg_boot_response *response, int timeout = 500);
+    bool bootResetHack();
+    bool bootEnter();
+    bool bootExit();
+    bool bootEraseSector(uint sector);
+    bool bootWriteDataAsync(uint addr, const QByteArray &data);
+    bool bootWriteData(uint addr, const QByteArray &data);
+    bool bootVerifyData(uint addr, const QByteArray &data);
 };
 
 #endif // BOOTPROTOCOL_H

@@ -111,7 +111,7 @@ CPPFLAGS += -fsingle-precision-constant
 #  -save-temps:  preserve .s and .i-files
 #
 CFLAGS += $(OPT)
-CFLAGS += -std=gnu99
+CFLAGS += -std=gnu11
 CFLAGS += -gdwarf-2
 CFLAGS += -ffunction-sections
 CFLAGS += -fdata-sections

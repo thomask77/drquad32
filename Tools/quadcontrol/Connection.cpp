@@ -72,19 +72,24 @@ QString Connection::portName()
     return serialPort.portName();
 }
 
-void Connection::sendMessage(const QByteArray &message)
+QString Connection::errorString()
 {
-    // TODO: mid(4) stört.
-    //
-    auto packet = encodeMessage(message .mid(4) );
+    return m_errorString;
+}
 
-    packet.append((char)0);
+void Connection::sendMessage(msg_header *msg)
+{
+    QByteArray packet;
+
+    encodeMessage(msg, &packet);
+    packet += '\0';
 
     if (serialPort.write(packet) >= 0) {
         stats.tx_bytes += packet.size();
         stats.tx_packets++;
     }
     else {
+        qDebug() << serialPort.errorString();
         stats.tx_errors++;
     }
 }
@@ -95,89 +100,84 @@ void Connection::pollMessages()
         return;
 
     auto buf = serialPort.readAll();
-    stats.rx_bytes += buf.size();
     rx_buf.append(buf);
+
+    stats.rx_bytes += buf.size();
 
     for (;;) {
         int pos = rx_buf.indexOf('\0');
         if (pos < 0)
             return;
 
-        auto message = decodeMessage(rx_buf.left(pos));
-        if (!message.isEmpty()) {
+        msg_generic msg;
+
+        if (decodeMessage(rx_buf.left(pos), &msg)) {
             stats.rx_packets++;
-            emit messageReceived(message);
+            emit messageReceived(msg);
         }
         else {
+            qDebug() << m_errorString;
             stats.rx_errors++;
         }
 
-        rx_buf = rx_buf.mid(pos+1);
+        rx_buf = rx_buf.mid(pos + 1);
     }
 }
 
-QByteArray Connection::encodeMessage(const QByteArray &message)
+bool Connection::encodeMessage(msg_header *msg, QByteArray *packet)
 {
-    uint16_t crc;
-    crc = crc16_init();
-    crc = crc16_update(crc, (const uchar*)message.constData(), message.size());
-    crc = crc16_finalize(crc);
+    msg->crc = crc16_init();
+    msg->crc = crc16_update(msg->crc, (uchar*)&msg->id, 2 + msg->data_len);
+    msg->crc = crc16_finalize(msg->crc);
 
-    QByteArray packet_raw;
-    packet_raw.append((char*)&crc, sizeof(crc));
-    packet_raw.append(message);
-
-    QByteArray packet_cobsr(
-        COBSR_ENCODE_DST_BUF_LEN_MAX(packet_raw.size()), 0
+    packet->resize(
+        COBSR_ENCODE_DST_BUF_LEN_MAX(2 + 2 + msg->data_len)
     );
 
     auto r = cobsr_encode(
-        (uint8_t*)packet_cobsr.data(), packet_cobsr.size(),
-        (const uint8_t *)packet_raw.constData(), packet_raw.size()
+        (uchar*)packet->data(), packet->size(),
+        (uchar*)&msg->crc, 2 + 2 + msg->data_len
     );
 
-    Q_ASSERT(r.status == COBSR_ENCODE_OK);
+    if (r.status != COBSR_ENCODE_OK) {
+        m_errorString = QString().sprintf("COBS/R error %d", r.status);
+        return false;
+    }
 
-    packet_cobsr.resize(r.out_len);
+    packet->resize(r.out_len);
 
-    return packet_cobsr;
+    return true;
 }
 
-QByteArray Connection::decodeMessage(const QByteArray &packet)
+bool Connection::decodeMessage(const QByteArray &packet, msg_generic *msg)
 {
-    QByteArray message(
-        COBSR_DECODE_DST_BUF_LEN_MAX(packet.size()), 0
+    auto r = cobsr_decode(
+        (uchar*)&msg->h.crc, 2 + 2 + sizeof(msg_generic::data),
+        (uchar*)packet.data(), packet.size()
     );
 
-    auto result = cobsr_decode(
-        (uint8_t*)message.data(), message.size(),
-        (const uint8_t *)packet.constData(), packet.size()
-    );
-
-    if (result.status != COBSR_DECODE_OK) {
-        qDebug("COBS/R error %d", result.status);
-        return QByteArray();
+    if (r.status != COBSR_DECODE_OK) {
+        m_errorString = QString().sprintf("COBS/R error %d", r.status);
+        return false;
     }
 
-    message.resize(result.out_len);
-
-    if (message.size() < 2 + 2) {
-        qDebug("Packet too short");
-        return QByteArray();
+    if (r.out_len < 2 + 2) {
+        m_errorString = QString().sprintf("Packet too short");
+        return false;
     }
 
-    uint16_t crc_remote = *(uint16_t*)message.constData();
+    msg->h.data_len = r.out_len -2 -2;
 
-    uint16_t crc_local;
-    crc_local = crc16_init();
-    crc_local = crc16_update(crc_local, (const uchar*)message.constData() + 2, message.size() - 2);
-    crc_local = crc16_finalize(crc_local);
+    uint16_t crc;
+    crc = crc16_init();
+    crc = crc16_update(crc, (uchar*)&msg->h.id, 2 + msg->h.data_len);
+    crc = crc16_finalize(crc);
 
-    if (crc_local != crc_remote) {
-        qDebug("Checksum error. Expected 0x%04x, got 0x%04x", crc_local, crc_remote);
-        return QByteArray();
+    if (crc != msg->h.crc) {
+        qDebug() << QByteArray((char*)&msg->h.crc, 2 + 2 + msg->h.data_len).toHex();
+        m_errorString = QString().sprintf("CRC expected 0x%04x, got 0x%04x", crc, msg->h.crc);
+        return false;
     }
 
-    return message.mid(2);
+    return true;
 }
-

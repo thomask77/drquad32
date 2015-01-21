@@ -29,8 +29,6 @@
 #include <QScrollBar>
 
 #include "MainWindow.h"
-#include "../../Bootloader/msg_structs.h"
-
 
 static const QBrush ansiPalette[] = {
     QBrush(QColor("#222")), QBrush(QColor("#C00")),
@@ -129,12 +127,10 @@ void ConsoleWindow::actionWrap_triggered()
 }
 
 
-void ConsoleWindow::connection_messageReceived(const QByteArray &message)
+void ConsoleWindow::connection_messageReceived(const msg_generic &msg)
 {
-    auto id = *(uint16_t*)message.constData();
-
-    if (id == MSG_ID_SHELL_TO_PC)
-        rx_buf.append( message.mid(2) );
+    if (msg.h.id == MSG_ID_SHELL_TO_PC)
+        rx_buf.append( QByteArray((char*)msg.data, msg.h.data_len) );
 }
 
 void ConsoleWindow::timer_timeout()

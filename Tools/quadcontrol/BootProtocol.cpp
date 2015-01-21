@@ -26,7 +26,36 @@
 #include <QThread>
 #include <QTime>
 
-static const int TIMEOUT_MS = 2000;
+
+enum FLASH_Status {
+    FLASH_BUSY = 1,
+    FLASH_ERROR_RD,
+    FLASH_ERROR_PGS,
+    FLASH_ERROR_PGP,
+    FLASH_ERROR_PGA,
+    FLASH_ERROR_WRP,
+    FLASH_ERROR_PROGRAM,
+    FLASH_ERROR_OPERATION,
+    FLASH_COMPLETE
+};
+
+
+static QString flashStatusStr(uint8_t status)
+{
+    switch (status) {
+    case FLASH_BUSY             : return "FLASH_BUSY";
+    case FLASH_ERROR_RD         : return "FLASH_ERROR_RD";
+    case FLASH_ERROR_PGS        : return "FLASH_ERROR_PGS";
+    case FLASH_ERROR_PGP        : return "FLASH_ERROR_PGP";
+    case FLASH_ERROR_PGA        : return "FLASH_ERROR_PGA";
+    case FLASH_ERROR_WRP        : return "FLASH_ERROR_WRP";
+    case FLASH_ERROR_PROGRAM    : return "FLASH_ERROR_PROGRAM";
+    case FLASH_ERROR_OPERATION  : return "FLASH_ERROR_OPERATION";
+    case FLASH_COMPLETE         : return "FLASH_COMPLETE";
+    default: return QString().sprintf("%d", status);
+    }
+}
+
 
 BootProtocol::BootProtocol(QWidget *parent, Connection &connection)
     : QWidget(parent)
@@ -43,9 +72,9 @@ BootProtocol::~BootProtocol()
 {
 }
 
-void BootProtocol::connection_messageReceived(const QByteArray &message)
+void BootProtocol::connection_messageReceived(const msg_generic &msg)
 {
-    messageQueue.enqueue(message);
+    messageQueue.enqueue(msg);
 }
 
 void BootProtocol::showProgress(int value, const QString &text)
@@ -58,178 +87,220 @@ void BootProtocol::showProgress(int value, const QString &text)
 
 /********** Low level functions **********/
 
-QByteArray BootProtocol::bootGetResponse(int timeout)
+bool BootProtocol::bootGetResponse(msg_boot_response *response, int timeout)
 {
     while (timeout > 0) {
-        if (progressDialog.wasCanceled()) {
-            m_errorString = "User canceled";
-            return QByteArray();
-        }
-
         while (!messageQueue.isEmpty()) {
             auto msg = messageQueue.dequeue();
-            auto id = *(uint16_t*)msg.constData();
+            if (msg.h.id == MSG_ID_BOOT_RESPONSE) {
+                // qDebug() << "BOOT_RESPONSE: " << msg.data;
 
-            if (id == MSG_ID_BOOT_RESPONSE) {
-                // qDebug() << "BOOT_RESPONSE: " << msg.mid(2).toHex();
-                return msg;
+                *response = *(msg_boot_response*)&msg;
+                return true;
             }
         }
 
         QApplication::processEvents();
-        int t = std::min(10, timeout);
-        QThread::msleep(t);
-        timeout -= t;
+        QThread::msleep(10);
+        timeout -= 10;
     }
 
     m_errorString = "Time out";
-    return QByteArray();
+    return false;
 }
 
-int BootProtocol::bootEnter()
+
+bool BootProtocol::bootResetHack()
 {
-    // Hack: CTRL-C\nreset\n
+    // Hack: send ctrl-c + reset
     //
-    connection.sendMessage("\03\nreset\n");
+    const char *s = "\03\nreset\n";
+
+    msg_shell_from_pc msg;
+    msg.h.id = MSG_ID_SHELL_FROM_PC;
+    msg.h.data_len = strlen(s);
+    strcpy((char*)msg.data, s);
+
+    connection.sendMessage(&msg.h);
+    return true;
+}
+
+
+
+bool BootProtocol::bootEnter()
+{
+    bootResetHack();
 
     msg_boot_enter msg;
     msg.h.id = MSG_ID_BOOT_ENTER;
+    msg.h.data_len = 4;
     msg.magic = 0xB00710AD;
 
-    connection.sendMessage( QByteArray((char*)&msg, sizeof(msg)) );
+    connection.sendMessage(&msg.h);
 
-    auto response = bootGetResponse(1000);
-    if (response.isNull())
-        return -1;
+    msg_boot_response res;
+    if (!bootGetResponse(&res))
+        return false;
 
-    return *(char*)response.mid(2).constData();
+    if (res.data[0] != 1) {
+        m_errorString = QString().sprintf(
+            "Can't enter bootloader: %d", res.data[0]
+        );
+        return false;
+    }
+
+    return true;
 }
 
-int BootProtocol::bootExit()
+
+bool BootProtocol::bootExit()
 {
     msg_boot_exit msg;
     msg.h.id = MSG_ID_BOOT_EXIT;
     msg.h.data_len = 0;
+    connection.sendMessage(&msg.h);
 
-    connection.sendMessage( QByteArray((char*)&msg, sizeof(msg)) );
+    msg_boot_response res;
+    if (!bootGetResponse(&res))
+        return false;
 
-    auto response = bootGetResponse(100);
-    if (response.isNull())
-        return -1;
+    if (res.data[0] != 1) {
+        m_errorString = QString().sprintf(
+            "Can't exit bootloader: %d", res.data[0]
+        );
+        return false;
+    }
 
-    return *(char*)response.mid(2).constData();
+    return true;
 }
 
-int BootProtocol::bootEraseSector(uint sector)
+
+bool BootProtocol::bootEraseSector(uint sector)
 {
     msg_boot_erase_sector msg;
     msg.h.id = MSG_ID_BOOT_ERASE_SECTOR;
+    msg.h.data_len = 4;
     msg.sector = sector;
+    connection.sendMessage(&msg.h);
 
-    connection.sendMessage( QByteArray((char*)&msg, sizeof(msg)) );
+    msg_boot_response res;
+    if (!bootGetResponse(&res, 2000))
+        return false;
 
-    auto response = bootGetResponse(2000);
-    if (response.isNull())
-        return -1;
-
-    return *(char*)response.mid(2).constData();
-}
-
-int BootProtocol::bootWriteDataAsync(uint addr, const QByteArray &data, size_t size, off_t  offset)
-{
-    msg_boot_write_data msg;
-
-    msg.h.id = MSG_ID_BOOT_WRITE_DATA;
-    msg.address = addr;
-    msg.length = std::min(size, sizeof(msg.data));
-    memcpy(msg.data, data.constData() + offset, msg.length);
-
-    connection.sendMessage( QByteArray((char*)&msg, sizeof(msg)) );
-
-    return msg.length;
-}
-
-int BootProtocol::bootWriteData(uint addr, const QByteArray &data, size_t size, off_t offset)
-{
-    static const int ACK_WINDOW = 16;
-    int pending = 0;
-
-    while ((unsigned)offset < size) {
-        showProgress(
-            offset * 100 / data.length(),
-            QString().sprintf("Writing 0x%08x", addr)
+    if (res.data[0] != FLASH_COMPLETE) {
+        m_errorString = QString().sprintf(
+            "Can't erase sector %d: %s", sector,
+            qPrintable(flashStatusStr(res.data[0]))
         );
-
-        int res = bootWriteDataAsync(addr, data, data.size() - offset, offset);
-        if (res < 0)
-            return -1;
-
-        offset += res;
-        addr   += res;
-
-        // queue requests to mask the connection latency
-        //
-        if (pending >= ACK_WINDOW) {
-            auto response = bootGetResponse(100);
-            if (response.isNull())
-                return -1;
-        }
-        else {
-            pending += 1;
-        }
+        return false;
     }
 
-    // wait for pending responses
-    //
-    while (pending > 0) {
-        auto response = bootGetResponse(100);
-        if (response.isNull())
-            return -1;
-
-        pending--;
-    }
-
-    return size;
+    return true;
 }
 
-int BootProtocol::bootVerifyData(uint addr, const QByteArray &data, size_t size, off_t offset)
+
+bool BootProtocol::bootWriteDataAsync(uint addr, const QByteArray &data)
+{
+    assert((uint)data.length() <= sizeof(msg_boot_write_data::data));
+
+    msg_boot_write_data msg;
+    msg.h.id = MSG_ID_BOOT_WRITE_DATA;
+    msg.h.data_len = 4 + data.length();
+    msg.address = addr;
+
+    memcpy(msg.data, data.constData(), data.length());
+
+    connection.sendMessage(&msg.h);
+
+    return true;
+}
+
+
+bool BootProtocol::bootWriteData(uint addr, const QByteArray &data)
+{
+    static const int chunk_size = sizeof(msg_boot_write_data::data);
+
+    int chunks = (data.length() + chunk_size - 1) / chunk_size;
+    int ack_window = std::min(chunks, 10);
+    int offset = 0;
+
+    for (int i=0; i < chunks + ack_window; i++) {
+        // send data
+        //
+        if (i < chunks) {
+            showProgress(
+                offset * 100 / data.length(),
+                QString().sprintf("Writing 0x%08x", addr + offset)
+            );
+
+            bootWriteDataAsync(addr + offset, data.mid(offset, chunk_size) );
+            offset += chunk_size;
+
+            if (progressDialog.wasCanceled())
+                return true;
+        }
+
+        // check responses later to mask the connection latency
+        //
+        if (i >= ack_window) {
+            msg_boot_response res;
+
+            if (!bootGetResponse(&res))
+                return false;
+
+            if (res.data[0] != FLASH_COMPLETE) {
+                m_errorString = QString().sprintf(
+                    "Can't write data at 0x%08x: %s", addr,
+                    qPrintable(flashStatusStr(res.data[0]))
+                );
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool BootProtocol::bootVerifyData(uint addr, const QByteArray &data)
 {
     msg_boot_verify msg;
     msg.h.id = MSG_ID_BOOT_VERIFY;
     msg.h.data_len = 4 + 4;
-
     msg.address = addr;
-    msg.length = size;
+    msg.length  = data.length();
 
-    connection.sendMessage( QByteArray((char*)&msg, sizeof(msg)) );
+    connection.sendMessage(&msg.h);
 
-    auto response = bootGetResponse(250);
-    if (response.isNull())
-        return -1;
+    msg_boot_response res;
+    if (!bootGetResponse(&res))
+        return false;
 
+    auto remote_crc = *(uint*)res.data;
     auto local_crc = crc32_init();
-    local_crc = crc32_update(local_crc, (const uchar*)data.constData() + offset, size);
+    local_crc = crc32_update(local_crc, (const uchar*)data.constData(), data.length());
     local_crc = crc32_finalize(local_crc);
 
-    auto remote_crc = *(uint*)response.mid(2).constData();
-
-    // qDebug("Local CRC : %08x", local_crc);
-    // qDebug("Remote CRC: %08x", remote_crc);
-
     if  (remote_crc != local_crc) {
-        m_errorString = "CRC check failed";
-        return -1;
+        m_errorString = QString().sprintf(
+            "Image CRC check failed. Expected 0x%04x, got 0x%04x",
+            local_crc, remote_crc
+        );
+        return false;
     }
 
-    return 1;
+    return true;
+
 }
 
 
 /********** Firmware update functions **********/
 
-#define CHECK_CANCEL()    \
+#define STEP(function)  do {            \
+    if (!function)                      \
+        return false;                   \
     if (progressDialog.wasCanceled())   \
-        goto cancel;                    \
+        return true;                    \
+} while(0);
 
 
 bool BootProtocol::sendHexFile(const QString &fileName)
@@ -256,10 +327,15 @@ bool BootProtocol::sendHexFile(const QString &fileName)
     qDebug("Start 0x%08x", start_addr);
     qDebug("End   0x%08x", end_addr);
 
-    for (int i=0; i<5; i++) {
-        showProgress(i, "Entering bootloader");
-        bootEnter();
-        CHECK_CANCEL();
+    int tries=0, ok=0;
+    while (tries++ < 100 && !ok) {
+        showProgress(tries, "Entering bootloader");
+        STEP( (ok=bootEnter(), true) );
+    }
+
+    if (!ok) {
+        m_errorString = "Can't enter boot loader";
+        return false;
     }
 
     t_enter = QTime::currentTime();
@@ -269,32 +345,27 @@ bool BootProtocol::sendHexFile(const QString &fileName)
             10 + 10 * (i-4) / (12-4),
             QString().sprintf("Erasing sector %d...", i)
         );
-        bootEraseSector(i);
-        CHECK_CANCEL();
+        STEP( bootEraseSector(i) );
     }
 
     t_erase = QTime::currentTime();
 
     // skip initial 8 bytes (written after verify)
     //
-    bootWriteData(start_addr + 8, data, data.size() - 8, 8);
-    CHECK_CANCEL();
+    STEP( bootWriteData(start_addr + 8, data.mid(8)) );
 
     t_write = QTime::currentTime();
 
     showProgress(85, "Verifying");
-    bootVerifyData(start_addr + 8, data, data.size() - 8, 8);
-    CHECK_CANCEL();
+    STEP( bootVerifyData(start_addr + 8, data.mid(8)) );
 
     t_verify = QTime::currentTime();
 
     showProgress(90, "Writing first 8 bytes");
-    bootWriteData(start_addr, data, 8, 0);
-    CHECK_CANCEL();
+    STEP( bootWriteData(start_addr, data.mid(0, 8)) );
 
     showProgress(95, "Starting application");
-    bootExit();
-    CHECK_CANCEL();
+    STEP( bootExit() );
 
     showProgress(100, "Done.");
 
@@ -305,14 +376,12 @@ bool BootProtocol::sendHexFile(const QString &fileName)
     qDebug("  Write:  %d ms", t_erase.msecsTo(t_write));
     qDebug("  Verify: %d ms", t_write.msecsTo(t_verify));
     qDebug("  Total:  %d ms", t0.msecsTo(t_total));
-    return true;
 
-cancel:
     return true;
 }
 
 
-QString BootProtocol::errorString() const
+QString BootProtocol::errorString()
 {
     return m_errorString;
 }
