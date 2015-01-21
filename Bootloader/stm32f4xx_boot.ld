@@ -29,6 +29,13 @@ SECTIONS
     . = ALIGN(4);
   } >FLASH
 
+  .version_info :
+  {
+    . = ALIGN(4);
+    KEEP(*(.version_info)) 
+    . = ALIGN(4);
+  } >FLASH
+
   /* The program code and other data goes into FLASH */
   .text :
   {
@@ -155,7 +162,7 @@ SECTIONS
     . = . + _Min_Heap_Size;
     . = . + _Min_Stack_Size;
     . = ALIGN(4);
-  } >RAM  
+  } >RAM
 
   /* Remove information from the standard libraries */
   /DISCARD/ :

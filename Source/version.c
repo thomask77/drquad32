@@ -1,5 +1,4 @@
 #include "version.h"
-#include "git_version.h"
 #include "ansi.h"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -8,28 +7,12 @@
 #include "ff.h"
 #include <stdio.h>
 
-#define PRODUCT_NAME    "DrMOS Quad 32"
-#define VERSION_MAJOR   0
-#define VERSION_MINOR   9
-#define VERSION_PATCH   0
 
-// -----
-
-// TODO: Per Linkerscript ganz an den Anfang stellen
-//
 const struct version_info version_info = {
-    .product_name = PRODUCT_NAME,
-    .major        = VERSION_MAJOR,
-    .minor        = VERSION_MINOR,
-    .patch        = VERSION_PATCH,
-    .string       = "v" STRINGIFY(VERSION_MAJOR) "."
-                        STRINGIFY(VERSION_MINOR) "."
-                        STRINGIFY(VERSION_PATCH),
-    .git_version  = GIT_VERSION,
-    .build_user   = BUILD_USER,
-    .build_host   = BUILD_HOST,
-    .build_date   = BUILD_DATE,
-    .build_time   = BUILD_TIME
+    .product_name   = "DrMOS Quad 32",
+    .major          = 0,
+    .minor          = 9,
+    .patch          = 0
 };
 
 
@@ -41,11 +24,15 @@ const struct version_info version_info = {
 void print_version_info(int verbose)
 {
     printf(
-        ANSI_FG_LTGREEN "%s" ANSI_NORMAL " %s %s %s %s\n"
-        "Copyright (c)2014 Thomas Kindler <mail@t-kindler.de>\n"
+        ANSI_FG_LTGREEN "%s" ANSI_NORMAL " v%d.%d.%d %s %s %s\n"
+        "Copyright (c)2015 Thomas Kindler <mail@t-kindler.de>\n"
         "\n", 
-        version_info.product_name, version_info.string, 
-        version_info.git_version, version_info.build_date,
+        version_info.product_name,
+        version_info.major,
+        version_info.minor,
+        version_info.patch,
+        version_info.git_version,
+        version_info.build_date,
         version_info.build_time
     );
 

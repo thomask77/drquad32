@@ -1,21 +1,34 @@
 #pragma once
 
-#include <stdbool.h>
+#include <stdint.h>
 
-extern const struct version_info {
-    const char *product_name;
+#define IMAGE_MAGIC 0x30676d69  // "img0"
 
-    int   major;
-    int   minor;
-    int   patch;
-    const char *string;
+struct version_info {
+    // set at link-time by add-version-info.py
+    //
+    uint32_t    image_magic;
+    uint32_t    image_crc;
+    uint32_t    image_addr;
+    uint32_t    image_size;
 
-    const char *git_version;
-    const char *build_user;
-    const char *build_host;
-    const char *build_date;
-    const char *build_time;
-} version_info;
+    char        git_version[32];
+    char        build_user[16];
+    char        build_host[16];
+    char        build_date[16];
+    char        build_time[16];
+
+    // set at compile-time
+    //
+    char        product_name[32];
+    int         major;
+    int         minor;
+    int         patch;
+};
+
+extern const struct version_info    version_info
+    __attribute__((section(".version_info")));
+
 
 void print_version_info(int verbose);
 

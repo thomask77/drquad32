@@ -5,15 +5,14 @@ Toolchain
 
   * Command line tools (use cygwin for windows)
     * make
+	* git
+    * python >= 2.7
 
   * Flash programming
     * STM32 ST-LINK utility (windows)
     * https://github.com/texane/stlink (linux)
 
   * Eclipse Luna
- 
-  * Python 2 and PyQt4 for the flashtool
-    * JetBrains PyCharm recommended
 
 Eclipse settings
 ================

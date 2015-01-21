@@ -21,23 +21,23 @@
 
 #include <QProgressDialog>
 
-
 #ifdef Q_OS_WIN
-
 #include <QtWinExtras>
+#endif
+
 
 class QProgressDialogEx : public QProgressDialog
 {
     Q_OBJECT
 
 public:
+    #ifdef Q_OS_WIN
     QWinTaskbarButton winTaskbarButton;
 
     QProgressDialogEx(QWidget *parent = 0, Qt::WindowFlags flags = 0)
         : QProgressDialog(parent, flags)
         , winTaskbarButton(this)
     {
-
     }
 
     virtual ~QProgressDialogEx()
@@ -56,13 +56,13 @@ public:
 
         winTaskbarButton.progress()->setValue(progress);
     }
+    #else
+
+    // Inherit constructors
+    //
+    using QProgressDialog::QProgressDialog;
+
+    #endif
 };
-
-
-#else
-
-typedef QProgressDialog QProgressDialogEx;
-
-#endif
 
 #endif // QPROGRESSDIALOGEX_H

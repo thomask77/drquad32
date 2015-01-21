@@ -50,7 +50,7 @@ WiFlyListener::WiFlyListener(QObject *parent)
     , socket(this)
 {
     socket.bind(BROADCAST_PORT, QUdpSocket::ShareAddress);
-    connect(&socket, QUdpSocket::readyRead, this, WiFlyListener::socket_readyRead);
+    connect(&socket, &QUdpSocket::readyRead, this, &WiFlyListener::socket_readyRead);
 }
 
 
@@ -84,9 +84,9 @@ bool WiFlyListener::handlePacket(const QByteArray &packet, const QHostAddress &a
     info.uBat       = qFromBigEndian(p.be_uBat);
     info.gpioPins   = qFromBigEndian(p.be_gpioPins);
 
-    info.asciiTime.sprintf("%.*s", sizeof(p.asciiTime), p.asciiTime);
-    info.version.sprintf("%.*s", sizeof(p.version), p.version);
-    info.deviceId.sprintf("%.*s", sizeof(p.deviceId), p.deviceId);
+    info.asciiTime.sprintf("%.*s", (int)sizeof(p.asciiTime), p.asciiTime);
+    info.version.sprintf("%.*s", (int)sizeof(p.version), p.version);
+    info.deviceId.sprintf("%.*s", (int)sizeof(p.deviceId), p.deviceId);
     info.bootTime_ms = qFromBigEndian(p.be_bootTime);
 
     for (int i=0; i<8; i++)

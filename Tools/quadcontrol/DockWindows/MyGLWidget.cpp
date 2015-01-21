@@ -117,17 +117,17 @@ void MyGLWidget::paintGL()
     // Draw fixed ground reference systems
     //
     glTranslatef(-32, -32, -32);
-    draw_big_coordinate_system(32);
+    GLTools::draw_big_coordinate_system(32);
 
     glTranslatef(32, 32, 32);
-    draw_coordinate_system(48);
+    GLTools::draw_coordinate_system(48);
 
     // Switch to air-frame
     //
     glPushMatrix();
     glRotatef(90, 1, 0, 0);
 
-    draw_big_coordinate_system(32);
+    GLTools::draw_big_coordinate_system(32);
 
     // Draw a flying teapot
     //
@@ -164,7 +164,7 @@ void MyGLWidget::mouseMoveEvent(QMouseEvent *event)
 
 void MyGLWidget::setXRotation(float x)
 {
-    x = normalizeAngle(x);
+    x = GLTools::normalizeAngle(x);
     if (x != xRot) {
         xRot = x;
         xRotationChanged(x);
@@ -174,7 +174,7 @@ void MyGLWidget::setXRotation(float x)
 
 void MyGLWidget::setYRotation(float y)
 {
-    y = normalizeAngle(y);
+    y = GLTools::normalizeAngle(y);
     if (y != yRot) {
         yRot = y;
         yRotationChanged(y);
@@ -184,7 +184,7 @@ void MyGLWidget::setYRotation(float y)
 
 void MyGLWidget::setZRotation(float z)
 {
-    z = normalizeAngle(z);
+    z = GLTools::normalizeAngle(z);
     if (z != zRot) {
         zRot = z;
         zRotationChanged(z);

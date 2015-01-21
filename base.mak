@@ -4,7 +4,11 @@ $(TARGET).elf: $(OBJECTS) $(LDSCRIPT)
 	@echo
 	@echo Linking: $@
 	@$(MKDIR) -p $(dir $@)
-	$(CC) $(OBJECTS) $(LDFLAGS) --output $@ 
+	$(CC) $(OBJECTS) $(LDFLAGS) --output $(basename $@).tmp
+
+	@echo
+	@echo Post-processing: $@
+	$(POSTLD) $(basename $@).tmp $@
 
 # Create extended listing file from ELF output file
 #
@@ -36,7 +40,7 @@ $(TARGET).elf: $(OBJECTS) $(LDSCRIPT)
 	@echo
 	@echo Creating bin file: $@
 	@$(MKDIR) -p $(dir $@)
-	$(OBJCOPY) -O binary $< $@
+	$(OBJCOPY) -O binary --gap-fill 0xFF $< $@
 
 # Compile: create object files from C source files
 #

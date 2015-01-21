@@ -25,36 +25,7 @@
 #include <QApplication>
 #include <QThread>
 #include <QTime>
-
-
-enum FLASH_Status {
-    FLASH_BUSY = 1,
-    FLASH_ERROR_RD,
-    FLASH_ERROR_PGS,
-    FLASH_ERROR_PGP,
-    FLASH_ERROR_PGA,
-    FLASH_ERROR_WRP,
-    FLASH_ERROR_PROGRAM,
-    FLASH_ERROR_OPERATION,
-    FLASH_COMPLETE
-};
-
-
-static QString flashStatusStr(uint8_t status)
-{
-    switch (status) {
-    case FLASH_BUSY             : return "FLASH_BUSY";
-    case FLASH_ERROR_RD         : return "FLASH_ERROR_RD";
-    case FLASH_ERROR_PGS        : return "FLASH_ERROR_PGS";
-    case FLASH_ERROR_PGP        : return "FLASH_ERROR_PGP";
-    case FLASH_ERROR_PGA        : return "FLASH_ERROR_PGA";
-    case FLASH_ERROR_WRP        : return "FLASH_ERROR_WRP";
-    case FLASH_ERROR_PROGRAM    : return "FLASH_ERROR_PROGRAM";
-    case FLASH_ERROR_OPERATION  : return "FLASH_ERROR_OPERATION";
-    case FLASH_COMPLETE         : return "FLASH_COMPLETE";
-    default: return QString().sprintf("%d", status);
-    }
-}
+#include <QMetaEnum>
 
 
 BootProtocol::BootProtocol(QWidget *parent, Connection &connection)
@@ -68,20 +39,35 @@ BootProtocol::BootProtocol(QWidget *parent, Connection &connection)
     connect(&connection, &Connection::messageReceived, this, &BootProtocol::connection_messageReceived);
 }
 
+
 BootProtocol::~BootProtocol()
 {
 }
+
 
 void BootProtocol::connection_messageReceived(const msg_generic &msg)
 {
     messageQueue.enqueue(msg);
 }
 
+
 void BootProtocol::showProgress(int value, const QString &text)
 {
-    // qDebug("%2d: %s", value, qPrintable(text));
     progressDialog.setValue(value);
     progressDialog.setLabelText(text);
+}
+
+
+QString BootProtocol::enumToStr(FLASH_Status status)
+{
+    QString value = metaObject()->enumerator(
+        metaObject()->indexOfEnumerator("FLASH_Status")
+    ).valueToKey(status);
+
+    if (value.isEmpty())
+        value.sprintf("%d", status);
+
+    return value;
 }
 
 
@@ -105,7 +91,7 @@ bool BootProtocol::bootGetResponse(msg_boot_response *response, int timeout)
         timeout -= 10;
     }
 
-    m_errorString = "Time out";
+    m_errorString = "Response timed out";
     return false;
 }
 
@@ -124,7 +110,6 @@ bool BootProtocol::bootResetHack()
     connection.sendMessage(&msg.h);
     return true;
 }
-
 
 
 bool BootProtocol::bootEnter()
@@ -190,7 +175,7 @@ bool BootProtocol::bootEraseSector(uint sector)
     if (res.data[0] != FLASH_COMPLETE) {
         m_errorString = QString().sprintf(
             "Can't erase sector %d: %s", sector,
-            qPrintable(flashStatusStr(res.data[0]))
+            qPrintable(enumToStr((FLASH_Status)res.data[0]))
         );
         return false;
     }
@@ -251,7 +236,7 @@ bool BootProtocol::bootWriteData(uint addr, const QByteArray &data)
             if (res.data[0] != FLASH_COMPLETE) {
                 m_errorString = QString().sprintf(
                     "Can't write data at 0x%08x: %s", addr,
-                    qPrintable(flashStatusStr(res.data[0]))
+                    qPrintable(enumToStr((FLASH_Status)res.data[0]))
                 );
                 return false;
             }
@@ -260,6 +245,7 @@ bool BootProtocol::bootWriteData(uint addr, const QByteArray &data)
 
     return true;
 }
+
 
 bool BootProtocol::bootVerifyData(uint addr, const QByteArray &data)
 {
@@ -275,8 +261,10 @@ bool BootProtocol::bootVerifyData(uint addr, const QByteArray &data)
     if (!bootGetResponse(&res))
         return false;
 
-    auto remote_crc = *(uint*)res.data;
-    auto local_crc = crc32_init();
+    uint32_t remote_crc;
+    memcpy(&remote_crc, res.data, 4);
+
+    uint32_t local_crc = crc32_init();
     local_crc = crc32_update(local_crc, (const uchar*)data.constData(), data.length());
     local_crc = crc32_finalize(local_crc);
 
@@ -296,7 +284,7 @@ bool BootProtocol::bootVerifyData(uint addr, const QByteArray &data)
 /********** Firmware update functions **********/
 
 #define STEP(function)  do {            \
-    if (!function)                      \
+    if (!(function))                    \
         return false;                   \
     if (progressDialog.wasCanceled())   \
         return true;                    \
@@ -305,8 +293,6 @@ bool BootProtocol::bootVerifyData(uint addr, const QByteArray &data)
 
 bool BootProtocol::sendHexFile(const QString &fileName)
 {
-    QTime t0, t_enter, t_erase, t_write, t_verify, t_total;
-
     progressDialog.reset();
     progressDialog.show();
 
@@ -318,14 +304,7 @@ bool BootProtocol::sendHexFile(const QString &fileName)
         return false;
     }
 
-    uint start_addr  = ih.sections[0].offset;
-    uint end_addr    = ih.sections[0].offset +  ih.sections[0].data.size();
-    const auto &data = ih.sections[0].data;
-
-    t0 = QTime::currentTime();
-
-    qDebug("Start 0x%08x", start_addr);
-    qDebug("End   0x%08x", end_addr);
+    QTime t0 = QTime::currentTime();
 
     int tries=0, ok=0;
     while (tries++ < 100 && !ok) {
@@ -338,43 +317,37 @@ bool BootProtocol::sendHexFile(const QString &fileName)
         return false;
     }
 
-    t_enter = QTime::currentTime();
+    QTime t_enter = QTime::currentTime();
 
     for (int i=4; i<12; i++) {
         showProgress(
-            10 + 10 * (i-4) / (12-4),
+            100 * (i-4) / (12-4),
             QString().sprintf("Erasing sector %d...", i)
         );
         STEP( bootEraseSector(i) );
     }
 
-    t_erase = QTime::currentTime();
+    QTime t_erase = QTime::currentTime();
 
-    // skip initial 8 bytes (written after verify)
-    //
-    STEP( bootWriteData(start_addr + 8, data.mid(8)) );
+    for (auto s: ih.sections) {
+        STEP( bootWriteData(s.offset, s.data) );
 
-    t_write = QTime::currentTime();
+        showProgress(80, "Verifying");
+        STEP( bootVerifyData(s.offset, s.data) );
+    }
 
-    showProgress(85, "Verifying");
-    STEP( bootVerifyData(start_addr + 8, data.mid(8)) );
+    QTime t_write = QTime::currentTime();
 
-    t_verify = QTime::currentTime();
-
-    showProgress(90, "Writing first 8 bytes");
-    STEP( bootWriteData(start_addr, data.mid(0, 8)) );
-
-    showProgress(95, "Starting application");
+    showProgress(90, "Starting application");
     STEP( bootExit() );
 
     showProgress(100, "Done.");
 
-    t_total =  QTime::currentTime();
+    QTime t_total =  QTime::currentTime();
 
     qDebug("  Enter:  %d ms", t0.msecsTo(t_enter));
     qDebug("  Erase:  %d ms", t_enter.msecsTo(t_erase));
     qDebug("  Write:  %d ms", t_erase.msecsTo(t_write));
-    qDebug("  Verify: %d ms", t_write.msecsTo(t_verify));
     qDebug("  Total:  %d ms", t0.msecsTo(t_total));
 
     return true;

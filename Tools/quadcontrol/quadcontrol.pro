@@ -31,7 +31,8 @@ SOURCES += main.cpp\
     DockWindows/MyGLWidget.cpp \
     BootProtocol.cpp \
     glut_teapot.cpp \
-    WiFlyListener.cpp
+    WiFlyListener.cpp \
+    GLTools.cpp
 
 HEADERS  += MainWindow.h \
     AnsiParser.h \

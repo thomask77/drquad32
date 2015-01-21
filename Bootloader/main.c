@@ -58,7 +58,7 @@ const struct sector sector_map[] = {
 int active = 0;
 
 
-static void send_response(void *data, int len)
+void send_response(void *data, int len)
 {
     struct msg_boot_response msg = {
         .h.id = MSG_ID_BOOT_RESPONSE,
@@ -72,33 +72,48 @@ static void send_response(void *data, int len)
 }
 
 
+int send_shell_to_pc(char *buf, size_t size)
+{
+    struct msg_shell_to_pc msg;
+
+    if (size > sizeof(msg.data))
+        size = sizeof(msg.data);
+
+    msg.h.id = MSG_ID_SHELL_TO_PC;
+    msg.h.data_len = size;
+    memcpy(msg.data, buf, size);
+
+    msg_send(&msg.h);
+    return size;
+}
+
+
 __attribute__((format(printf, 1, 2)))
 int msg_printf(const char *fmt, ...)
 {
+    char buf[256];
+
     va_list args;
     va_start(args, fmt);
 
-    struct msg_shell_to_pc msg;
-
-    int n = vsnprintf((char*)msg.data, sizeof(msg.data), fmt, args);
-
-    if (n > sizeof(msg.data)-1) {
-        // Message was truncated
+    int n = vsnprintf(buf, sizeof(buf), fmt, args);
+    if (n > sizeof(buf)-1) {
+        // message was truncated
         //
-        n = sizeof(msg.data)-1;
+        n = sizeof(buf)-1;
     }
 
-    msg.h.id = MSG_ID_SHELL_TO_PC;
-    msg.h.data_len = n;
-
-    msg_send(&msg.h);
     va_end(args);
+
+    int todo = n;
+    while (todo > 0)
+        todo -= send_shell_to_pc(&buf[n-todo], todo);
 
     return n;
 }
 
 
-static void toggle_led(void)
+void toggle_led(void)
 {
     static int toggle;
 
@@ -111,9 +126,29 @@ static void toggle_led(void)
 }
 
 
-static int start_app(uint32_t addr)
+void check_app(uint32_t addr)
+{
+    const struct version_info *info = (void*)(addr + VERSION_INFO_OFFSET);
+
+    uint32_t  crc = crc32_init();
+    crc = crc32_update(crc, (void*)info->image_addr, info->image_size);
+    crc = crc32_finalize(crc);
+
+    msg_printf(
+        "  0x%08lx, %ld bytes: %s, %s\n",
+        info->image_addr,
+        info->image_size,
+        info->product_name,
+        crc ? "CRC failed." : "CRC ok."
+    );
+}
+
+
+int start_app(uint32_t addr)
 {
     msg_printf("Starting application at 0x%08x..\n", (unsigned)addr);
+
+    check_app(addr);
 
     uint32_t  stack = ((const uint32_t *)addr)[0];
     uint32_t  entry = ((const uint32_t *)addr)[1];
@@ -152,7 +187,7 @@ static int start_app(uint32_t addr)
 }
 
 
-static void set_option_bytes(void)
+void set_option_bytes(void)
 {
     if (FLASH_OB_GetWRP() == 0xFFC  &&
         FLASH_OB_GetBOR() == OB_BOR_LEVEL3)
@@ -175,7 +210,7 @@ static void set_option_bytes(void)
 }
 
 
-static bool sector_empty_check(int sector)
+bool sector_empty_check(int sector)
 {
     uint32_t addr = sector_map[sector].addr;
     uint32_t size = sector_map[sector].size;
@@ -190,7 +225,7 @@ static bool sector_empty_check(int sector)
 }
 
 
-static void handle_boot_enter(struct msg_boot_enter *msg)
+void handle_boot_enter(struct msg_boot_enter *msg)
 {
     msg_printf("boot_enter(0x%08lx): ", msg->magic);
 
@@ -207,7 +242,7 @@ static void handle_boot_enter(struct msg_boot_enter *msg)
 }
 
 
-static void handle_boot_read_data(struct msg_boot_read_data *msg)
+void handle_boot_read_data(struct msg_boot_read_data *msg)
 {
     DBG_PRINTF("boot_read_data(%04lx, %d): ",
         msg->address, msg->length
@@ -217,7 +252,7 @@ static void handle_boot_read_data(struct msg_boot_read_data *msg)
 }
 
 
-static void handle_boot_verify(struct msg_boot_verify *msg)
+void handle_boot_verify(struct msg_boot_verify *msg)
 {
     msg_printf("boot_verify(0x%04lx, %lu): ",
         msg->address, msg->length
@@ -233,7 +268,7 @@ static void handle_boot_verify(struct msg_boot_verify *msg)
 }
 
 
-static void handle_boot_write_data(struct msg_boot_write_data *msg)
+void handle_boot_write_data(struct msg_boot_write_data *msg)
 {
     uint32_t addr = msg->address;
     uint32_t len  = msg->h.data_len - 4;
@@ -256,7 +291,7 @@ static void handle_boot_write_data(struct msg_boot_write_data *msg)
 }
 
 
-static void handle_boot_erase_sector(struct msg_boot_erase_sector *msg)
+void handle_boot_erase_sector(struct msg_boot_erase_sector *msg)
 {
     msg_printf("boot_erase_sector(%d): ", msg->sector);
 
@@ -276,14 +311,14 @@ static void handle_boot_erase_sector(struct msg_boot_erase_sector *msg)
 }
 
 
-static void handle_boot_exit(struct msg_boot_exit *msg)
+void handle_boot_exit(struct msg_boot_exit *msg)
 {
     msg_printf("boot_exit()\n");
     send_response((char[]){ 1 }, 1);
 }
 
 
-static void handle_unknown_message(struct msg_generic *msg)
+void handle_unknown_message(struct msg_generic *msg)
 {
     msg_printf("Unknown message: 0x%04x, %d bytes\n",
         msg->h.id, msg->h.data_len
@@ -291,7 +326,7 @@ static void handle_unknown_message(struct msg_generic *msg)
 }
 
 
-static void msg_loop(void)
+void msg_loop(void)
 {
     uint32_t t0 = tickcount;
 
@@ -345,12 +380,16 @@ int main(void)
     uart_init(XBEE_BAUDRATE);
 
     msg_printf("\n\n");
-
     msg_printf(
-        "\033[1;36m%s\033[0;39m %s %s %s %s\n"
-        "Copyright (c)2014 Thomas Kindler <mail@t-kindler.de>\n\n",
-        version_info.product_name, version_info.string, 
-        version_info.git_version, version_info.build_date,
+        "\033[1;36m%s\033[0;39m v%d.%d.%d %s %s %s\n"
+        "Copyright (c)2015 Thomas Kindler <mail@t-kindler.de>\n"
+        "\n",
+        version_info.product_name,
+        version_info.major,
+        version_info.minor,
+        version_info.patch,
+        version_info.git_version,
+        version_info.build_date,
         version_info.build_time
     );
 
