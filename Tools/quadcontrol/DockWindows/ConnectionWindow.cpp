@@ -29,6 +29,7 @@ ConnectionWindow::ConnectionWindow(MainWindow *parent)
     : QMainWindow(parent)
     , ui(new Ui::ConnectionWindow)
     , mainWindow(parent)
+    , wiFlyListener(this)
 {
     ui->setupUi(this);
     ui->treeWidget->sortByColumn(0, Qt::AscendingOrder);

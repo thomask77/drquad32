@@ -1,6 +1,8 @@
 #ifndef CONNECTIONWINDOW_H
 #define CONNECTIONWINDOW_H
 
+#include "WiFlyListener.h"
+
 #include <QMainWindow>
 #include <QTreeWidgetItem>
 
@@ -19,6 +21,8 @@ public:
 private:
     Ui::ConnectionWindow *ui;  
     class MainWindow *mainWindow;
+
+    WiFlyListener wiFlyListener;
 
     void actionScan_triggered();
     void actionConnect_triggered();
