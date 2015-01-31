@@ -2,13 +2,19 @@
 #define CONNECTIONWINDOW_H
 
 #include "WiFlyListener.h"
+#include "InterleavedFuture.h"
 
 #include <QMainWindow>
 #include <QTreeWidgetItem>
+#include <QSerialPortInfo>
+#include <QTimer>
+#include <QMap>
+
 
 namespace Ui {
 class ConnectionWindow;
 }
+
 
 class ConnectionWindow : public QMainWindow
 {
@@ -22,11 +28,27 @@ private:
     Ui::ConnectionWindow *ui;  
     class MainWindow *mainWindow;
 
-    WiFlyListener wiFlyListener;
+    QTimer  timer;
+    QFont   boldFont;
 
-    void actionScan_triggered();
+    WiFlyListener   wiFlyListener;
+
+    // availablePorts takes fucking ages on windows,
+    // so we execute it in a background thread.
+    //
+    InterleavedFuture<
+        QList<QSerialPortInfo>,
+        &QSerialPortInfo::availablePorts
+    > availablePortsAsync;
+
+    QTreeWidgetItem serialItems;
+    QTreeWidgetItem wiFlyItems;
+    QTreeWidgetItem favoriteItems;
+
+    void timer_timeout();
     void actionConnect_triggered();
     void actionDisconnect_triggered();
+    void actionTerminal_triggered();
     void treewidget_currentItemChanged();
     void connectionChanged();
 

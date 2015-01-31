@@ -18,16 +18,22 @@
  */
 
 #include "errors.h"
+#include "small_printf.h"
 
 const char *_user_strerror(int errnum)
 {
-    switch (errnum) {
-    #undef ERRORS_H
+    static char buf[80];
 
+    switch (errnum) {
+
+    #undef ERRORS_H
     #define MAKE_ERROR_TABLE
     #define ENUM(name, desc)    case name: return desc;
-
     #include "errors.h"
+
+    default:
+        sprintf(buf, "Unknown error %d", errnum);
+        return buf;
     }
 
     return NULL;

@@ -7,14 +7,10 @@
 
 #define PACKET_TIMEOUT  1000     // [ms]
 
-// Message ID + 255 bytes data
-//
-#define MAX_MESSAGE_LENGTH  (2 + 255)
-
-// COBSR(CRC + MAX_MESSAGE_LENGTH) + End-of-packet
+// COBSR(CRC + ID + MSG_MAX_DATA_SIZE) + End-of-packet
 //
 #define MAX_BUF_LENGTH  \
-    (COBSR_ENCODE_DST_BUF_LEN_MAX(2 + MAX_MESSAGE_LENGTH) + 1)
+    ( COBSR_ENCODE_DST_BUF_LEN_MAX(2 + 2 + MSG_MAX_DATA_SIZE) + 1 )
 
 
 static uint8_t rx_buf[MAX_BUF_LENGTH];
@@ -73,13 +69,14 @@ int msg_recv(struct msg_header *msg)
     // decode COBS/R
     //
     uint8_t *dst_buf = (uint8_t*)&msg->crc;
-    int      dst_len = 2 + 2 + msg->data_len;   // +CRC +ID
+    int      dst_len = 2 + 2 + MSG_MAX_DATA_SIZE;   // +CRC +ID
 
     cobsr_decode_result  cobsr_res = cobsr_decode(
         dst_buf, dst_len, rx_buf, rx_len
     );
 
     if (cobsr_res.status != COBSR_DECODE_OK) {
+        msg_printf("dst_len = %d, rx_len = %d, status=%d", cobsr_res.status);
         errno = EMSG_COBSR;
         return -1;
     }

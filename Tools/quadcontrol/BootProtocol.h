@@ -13,7 +13,6 @@
 class BootProtocol : public QWidget
 {
     Q_OBJECT
-    Q_ENUMS(FLASH_Status);
 
 public:
     BootProtocol(QWidget *parent, Connection &connection);
@@ -23,18 +22,6 @@ public:
 
     QString errorString();
 
-    enum FLASH_Status {
-        FLASH_BUSY = 1,
-        FLASH_ERROR_RD,
-        FLASH_ERROR_PGS,
-        FLASH_ERROR_PGP,
-        FLASH_ERROR_PGA,
-        FLASH_ERROR_WRP,
-        FLASH_ERROR_PROGRAM,
-        FLASH_ERROR_OPERATION,
-        FLASH_COMPLETE
-    };
-
 private:
     QString m_errorString;
     QProgressDialogEx progressDialog;
@@ -43,7 +30,6 @@ private:
 
     void connection_messageReceived(const msg_generic &msg);
     void showProgress(int value, const QString &text);
-    QString enumToStr(FLASH_Status status);
 
     bool bootGetResponse(msg_boot_response *response, int timeout = 500);
     bool bootResetHack();
@@ -51,7 +37,7 @@ private:
     bool bootExit();
     bool bootEraseSector(uint sector);
     bool bootWriteDataAsync(uint addr, const QByteArray &data);
-    bool bootWriteData(uint addr, const QByteArray &data);
+    bool bootWriteData(uint addr, const QByteArray &data, int ack_window = 10);
     bool bootVerifyData(uint addr, const QByteArray &data);
 };
 

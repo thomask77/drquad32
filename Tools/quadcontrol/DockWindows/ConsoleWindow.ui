@@ -64,14 +64,14 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="action_save"/>
-   <addaction name="action_clear"/>
-   <addaction name="action_pause"/>
-   <addaction name="action_wrap"/>
+   <addaction name="actionSave"/>
+   <addaction name="actionClear"/>
+   <addaction name="actionPause"/>
+   <addaction name="actionWrap"/>
    <addaction name="separator"/>
-   <addaction name="action_terminal"/>
+   <addaction name="actionTerminal"/>
   </widget>
-  <action name="action_save">
+  <action name="actionSave">
    <property name="icon">
     <iconset resource="../resources.qrc">
      <normaloff>:/new/prefix1/Images/save.png</normaloff>:/new/prefix1/Images/save.png</iconset>
@@ -80,7 +80,7 @@
     <string>&amp;Save</string>
    </property>
   </action>
-  <action name="action_clear">
+  <action name="actionClear">
    <property name="icon">
     <iconset resource="../resources.qrc">
      <normaloff>:/new/prefix1/Images/clear.png</normaloff>:/new/prefix1/Images/clear.png</iconset>
@@ -89,7 +89,7 @@
     <string>&amp;Clear</string>
    </property>
   </action>
-  <action name="action_wrap">
+  <action name="actionWrap">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -101,7 +101,7 @@
     <string>&amp;Word Wrap</string>
    </property>
   </action>
-  <action name="action_pause">
+  <action name="actionPause">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -116,7 +116,7 @@
     <string>Pause</string>
    </property>
   </action>
-  <action name="action_terminal">
+  <action name="actionTerminal">
    <property name="icon">
     <iconset resource="../resources.qrc">
      <normaloff>:/new/prefix1/Images/application_xp_terminal.png</normaloff>:/new/prefix1/Images/application_xp_terminal.png</iconset>

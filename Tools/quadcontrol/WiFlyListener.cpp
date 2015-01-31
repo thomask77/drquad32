@@ -39,15 +39,44 @@ struct BroadcastPacket {
 #pragma pack(pop)
 
 
-inline bool qMapLessThanKey(const QHostAddress &key1, const QHostAddress &key2)
+bool WiFlyClientInfo::fromPacket(const QByteArray &packet, const QHostAddress &addr)
 {
-    return key1.toString() < key2.toString();
+    if (packet.size() != sizeof(BroadcastPacket))
+        return false;
+
+    auto &p = *(const BroadcastPacket *)packet.constData();
+
+    address = addr;
+    lastSeen = QDateTime::currentDateTime();
+
+    apMacAddress.sprintf(
+        "%02x:%02x:%02x:%02x:%02x:%02x",
+        p.apMacAddress[0], p.apMacAddress[1],
+        p.apMacAddress[2], p.apMacAddress[3],
+        p.apMacAddress[4], p.apMacAddress[5]
+    );
+
+    channel    = p.channel;
+    rssi       = p.rssi;
+    localPort  = qFromBigEndian(p.be_localPort);
+    rtcValue   = qFromBigEndian(p.be_rtcValue);
+    uBat       = qFromBigEndian(p.be_uBat);
+    gpioPins   = qFromBigEndian(p.be_gpioPins);
+
+    asciiTime.sprintf("%.*s", (int)sizeof(p.asciiTime), p.asciiTime);
+    version.sprintf("%.*s", (int)sizeof(p.version), p.version);
+    deviceId.sprintf("%.*s", (int)sizeof(p.deviceId), p.deviceId);
+    bootTime_ms = qFromBigEndian(p.be_bootTime);
+
+    for (int i=0; i<8; i++)
+        sensors[i] = qFromBigEndian(p.be_sensors[i]);
+
+    return true;
 }
 
 
 WiFlyListener::WiFlyListener(QObject *parent)
     : QObject(parent)
-    , socket(this)
 {
     socket.bind(BROADCAST_PORT, QUdpSocket::ShareAddress);
     connect(&socket, &QUdpSocket::readyRead, this, &WiFlyListener::socket_readyRead);
@@ -56,45 +85,6 @@ WiFlyListener::WiFlyListener(QObject *parent)
 
 WiFlyListener::~WiFlyListener()
 {
-}
-
-
-bool WiFlyListener::handlePacket(const QByteArray &packet, const QHostAddress &addr)
-{
-    if (packet.size() != sizeof(BroadcastPacket))
-        return false;
-
-    auto &p = *(const BroadcastPacket *)packet.constData();
-
-    ClientInfo info;
-
-    info.lastSeen = QDateTime::currentDateTime();
-
-    info.apMacAddress.sprintf(
-        "%02x:%02x:%02x:%02x:%02x:%02x",
-        p.apMacAddress[0], p.apMacAddress[1],
-        p.apMacAddress[2], p.apMacAddress[3],
-        p.apMacAddress[4], p.apMacAddress[5]
-    );
-
-    info.channel    = p.channel;
-    info.rssi       = p.rssi;
-    info.localPort  = qFromBigEndian(p.be_localPort);
-    info.rtcValue   = qFromBigEndian(p.be_rtcValue);
-    info.uBat       = qFromBigEndian(p.be_uBat);
-    info.gpioPins   = qFromBigEndian(p.be_gpioPins);
-
-    info.asciiTime.sprintf("%.*s", (int)sizeof(p.asciiTime), p.asciiTime);
-    info.version.sprintf("%.*s", (int)sizeof(p.version), p.version);
-    info.deviceId.sprintf("%.*s", (int)sizeof(p.deviceId), p.deviceId);
-    info.bootTime_ms = qFromBigEndian(p.be_bootTime);
-
-    for (int i=0; i<8; i++)
-        info.sensors[i] = qFromBigEndian(p.be_sensors[i]);
-
-    clients[addr] = info;
-
-    return true;
 }
 
 
@@ -113,6 +103,9 @@ void WiFlyListener::socket_readyRead()
         //     qPrintable(packet.toHex())
         // );
 
-        handlePacket(packet, addr);
+        WiFlyClientInfo ci;
+
+        if (ci.fromPacket(packet, addr))
+            clients[addr] = ci;
     }
 }

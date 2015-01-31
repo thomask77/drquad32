@@ -49,9 +49,9 @@ ConsoleWindow::ConsoleWindow(MainWindow *parent)
 {
     ui->setupUi(this);
 
-    connect(ui->action_clear, &QAction::triggered, this, &ConsoleWindow::actionClear_triggered);
-    connect(ui->action_save, &QAction::triggered, this, &ConsoleWindow::actionSave_triggered);
-    connect(ui->action_wrap, &QAction::triggered, this, &ConsoleWindow::actionWrap_triggered);
+    connect(ui->actionClear, &QAction::triggered, this, &ConsoleWindow::actionClear_triggered);
+    connect(ui->actionSave, &QAction::triggered, this, &ConsoleWindow::actionSave_triggered);
+    connect(ui->actionWrap, &QAction::triggered, this, &ConsoleWindow::actionWrap_triggered);
 
     connect(&ansiParser, &AnsiParser::attributesChanged, this, &ConsoleWindow::ansi_attributesChanged);
     connect(&ansiParser, &AnsiParser::printText, this, &ConsoleWindow::ansi_print_text);
@@ -63,6 +63,7 @@ ConsoleWindow::ConsoleWindow(MainWindow *parent)
 
     auto p = ui->plainTextEdit->palette();
     p.setColor(QPalette::All, QPalette::Base, ansiPalette[0].color());
+    p.setColor(QPalette::All, QPalette::Text, ansiPalette[7].color());
     ui->plainTextEdit->setPalette(p);
 
     actionClear_triggered();
@@ -106,7 +107,9 @@ void ConsoleWindow::actionSave_triggered()
 
     while (!f.open(QIODevice::WriteOnly)) {
         if (QMessageBox::critical(
-            this, "Can't save log file", f.errorString(),
+            mainWindow, "Error",
+            QString("Can't save\n%1\n%2")
+                .arg(fn) .arg(f.errorString()),
             QMessageBox::Abort | QMessageBox::Retry
         ) != QMessageBox::Retry) {
             return;
@@ -120,7 +123,7 @@ void ConsoleWindow::actionSave_triggered()
 
 void ConsoleWindow::actionWrap_triggered()
 {
-    if (ui->action_wrap->isChecked())
+    if (ui->actionWrap->isChecked())
         ui->plainTextEdit->setLineWrapMode(QPlainTextEdit::WidgetWidth);
     else
         ui->plainTextEdit->setLineWrapMode(QPlainTextEdit::NoWrap);
@@ -135,7 +138,7 @@ void ConsoleWindow::connection_messageReceived(const msg_generic &msg)
 
 void ConsoleWindow::timer_timeout()
 {
-    if (ui->action_pause->isChecked())
+    if (ui->actionPause->isChecked())
         return;
 
     if (rx_buf.isEmpty())

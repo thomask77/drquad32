@@ -23,9 +23,6 @@ public:
 
     Connection connection;
 
-signals:
-    void  deviceChanged();
-
 private:
     Ui::MainWindow *ui;
 
@@ -45,8 +42,10 @@ private:
     void timer_timeout();
     void actionFullscreen_triggered();
 
+    void actionAbout_triggered();
+    void actionAboutQt_triggered();
+
     virtual void closeEvent(QCloseEvent *event) override;
-    virtual bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
 };
 
 

@@ -1,9 +1,0 @@
-[x] Ansi-Filter + Color
-[x] Libraries: cobsr, crc
-
-[ ] Connection-Klasse mit gleicher Packet-Struktur wie beim QuadroKopter!
-
-[ ] ausgewählten SerialPort speichern
-[x] IntelHex-Reader
-[ ] Firmware-Update-Protokoll
-

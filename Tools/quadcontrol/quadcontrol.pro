@@ -9,6 +9,7 @@ QT += serialport
 QT += widgets
 QT += opengl
 QT += network
+QT += concurrent
 win32:QT += winextras
 
 TARGET = quadcontrol
@@ -32,7 +33,8 @@ SOURCES += main.cpp\
     BootProtocol.cpp \
     glut_teapot.cpp \
     WiFlyListener.cpp \
-    GLTools.cpp
+    GLTools.cpp \
+    PuTTYLauncher.cpp
 
 HEADERS  += MainWindow.h \
     AnsiParser.h \
@@ -51,7 +53,8 @@ HEADERS  += MainWindow.h \
     glut_teapot.h \
     QProgressDialogEx.h \
     ../../Bootloader/msg_structs.h \
-    WiFlyListener.h
+    WiFlyListener.h \
+    PuTTYLauncher.h
 
 FORMS    += MainWindow.ui \
     DockWindows/ConnectionWindow.ui \

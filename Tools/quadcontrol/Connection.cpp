@@ -43,7 +43,7 @@ bool Connection::open(const QSerialPortInfo &serialPortInfo)
     serialPort.setBaudRate(115200);
 
     if (!serialPort.open(QIODevice::ReadWrite)) {
-        qDebug() << serialPort.errorString();
+        m_errorString = serialPort.errorString();
         return false;
     }
 

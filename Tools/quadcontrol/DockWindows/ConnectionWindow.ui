@@ -82,26 +82,14 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionScan"/>
    <addaction name="actionAdd"/>
    <addaction name="actionRemove"/>
    <addaction name="separator"/>
    <addaction name="actionConnect"/>
    <addaction name="actionDisconnect"/>
    <addaction name="separator"/>
+   <addaction name="actionTerminal"/>
   </widget>
-  <action name="actionScan">
-   <property name="icon">
-    <iconset resource="../resources.qrc">
-     <normaloff>:/new/prefix1/Images/arrow_refresh.png</normaloff>:/new/prefix1/Images/arrow_refresh.png</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Scan</string>
-   </property>
-   <property name="toolTip">
-    <string>Scan available ports</string>
-   </property>
-  </action>
   <action name="actionConnect">
    <property name="enabled">
     <bool>false</bool>
@@ -149,6 +137,18 @@
    </property>
    <property name="toolTip">
     <string>Remove Connection</string>
+   </property>
+  </action>
+  <action name="actionTerminal">
+   <property name="icon">
+    <iconset resource="../resources.qrc">
+     <normaloff>:/new/prefix1/Images/application_xp_terminal.png</normaloff>:/new/prefix1/Images/application_xp_terminal.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Terminal</string>
+   </property>
+   <property name="toolTip">
+    <string>Start Terminal Program</string>
    </property>
   </action>
  </widget>

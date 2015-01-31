@@ -103,7 +103,10 @@ void UpdateWindow::updateButton_clicked()
             return;
 
         if (QMessageBox::critical(
-                this, "Firmware update failed", bp.errorString(),
+                mainWindow, "Error",
+                QString("Firmware update failed\n%1\n%2")
+                    .arg(ui->lineEdit->text())
+                    .arg(bp.errorString()),
                 QMessageBox::Abort | QMessageBox::Retry
         ) != QMessageBox::Retry) {
             return;

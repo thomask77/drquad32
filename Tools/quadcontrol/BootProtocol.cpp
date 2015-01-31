@@ -25,7 +25,6 @@
 #include <QApplication>
 #include <QThread>
 #include <QTime>
-#include <QMetaEnum>
 
 
 BootProtocol::BootProtocol(QWidget *parent, Connection &connection)
@@ -58,19 +57,6 @@ void BootProtocol::showProgress(int value, const QString &text)
 }
 
 
-QString BootProtocol::enumToStr(FLASH_Status status)
-{
-    QString value = metaObject()->enumerator(
-        metaObject()->indexOfEnumerator("FLASH_Status")
-    ).valueToKey(status);
-
-    if (value.isEmpty())
-        value.sprintf("%d", status);
-
-    return value;
-}
-
-
 /********** Low level functions **********/
 
 bool BootProtocol::bootGetResponse(msg_boot_response *response, int timeout)
@@ -79,7 +65,7 @@ bool BootProtocol::bootGetResponse(msg_boot_response *response, int timeout)
         while (!messageQueue.isEmpty()) {
             auto msg = messageQueue.dequeue();
             if (msg.h.id == MSG_ID_BOOT_RESPONSE) {
-                // qDebug() << "BOOT_RESPONSE: " << msg.data;
+//tk TODO                qDebug() << "BOOT_RESPONSE: " << msg.data;
 
                 *response = *(msg_boot_response*)&msg;
                 return true;
@@ -108,6 +94,10 @@ bool BootProtocol::bootResetHack()
     strcpy((char*)msg.data, s);
 
     connection.sendMessage(&msg.h);
+
+    msg_boot_response res;
+    bootGetResponse(&res);
+
     return true;
 }
 
@@ -119,7 +109,7 @@ bool BootProtocol::bootEnter()
     msg_boot_enter msg;
     msg.h.id = MSG_ID_BOOT_ENTER;
     msg.h.data_len = 4;
-    msg.magic = 0xB00710AD;
+    msg.magic = BOOT_ENTER_MAGIC;
 
     connection.sendMessage(&msg.h);
 
@@ -141,7 +131,7 @@ bool BootProtocol::bootEnter()
 bool BootProtocol::bootExit()
 {
     msg_boot_exit msg;
-    msg.h.id = MSG_ID_BOOT_EXIT;
+    msg.h.id = MSG_IG_BOOT_EXIT;
     msg.h.data_len = 0;
     connection.sendMessage(&msg.h);
 
@@ -172,6 +162,7 @@ bool BootProtocol::bootEraseSector(uint sector)
     if (!bootGetResponse(&res, 2000))
         return false;
 
+/*tk TODO
     if (res.data[0] != FLASH_COMPLETE) {
         m_errorString = QString().sprintf(
             "Can't erase sector %d: %s", sector,
@@ -179,7 +170,7 @@ bool BootProtocol::bootEraseSector(uint sector)
         );
         return false;
     }
-
+*/
     return true;
 }
 
@@ -201,13 +192,15 @@ bool BootProtocol::bootWriteDataAsync(uint addr, const QByteArray &data)
 }
 
 
-bool BootProtocol::bootWriteData(uint addr, const QByteArray &data)
+bool BootProtocol::bootWriteData(uint addr, const QByteArray &data, int ack_window)
 {
     static const int chunk_size = sizeof(msg_boot_write_data::data);
 
     int chunks = (data.length() + chunk_size - 1) / chunk_size;
-    int ack_window = std::min(chunks, 10);
     int offset = 0;
+
+    if (ack_window > chunks)
+        ack_window = chunks;
 
     for (int i=0; i < chunks + ack_window; i++) {
         // send data
@@ -232,7 +225,7 @@ bool BootProtocol::bootWriteData(uint addr, const QByteArray &data)
 
             if (!bootGetResponse(&res))
                 return false;
-
+/*tk TODO
             if (res.data[0] != FLASH_COMPLETE) {
                 m_errorString = QString().sprintf(
                     "Can't write data at 0x%08x: %s", addr,
@@ -240,6 +233,7 @@ bool BootProtocol::bootWriteData(uint addr, const QByteArray &data)
                 );
                 return false;
             }
+*/
         }
     }
 
@@ -257,8 +251,12 @@ bool BootProtocol::bootVerifyData(uint addr, const QByteArray &data)
 
     connection.sendMessage(&msg.h);
 
-    msg_boot_response res;
+    // TK TODO: Just one variable sized message!
+
+    msg_boot_response res, res2;
     if (!bootGetResponse(&res))
+        return false;
+    if (!bootGetResponse(&res2))
         return false;
 
     uint32_t remote_crc;

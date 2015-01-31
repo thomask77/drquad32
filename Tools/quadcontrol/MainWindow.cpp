@@ -29,6 +29,7 @@
 #include <QDockWidget>
 #include <QSettings>
 #include <QCloseEvent>
+#include <QMessageBox>
 #include <QDebug>
 
 
@@ -41,6 +42,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     connect(ui->actionExit, &QAction::triggered, this, &MainWindow::close);
+    connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::actionAbout_triggered);
+    connect(ui->actionAboutQt, &QAction::triggered, this, &MainWindow::actionAboutQt_triggered);
     connect(ui->actionFullscreen, &QAction::triggered, this, &MainWindow::actionFullscreen_triggered);
 
     ui->statusBar->addPermanentWidget(&statisticsLabel);
@@ -66,35 +69,12 @@ MainWindow::MainWindow(QWidget *parent)
     timer.start(500);
 }
 
-#ifdef Q_OS_WIN
 
-#include <qt_windows.h>
-#include <dbt.h>
-
-bool MainWindow::nativeEvent(const QByteArray &, void *message, long *)
+MainWindow::~MainWindow()
 {
-    MSG *msg = (MSG*)message;
-
-    if (msg->message == WM_DEVICECHANGE) {
-        qDebug("WM_DEVICECHANGE: %x", msg->wParam);
-
-        if (msg->wParam == DBT_DEVICEARRIVAL ||
-            msg->wParam == DBT_DEVICEREMOVECOMPLETE)
-        {
-            emit deviceChanged();
-        }
-    }
-    return false;
+    delete ui;
 }
 
-#else
-
-bool MainWindow::nativeEvent(const QByteArray &, void *, long *)
-{
-    return false;
-}
-
-#endif
 
 void MainWindow::timer_timeout()
 {
@@ -150,6 +130,7 @@ void MainWindow::addDockWindow(Qt::DockWidgetArea area, QMainWindow *window)
     );
 }
 
+
 void MainWindow::actionFullscreen_triggered()
 {
     if (ui->actionFullscreen->isChecked())
@@ -158,7 +139,32 @@ void MainWindow::actionFullscreen_triggered()
         this->showNormal();
 }
 
-MainWindow::~MainWindow()
+
+void MainWindow::actionAbout_triggered()
 {
-    delete ui;
+    QMessageBox::about(this,
+        "QuadControl",
+        "Copyright (c)2015 Thomas Kindler <a href=\"mailto:mail@t-kindler.de\">&lt;mail@t-kindler.de&gt;</a>"
+        "<p>"
+        "This program is free software: you can redistribute it and/or modify "
+        "it under the terms of the GNU General Public License as published by "
+        "the Free Software Foundation, either version 3 of the License, or "
+        "(at your option) any later version. "
+        "<p>"
+        "This program is distributed in the hope that it will be useful, "
+        "but WITHOUT ANY WARRANTY; without even the implied warranty of "
+        "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the "
+        "GNU General Public License for more details. "
+        "<p>"
+        "You should have received a copy of the GNU General Public License "
+        "along with this program.  If not, see "
+        "<a href=\"http://www.gnu.org/licenses/\">http://www.gnu.org/licenses/</a>."
+    );
 }
+
+
+void MainWindow::actionAboutQt_triggered()
+{
+    QMessageBox::aboutQt(this);
+}
+

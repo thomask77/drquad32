@@ -3,16 +3,27 @@
 #include <stdint.h>
 #include <assert.h>
 
+// XBee Series 1:           100 bytes
+// XBee Series 2 ZNet:      72 bytes
+// XBee Series 2 ZB Pro:    84 bytes
+//
+#define MSG_MAX_DATA_SIZE   (100 - 2 - 2)   // -crc -id
+
+// TK TODO!
+#define CHECK_MSG_LEN(t, m) \
+    (sizeof(struct t) == (m).h.len)
+
+
 enum msg_id {
     MSG_ID_NOP                  = 0x0000,
 
     MSG_ID_BOOT_ENTER           = 0xB000,
-    MSG_ID_BOOT_RESPONSE        = 0xB001,
-    MSG_ID_BOOT_READ_DATA       = 0xB002,
-    MSG_ID_BOOT_VERIFY          = 0xB003,
-    MSG_ID_BOOT_WRITE_DATA      = 0xB004,
-    MSG_ID_BOOT_ERASE_SECTOR    = 0xB005,
-    MSG_ID_BOOT_EXIT            = 0xB00F,
+    MSG_ID_BOOT_READ_DATA       = 0xB001,
+    MSG_ID_BOOT_VERIFY          = 0xB002,
+    MSG_ID_BOOT_WRITE_DATA      = 0xB003,
+    MSG_ID_BOOT_ERASE_SECTOR    = 0xB004,
+    MSG_IG_BOOT_EXIT            = 0xB00F,
+    MSG_ID_BOOT_RESPONSE        = 0xB010,
 
     MSG_ID_SHELL_TO_PC          = 0xC000,
     MSG_ID_SHELL_FROM_PC        = 0xC001
@@ -20,12 +31,6 @@ enum msg_id {
 
 
 #pragma pack(push, 1)
-
-// XBee Series 1:           100 bytes
-// XBee Series 2 ZNet:      72 bytes
-// XBee Series 2 ZB Pro:    84 bytes
-//
-#define MSG_MAX_DATA_SIZE    (100 - 2 - 2)   // -crc -id
 
 /**
  * Message header
@@ -70,20 +75,13 @@ struct msg_nop
 /**
  * Enter bootloader
  */
+
+#define BOOT_ENTER_MAGIC    0xB00710AD
+
 struct msg_boot_enter
 {
     struct msg_header h;
     uint32_t    magic;
-};
-
-
-/**
- * Bootloader command response
- */
-struct msg_boot_response
-{
-    struct msg_header h;
-    uint8_t     data[MSG_MAX_DATA_SIZE];
 };
 
 
@@ -153,6 +151,16 @@ struct msg_shell_to_pc
  * Shell connection PC -> Vehicle
  */
 struct msg_shell_from_pc
+{
+    struct msg_header h;
+    uint8_t     data[MSG_MAX_DATA_SIZE];
+};
+
+
+/**
+ * Bootloader command response
+ */
+struct msg_boot_response
 {
     struct msg_header h;
     uint8_t     data[MSG_MAX_DATA_SIZE];

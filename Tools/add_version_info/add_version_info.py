@@ -28,7 +28,7 @@ from elf import ELFObject
 
 
 class VersionInfo:
-    format = "<IIII32s16s16s16s16s"
+    format = "<II32s16s16s16s16s"
 
     def __init__(self, elf):
         ss = elf.getSections()
@@ -38,9 +38,7 @@ class VersionInfo:
             ["git", "describe", "--always", "--dirty"]
         )
 
-        self.image_magic  = 0x30676d69
         self.image_crc    = 0x00000000  # must be calculated later
-        self.image_addr   = ss[0].lma
         self.image_size   = ss[-1].lma + ss[-1].sh_size - ss[0].lma
         self.git_version  = git_version.strip()
         self.build_user   = getpass.getuser()
@@ -50,8 +48,7 @@ class VersionInfo:
 
     def pack(self):
         return struct.pack( self.format,
-            self.image_magic, self.image_crc,
-            self.image_addr, self.image_size,
+            self.image_crc, self.image_size,
             self.git_version, self.build_user,
             self.build_host, self.build_data,
             self.build_time
@@ -149,13 +146,12 @@ def patch_elf():
 
     info.image_crc = CRC32().forge(
         0x00000000, elf_to_bin(elf, elf_data), 
-        section.lma - elf.getSections()[0].lma + 4
+        section.lma - elf.getSections()[0].lma
     )
     
     patch_section(elf, elf_data, section, info.pack())
     
     dprint("  image_crc  = 0x%08x" % info.image_crc)
-    dprint("  image_addr = 0x%08x" % info.image_addr)
     dprint("  image_size = %d"     % info.image_size)
 
     ##########

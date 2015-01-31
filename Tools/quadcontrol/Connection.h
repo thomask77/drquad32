@@ -41,8 +41,8 @@ signals:
     void connectionChanged();
 
 private:
-    QString m_errorString;
     QSerialPort serialPort;
+    QString m_errorString;
     QByteArray rx_buf;
     QTimer timer;
 
@@ -52,7 +52,62 @@ private:
     bool decodeMessage(const QByteArray &packet, msg_generic *msg);
 };
 
+// allg. URL evtl. besser?
+// Connection::open(const QString &url);
+// QUrl
+//
+// ser://COM12@115200
+// wifly://host:port
+// file://test.log
+//
 
+class NullConnection : public Connection {
+    Q_OBJECT
+
+public:
+    NullConnection(QObject *parent = 0);
+
+    ~NullConnection()
+    {
+    }
+};
+
+
+class SerialConnection : public Connection {
+    Q_OBJECT
+
+public:
+    SerialConnection(const QString &portName, QObject *parent = 0);
+
+    ~SerialConnection()
+    {
+    }
+
+};
+
+
+class WiFlyConnection : public Connection {
+    Q_OBJECT
+
+public:
+    WiFlyConnection(const QString &hostName, quint16 port, QObject *parent = 0);
+
+    ~WiFlyConnection()
+    {
+    }
+};
+
+
+class LogFileConnection : public Connection {
+    Q_OBJECT
+
+public:
+    LogFileConnection(const QString &fileName, QObject *parent = 0);
+
+    ~LogFileConnection()
+    {
+    }
+};
 
 
 #endif // CONNECTION_H
