@@ -15,19 +15,16 @@ public:
     ~PuTTYLauncher();
 
 #ifdef Q_OS_WIN
-    QString puttyFilename = "c:\\Program Files (x86)\\PuTTY\\putty.exe";
+    QString puttyFilename = "C:\\Program Files (x86)\\PuTTY\\putty.exe";
 #else
     QString puttyFilename = "/usr/bin/putty";
 #endif
 
     QString sessionName = "QuadControl";
     QMap<QString, QVariant>  settings;
-
-    bool startSerial(const QString &portName, int baudRate);
-    bool startRaw(const QString &hostName, int port);
-    bool startSession();
-
     QString errorString();
+
+    bool openUrl(const QString &path);
 
 signals:
     void started();
@@ -36,6 +33,8 @@ signals:
 private:
     QString  m_errorString;
     QProcess process;
+
+    bool openSession();
 };
 
 #endif // PUTTYLAUNCHER_H

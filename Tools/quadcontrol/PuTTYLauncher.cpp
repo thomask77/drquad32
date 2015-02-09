@@ -23,7 +23,7 @@
 #include <QUuid>
 #include <QFile>
 #include <QDir>
-
+#include <QUrl>
 
 PuTTYLauncher::PuTTYLauncher(QObject *parent)
     : QObject(parent)
@@ -51,32 +51,34 @@ QString PuTTYLauncher::errorString()
 }
 
 
-bool PuTTYLauncher::startSerial(const QString &portName, int baudRate)
+bool PuTTYLauncher::openUrl(const QString &path)
 {
-    settings["WinTitle"] = "PuTTY - " + portName + "@" + QString::number(baudRate);
-    settings["Protocol"] = "serial";
-    settings["SerialLine"] = portName;
-    settings["SerialSpeed"] = baudRate;
-    settings["SerialFlowControl"] = 2;  // 2 = RTS/CTS
+    const QUrl url(path);
+    settings["WinTitle"] = "PuTTY - " + path;
 
-    return startSession();
+    if (url.scheme() == "serial") {
+        settings["Protocol"] = "serial";
+        settings["SerialLine"] = url.host();
+        settings["SerialSpeed"] = url.query().toInt();
+        settings["SerialFlowControl"] = 2;  // 2 = RTS/CTS
+        return openSession();
+    }
+
+    if (url.scheme() == "wifly") {
+        settings["Protocol"] = "raw";
+        settings["HostName"] = url.host();
+        settings["PortNumber"] = url.port();
+        settings["LocalEcho"] = 1;  // 0 = On, 1 = Off, 2 = Auto
+        settings["LocalEdit"] = 1;  // 0 = On, 1 = Off, 2 = Auto
+        return openSession();
+    }
+
+    m_errorString = "Unknown URL scheme";
+    return false;
 }
 
 
-bool PuTTYLauncher::startRaw(const QString &hostName, int port)
-{
-    settings["WinTitle"] = "PuTTY - " + hostName + "@" + QString::number(port);
-    settings["Protocol"] = "raw";
-    settings["HostName"] = hostName;
-    settings["PortNumber"] = port;
-    settings["LocalEcho"] = 1;  // 0 = On, 1 = Off, 2 = Auto
-    settings["LocalEdit"] = 1;  // 0 = On, 1 = Off, 2 = Auto
-
-    return startSession();
-}
-
-
-bool PuTTYLauncher::startSession()
+bool PuTTYLauncher::openSession()
 {
 #ifdef Q_OS_WIN
     QSettings registry(
@@ -113,15 +115,6 @@ bool PuTTYLauncher::startSession()
 
     if (!process.waitForStarted()) {
         m_errorString = process.errorString();
-
-        /*        switch (process.error()) {
-        case QProcess::FailedToStart: m_errorString = "FailedToStart";
-        case QProcess::Crashed      : m_errorString = "Crashed";
-        case QProcess::Timedout     : m_errorString = "Timedout";
-        case QProcess::WriteError   : m_errorString = "WriteError";
-        case QProcess::ReadError    : m_errorString = "ReadError";
-        case QProcess::UnknownError : m_errorString = "UnknownError";
-        } */
         return false;
     }
 

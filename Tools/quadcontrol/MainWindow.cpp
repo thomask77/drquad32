@@ -78,10 +78,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::timer_timeout()
 {
-    if (connection.isOpen())
-        connectionLabel.setText(connection.portName());
-    else
-        connectionLabel.setText("Not connected");
+    connectionLabel.setText(connection.getUrl());
 
     // Update RX/TX statistics
     //

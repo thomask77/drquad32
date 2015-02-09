@@ -20,6 +20,7 @@
 
 #include <QSerialPort>
 #include <QMessageBox>
+#include <QInputDialog>
 #include <QDebug>
 
 #include "MainWindow.h"
@@ -28,14 +29,16 @@
 
 ConnectionWindow::ConnectionWindow(MainWindow *parent)
     : QMainWindow(parent)
-    , mainWindow(parent)
     , ui(new Ui::ConnectionWindow)
+    , mainWindow(parent)
 {
     ui->setupUi(this);
     ui->treeWidget->sortByColumn(0, Qt::AscendingOrder);
     ui->treeWidget->setColumnWidth(0, 120);
     ui->treeWidget->setColumnWidth(1, 0);
 
+    connect(ui->actionAdd, &QAction::triggered, this, &ConnectionWindow::actionAdd_triggered);
+    connect(ui->actionRemove, &QAction::triggered, this, &ConnectionWindow::actionRemove_triggered);
     connect(ui->actionConnect, &QAction::triggered, this, &ConnectionWindow::actionConnect_triggered);
     connect(ui->actionDisconnect, &QAction::triggered, this, &ConnectionWindow::actionDisconnect_triggered);
     connect(ui->actionTerminal, &QAction::triggered, this, &ConnectionWindow::actionTerminal_triggered);
@@ -87,6 +90,19 @@ static void setItemColor(QTreeWidgetItem *item, const QColor &color)
 }
 
 
+QTreeWidgetItem *ConnectionWindow::getSelectedItem()
+{
+    auto item = ui->treeWidget->currentItem();
+
+    // ignore top-level items
+    //
+    if (!item || !item->parent())
+        return NULL;
+
+    return item;
+}
+
+
 static QTreeWidgetItem *findChildOrNew(QTreeWidgetItem *item, const QString &text)
 {
     for (int i=0; i<item->childCount(); i++)
@@ -114,6 +130,10 @@ void ConnectionWindow::timer_timeout()
         item->setText(0, p.portName());
         item->setText(1, p.systemLocation());
         item->setText(2, p.description());
+
+        auto path = QString("serial://%1?115200").arg(p.portName());
+        item->setData(0, Qt::UserRole, path);
+        item->setToolTip(0, path);
     }
 
     for (int i=0; i<serialItems.childCount(); i++) {
@@ -139,25 +159,41 @@ void ConnectionWindow::timer_timeout()
 
         auto age = ci.lastSeen.secsTo(QDateTime::currentDateTime());
         setItemColor(item, age < 10 ? Qt::black : Qt::gray);
+
+        auto path = QString("wifly://%1:%2") .arg(ci.address.toString()) .arg(ci.localPort);
+
+        item->setData(0, Qt::UserRole, path);
+        item->setToolTip(0, path);
     }
 
     ui->treeWidget->setUpdatesEnabled(true);
 }
 
 
-QTreeWidgetItem *ConnectionWindow::getSelectedItem()
+void ConnectionWindow::actionAdd_triggered()
 {
-    if (!ui->treeWidget)
-        return NULL;
+    QInputDialog qid;
 
-    auto item = ui->treeWidget->currentItem();
+    if (getSelectedItem())
+        qid.setTextValue(getSelectedItem()->data(0, Qt::UserRole).toString());
 
-    // ignore top-level items
-    //
-    if (!item || !item->parent())
-        return NULL;
+    if (qid.exec() != QDialog::Accepted)
+        return;
 
-    return item;
+    auto item = new QTreeWidgetItem();
+    item->setText(0, qid.textValue());
+    item->setData(0,  Qt::UserRole, qid.textValue());
+    favoriteItems.addChild(item);
+
+    item->setFirstColumnSpanned(true);
+}
+
+
+void ConnectionWindow::actionRemove_triggered()
+{
+    auto item = getSelectedItem();
+    if (item)
+        item->parent()->removeChild(item);
 }
 
 
@@ -169,16 +205,19 @@ void ConnectionWindow::actionConnect_triggered()
 
     bool res = false;
     while (!res) {
-        auto portName = item->text(0);
 
         QApplication::setOverrideCursor(Qt::WaitCursor);
-        res = mainWindow->connection.open( QSerialPortInfo(portName) );
+        QApplication::processEvents();
+
+        auto path = item->data(0, Qt::UserRole).toString();
+        res = mainWindow->connection.open(path);
+
         QApplication::restoreOverrideCursor();
 
         if (!res && QMessageBox::critical(
             mainWindow, "Error",
             QString("Can't open\n%1\n%2")
-                .arg(portName)
+                .arg(path)
                 .arg(mainWindow->connection.errorString()),
             QMessageBox::Abort | QMessageBox::Retry
         ) != QMessageBox::Retry) {
@@ -190,24 +229,24 @@ void ConnectionWindow::actionConnect_triggered()
 
 void ConnectionWindow::actionTerminal_triggered()
 {
+    auto item = getSelectedItem();
+    if (!item)
+        return;
+
     // TODO: disconnect if connected to current item
     //
-
     auto putty = new PuTTYLauncher(mainWindow);
-    auto qmb   = new QMessageBox(mainWindow);
-
-    connect( putty, &PuTTYLauncher::finished, [=](){ qmb->accept(); } );
-
-    qmb->setModal(true);
-    qmb->setText("Waiting for PuTTY...");
-    qmb->setStandardButtons(QMessageBox::Cancel);
-    qmb->setIcon(QMessageBox::Information);
 
     bool res = false;
-
     while (!res) {
+        auto portName = item->text(0);
+
         QApplication::setOverrideCursor(Qt::WaitCursor);
-        res = putty->startSerial("COM26", 115200);
+        QApplication::processEvents();
+
+        auto path = item->data(0, Qt::UserRole).toString();
+        res = putty->openUrl(path);
+
         QApplication::restoreOverrideCursor();
 
         if (!res && QMessageBox::critical(
@@ -221,7 +260,14 @@ void ConnectionWindow::actionTerminal_triggered()
         }
     }
 
-    if (!res || (qmb->exec() != QMessageBox::Cancel)) {
+    QMessageBox qmb;
+    qmb.setText("Waiting for PuTTY...");
+    qmb.setStandardButtons(QMessageBox::Cancel);
+    qmb.setIcon(QMessageBox::Information);
+
+    connect( putty, &PuTTYLauncher::finished, &qmb, &QMessageBox::accept );
+
+    if (!res || (qmb.exec() != QMessageBox::Cancel)) {
         // reconnect if disconnected
         //
     }
@@ -237,8 +283,9 @@ void ConnectionWindow::actionDisconnect_triggered()
 void ConnectionWindow::treewidget_currentItemChanged()
 {
     auto item = getSelectedItem();
-    ui->actionConnect->setEnabled(!!item);
-    ui->actionTerminal->setEnabled(!!item);
+    ui->actionConnect->setEnabled(item);
+    ui->actionTerminal->setEnabled(item);
+    ui->actionRemove->setEnabled(item && item->parent() == &favoriteItems);
 }
 
 

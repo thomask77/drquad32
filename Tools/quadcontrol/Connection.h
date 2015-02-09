@@ -27,86 +27,37 @@ public:
 
     Statistics stats = Statistics();
 
-    QString portName();
+    bool    open(const QString &path);
+    QString getUrl();
+
     QString errorString();
 
-    bool open(const QSerialPortInfo &serialPortInfo);
     void close();
     bool isOpen();
 
-    void sendMessage(msg_header *msg);
+    bool sendMessage(msg_header *msg);
 
 signals:
     void messageReceived(const msg_generic &msg);
     void connectionChanged();
 
 private:
-    QSerialPort serialPort;
-    QString m_errorString;
-    QByteArray rx_buf;
-    QTimer timer;
+    QIODevice   *ioDevice = NULL;
+    QTimer      timer;
+    QString     m_path;
+    QString     m_errorString;
+    QByteArray  rx_buf;
 
-    void pollMessages();
+    bool open(QIODevice *ioDevice);
+    bool openSerial(const QString &getUrl, int baudRate);
+    bool openSocket(const QString &address, quint16 port);
+    bool openFile(const QString &fileName);
+
+    void ioDevice_readyRead();
+    void parseMessages();
 
     bool encodeMessage(msg_header *msg, QByteArray *packet);
     bool decodeMessage(const QByteArray &packet, msg_generic *msg);
-};
-
-// allg. URL evtl. besser?
-// Connection::open(const QString &url);
-// QUrl
-//
-// ser://COM12@115200
-// wifly://host:port
-// file://test.log
-//
-
-class NullConnection : public Connection {
-    Q_OBJECT
-
-public:
-    NullConnection(QObject *parent = 0);
-
-    ~NullConnection()
-    {
-    }
-};
-
-
-class SerialConnection : public Connection {
-    Q_OBJECT
-
-public:
-    SerialConnection(const QString &portName, QObject *parent = 0);
-
-    ~SerialConnection()
-    {
-    }
-
-};
-
-
-class WiFlyConnection : public Connection {
-    Q_OBJECT
-
-public:
-    WiFlyConnection(const QString &hostName, quint16 port, QObject *parent = 0);
-
-    ~WiFlyConnection()
-    {
-    }
-};
-
-
-class LogFileConnection : public Connection {
-    Q_OBJECT
-
-public:
-    LogFileConnection(const QString &fileName, QObject *parent = 0);
-
-    ~LogFileConnection()
-    {
-    }
 };
 
 

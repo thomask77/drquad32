@@ -29,29 +29,34 @@ from elf import ELFObject
 
 class VersionInfo:
     format = "<II32s16s16s16s16s"
+    git_cmd = "git describe --always --dirty"
 
     def __init__(self, elf):
         ss = elf.getSections()
         now = datetime.now()
 
+        dprint("Running \"%s\"..." % self.git_cmd)
+
         git_version = subprocess.check_output(
-            ["git", "describe", "--always", "--dirty"]
-        )
+            self.git_cmd.split(" ")
+        ).strip()
+
+        dprint("  %s" % git_version)
 
         self.image_crc    = 0x00000000  # must be calculated later
-        self.image_size   = ss[-1].lma + ss[-1].sh_size - ss[0].lma
-        self.git_version  = git_version.strip()
+        self.image_size   = ss[-1].lma + ss[-1].sh_size - ss[0].lma      
+        self.git_version  = git_version
         self.build_user   = getpass.getuser()
         self.build_host   = platform.node()
-        self.build_data   = now.strftime("%Y-%m-%d")
+        self.build_date   = now.strftime("%Y-%m-%d")
         self.build_time   = now.strftime("%H:%M:%S")
 
     def pack(self):
         return struct.pack( self.format,
             self.image_crc, self.image_size,
-            self.git_version, self.build_user,
-            self.build_host, self.build_data,
-            self.build_time
+            self.git_version, 
+            self.build_user, self.build_host, 
+            self.build_date, self.build_time
         )
 
 

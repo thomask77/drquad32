@@ -46,9 +46,13 @@ private:
     QTreeWidgetItem favoriteItems;
 
     void timer_timeout();
+
+    void actionAdd_triggered();
+    void actionRemove_triggered();
     void actionConnect_triggered();
     void actionDisconnect_triggered();
     void actionTerminal_triggered();
+
     void treewidget_currentItemChanged();
     void connectionChanged();
 

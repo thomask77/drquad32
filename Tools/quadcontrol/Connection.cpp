@@ -17,93 +17,181 @@
 
 #include "Connection.h"
 
-#include <QByteArray>
 #include <QDebug>
+#include <QByteArray>
+#include <QUrl>
+#include <QSerialPortInfo>
+#include <QTcpSocket>
+#include <QFile>
 
 #include "../../Libraries/cobs/cobsr.h"
 #include "../../Libraries/crc/crc16.h"
 
+
 Connection::Connection(QObject *parent)
     : QObject(parent)
 {
-    connect(&timer, &QTimer::timeout, this, &Connection::pollMessages);
-
-    timer.setInterval(10);
 }
+
 
 Connection::~Connection()
 {
 }
 
-bool Connection::open(const QSerialPortInfo &serialPortInfo)
+
+bool Connection::open(const QString &path)
 {
-    close();
+    QUrl url(path);
 
-    serialPort.setPort(serialPortInfo);
-    serialPort.setBaudRate(115200);
+    if (url.scheme() == "serial")
+        return openSerial(url.host(), url.query().toInt());
 
-    if (!serialPort.open(QIODevice::ReadWrite)) {
-        m_errorString = serialPort.errorString();
+    if (url.scheme() == "wifly")
+        return openSocket(url.host(), url.port());
+
+    if (url.scheme() == "file" || url.scheme() == "")
+        return openFile(url.path());
+
+    m_errorString = "Unknown URL scheme";
+    return false;
+}
+
+
+bool Connection::openSerial(const QString &portName, int baudRate)
+{
+    auto serialPort = new QSerialPort(this);
+
+    serialPort->setPortName(portName);
+    serialPort->setBaudRate(baudRate);
+
+    if (!serialPort->open(QIODevice::ReadWrite)) {
+        m_errorString = serialPort->errorString();
+        delete serialPort;
         return false;
     }
 
+    m_path = QString("serial://%1?%2").arg(portName).arg(baudRate);
+    return open(serialPort);
+}
+
+
+bool Connection::openSocket(const QString &address, quint16 port)
+{
+    auto socket = new QTcpSocket(this);
+
+    socket->connectToHost(address, port);
+
+    if (!socket->waitForConnected(10000)) {
+        m_errorString = socket->errorString();
+        delete socket;
+        return false;
+    }
+
+    socket->setSocketOption(QAbstractSocket::LowDelayOption, 1);
+
+    m_path = QString("wifly://%1:%2").arg(address).arg(port);
+
+    return open(socket);
+}
+
+
+bool Connection::openFile(const QString &fileName)
+{
+    auto file = new QFile(fileName);
+
+    if (!file->open(QIODevice::ReadOnly)) {
+        m_errorString = file->errorString();
+        delete file;
+        return false;
+    }
+
+    m_path = QString("file://%1").arg(fileName);
+
+    return open(file);
+}
+
+
+bool Connection::open(QIODevice *ioDevice)
+{
+    close();
+
+    this->ioDevice = ioDevice;
+    connect(ioDevice, &QIODevice::readyRead, this, &Connection::ioDevice_readyRead);
+
     emit connectionChanged();
-    timer.start();
     return true;
 }
 
+
 void Connection::close()
 {
-    if (!serialPort.isOpen())
-        return;
+    if (ioDevice) {
+        ioDevice->close();
+        delete ioDevice;
+        ioDevice = NULL;
+    }
 
-    timer.stop();
-    serialPort.close();
     emit connectionChanged();
 }
 
+
 bool Connection::isOpen()
 {
-    return serialPort.isOpen();
+    return ioDevice && ioDevice->isOpen();
 }
 
-QString Connection::portName()
+
+QString Connection::getUrl()
 {
-    return serialPort.portName();
+    return isOpen() ? m_path : "Not connected";
 }
+
 
 QString Connection::errorString()
 {
     return m_errorString;
 }
 
-void Connection::sendMessage(msg_header *msg)
+
+bool Connection::sendMessage(msg_header *msg)
 {
+    if (!isOpen())
+        return false;
+
     QByteArray packet;
 
     encodeMessage(msg, &packet);
     packet += '\0';
 
-    if (serialPort.write(packet) >= 0) {
-        stats.tx_bytes += packet.size();
-        stats.tx_packets++;
-    }
-    else {
-        qDebug() << serialPort.errorString();
+    int res = ioDevice->write(packet);
+    if (res < 0) {
+        qDebug() << ioDevice->errorString();
         stats.tx_errors++;
+        return false;
     }
+
+    stats.tx_bytes += res;
+    stats.tx_packets++;
+
+    return true;
 }
 
-void Connection::pollMessages()
+
+void Connection::ioDevice_readyRead()
 {
     if (!isOpen())
         return;
 
-    auto buf = serialPort.readAll();
+    auto buf = ioDevice->readAll();
     rx_buf.append(buf);
-
     stats.rx_bytes += buf.size();
 
+    parseMessages();
+}
+
+
+void Connection::parseMessages()
+{
     for (;;) {
         int pos = rx_buf.indexOf('\0');
         if (pos < 0)
@@ -123,6 +211,7 @@ void Connection::pollMessages()
         rx_buf = rx_buf.mid(pos + 1);
     }
 }
+
 
 bool Connection::encodeMessage(msg_header *msg, QByteArray *packet)
 {
@@ -148,6 +237,7 @@ bool Connection::encodeMessage(msg_header *msg, QByteArray *packet)
 
     return true;
 }
+
 
 bool Connection::decodeMessage(const QByteArray &packet, msg_generic *msg)
 {
