@@ -19,8 +19,6 @@
 
 #include <QDebug>
 #include <QByteArray>
-#include <QUrl>
-#include <QSerialPortInfo>
 #include <QTcpSocket>
 #include <QFile>
 
@@ -39,39 +37,40 @@ Connection::~Connection()
 }
 
 
-bool Connection::open(const QString &path)
+bool Connection::openUrl(const QUrl &url)
 {
-    QUrl url(path);
+    bool res = false;
 
     if (url.scheme() == "serial")
-        return openSerial(url.host(), url.query().toInt());
+        res = openSerial(url.path(), url.query().toInt());
+    else if (url.scheme() == "wifly")
+        res = openSocket(url.host(), url.port());
+    else if (url.scheme() == "file" || url.scheme() == "")
+        res = openFile(url.path());
+    else
+        m_errorString = "Unknown URL scheme";
 
-    if (url.scheme() == "wifly")
-        return openSocket(url.host(), url.port());
+    if (res)
+        m_url = url;
 
-    if (url.scheme() == "file" || url.scheme() == "")
-        return openFile(url.path());
-
-    m_errorString = "Unknown URL scheme";
-    return false;
+    return res;
 }
 
 
 bool Connection::openSerial(const QString &portName, int baudRate)
 {
-    auto serialPort = new QSerialPort(this);
+    auto serialPort = new QSerialPort(portName, this);
 
-    serialPort->setPortName(portName);
-    serialPort->setBaudRate(baudRate);
-
-    if (!serialPort->open(QIODevice::ReadWrite)) {
+    if (!serialPort->open(QIODevice::ReadWrite) ||
+        !serialPort->setBaudRate(baudRate) )
+    {
         m_errorString = serialPort->errorString();
+        serialPort->close();
         delete serialPort;
         return false;
     }
 
-    m_path = QString("serial://%1?%2").arg(portName).arg(baudRate);
-    return open(serialPort);
+    return openIoDevice(serialPort);
 }
 
 
@@ -89,9 +88,7 @@ bool Connection::openSocket(const QString &address, quint16 port)
 
     socket->setSocketOption(QAbstractSocket::LowDelayOption, 1);
 
-    m_path = QString("wifly://%1:%2").arg(address).arg(port);
-
-    return open(socket);
+    return openIoDevice(socket);
 }
 
 
@@ -105,13 +102,11 @@ bool Connection::openFile(const QString &fileName)
         return false;
     }
 
-    m_path = QString("file://%1").arg(fileName);
-
-    return open(file);
+    return openIoDevice(file);
 }
 
 
-bool Connection::open(QIODevice *ioDevice)
+bool Connection::openIoDevice(QIODevice *ioDevice)
 {
     close();
 
@@ -141,9 +136,9 @@ bool Connection::isOpen()
 }
 
 
-QString Connection::getUrl()
+QUrl Connection::getUrl()
 {
-    return isOpen() ? m_path : "Not connected";
+    return isOpen() ? m_url : QUrl();
 }
 
 

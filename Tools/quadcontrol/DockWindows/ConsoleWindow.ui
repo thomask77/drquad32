@@ -35,12 +35,6 @@
     </property>
     <item>
      <widget class="QPlainTextEdit" name="plainTextEdit">
-      <property name="font">
-       <font>
-        <family>Lucida Console</family>
-        <pointsize>9</pointsize>
-       </font>
-      </property>
       <property name="verticalScrollBarPolicy">
        <enum>Qt::ScrollBarAlwaysOn</enum>
       </property>

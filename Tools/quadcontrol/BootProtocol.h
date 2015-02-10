@@ -10,12 +10,12 @@
 #include "Connection.h"
 #include "QProgressDialogEx.h"
 
-class BootProtocol : public QWidget
+class BootProtocol : public QObject
 {
     Q_OBJECT
 
 public:
-    BootProtocol(QWidget *parent, Connection &connection);
+    BootProtocol(Connection &connection, QWidget *parent = 0);
     ~BootProtocol();
 
     bool sendHexFile(const QString &fileName);

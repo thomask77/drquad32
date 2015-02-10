@@ -27,9 +27,9 @@
 #include <QTime>
 
 
-BootProtocol::BootProtocol(QWidget *parent, Connection &connection)
-    : QWidget(parent)
-    , progressDialog(this)
+BootProtocol::BootProtocol(Connection &connection, QWidget *parent)
+    : QObject(parent)
+    , progressDialog(parent)
     , connection(connection)
 {
     progressDialog.setWindowModality(Qt::WindowModal);

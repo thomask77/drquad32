@@ -66,6 +66,16 @@ ConsoleWindow::ConsoleWindow(MainWindow *parent)
     p.setColor(QPalette::All, QPalette::Text, ansiPalette[7].color());
     ui->plainTextEdit->setPalette(p);
 
+    auto font = ui->plainTextEdit->font();
+
+#ifdef Q_OS_WIN
+    font.setFamily("Lucida Console");
+#else
+    font.setFamily("Liberation Mono");
+#endif
+
+    ui->plainTextEdit->setFont(font);
+
     actionClear_triggered();
     timer.start(100);
 }

@@ -20,6 +20,7 @@
 #include "PuTTYLauncher.h"
 #include <QDebug>
 #include <QSettings>
+#include <QSerialPortInfo>
 #include <QUuid>
 #include <QFile>
 #include <QDir>
@@ -30,11 +31,6 @@ PuTTYLauncher::PuTTYLauncher(QObject *parent)
 {
     connect(&process, &QProcess::started, this, &PuTTYLauncher::started);
     connect(&process, (void (QProcess::*)(int))&QProcess::finished, this, &PuTTYLauncher::finished);
-
-    settings["ScrollbackLines"] = 10000;
-    settings["WarnOnClose"] = 0;
-    settings["TermWidth"] = 80;     // EGA style :)
-    settings["TermHeight"] = 43;
 }
 
 
@@ -51,30 +47,34 @@ QString PuTTYLauncher::errorString()
 }
 
 
-bool PuTTYLauncher::openUrl(const QString &path)
+bool PuTTYLauncher::openUrl(const QUrl &url)
 {
-    const QUrl url(path);
-    settings["WinTitle"] = "PuTTY - " + path;
+    settings["ScrollbackLines"] = 10000;
+    settings["WarnOnClose"] = 0;
+    settings["TermWidth"] = 80;     // EGA style :)
+    settings["TermHeight"] = 43;
+
+    settings["WinTitle"] = "PuTTY - " + url.toString();
 
     if (url.scheme() == "serial") {
         settings["Protocol"] = "serial";
-        settings["SerialLine"] = url.host();
+        settings["SerialLine"] = QSerialPortInfo(url.path()).systemLocation();
         settings["SerialSpeed"] = url.query().toInt();
         settings["SerialFlowControl"] = 2;  // 2 = RTS/CTS
-        return openSession();
     }
-
-    if (url.scheme() == "wifly") {
+    else if (url.scheme() == "wifly") {
         settings["Protocol"] = "raw";
         settings["HostName"] = url.host();
         settings["PortNumber"] = url.port();
         settings["LocalEcho"] = 1;  // 0 = On, 1 = Off, 2 = Auto
         settings["LocalEdit"] = 1;  // 0 = On, 1 = Off, 2 = Auto
-        return openSession();
+    }
+    else {
+        m_errorString = "Unknown URL scheme";
+        return false;
     }
 
-    m_errorString = "Unknown URL scheme";
-    return false;
+    return openSession();
 }
 
 
@@ -95,7 +95,10 @@ bool PuTTYLauncher::openSession()
     registry.sync();
 
 #else
-    QFile file(QDir::homePath() + "/.putty/sessions/" + sessionName);
+    auto sessionPath = QDir::homePath() + "/.putty/sessions/";
+    QDir().mkpath(sessionPath);
+
+    QFile file(sessionPath + sessionName);
 
     if (!file.open(QIODevice::WriteOnly)) {
         m_errorString = file.errorString();

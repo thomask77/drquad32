@@ -17,11 +17,12 @@
 
 #include "ConnectionWindow.h"
 #include "ui_ConnectionWindow.h"
+#include "AddConnectionDialog.h"
 
 #include <QSerialPort>
 #include <QMessageBox>
-#include <QInputDialog>
 #include <QDebug>
+#include <QSettings>
 
 #include "MainWindow.h"
 #include "PuTTYLauncher.h"
@@ -72,6 +73,21 @@ ConnectionWindow::ConnectionWindow(MainWindow *parent)
     favoriteItems.setFirstColumnSpanned(true);
     favoriteItems.setExpanded(true);
 
+    QSettings settings;
+    int size = settings.beginReadArray("favorites");
+    for (int i=0; i<size; i++) {
+        settings.setArrayIndex(i);
+        auto item = new QTreeWidgetItem();
+        favoriteItems.addChild(item);
+
+        item->setText(0, settings.value("name").toString());
+        item->setText(1, settings.value("hwid").toString());
+        item->setText(2, settings.value("desc").toString());
+        item->setToolTip(0, settings.value("url").toString());
+        item->setData(0, Qt::UserRole, settings.value("url").toUrl());
+    }
+    settings.endArray();
+
     timer.setInterval(1000);
     timer.start();
 }
@@ -79,6 +95,20 @@ ConnectionWindow::ConnectionWindow(MainWindow *parent)
 
 ConnectionWindow::~ConnectionWindow()
 {
+    QSettings settings;
+    settings.beginWriteArray("favorites");
+
+    for (int i=0; i<favoriteItems.childCount(); i++) {
+        auto item = favoriteItems.child(i);
+        settings.setArrayIndex(i);
+        settings.setValue("name", item->text(0));
+        settings.setValue("hwid", item->text(1));
+        settings.setValue("desc", item->text(2));
+        settings.setValue("url",  item->data(0, Qt::UserRole));
+    }
+
+    settings.endArray();
+
     delete ui;
 }
 
@@ -131,9 +161,13 @@ void ConnectionWindow::timer_timeout()
         item->setText(1, p.systemLocation());
         item->setText(2, p.description());
 
-        auto path = QString("serial://%1?115200").arg(p.portName());
-        item->setData(0, Qt::UserRole, path);
-        item->setToolTip(0, path);
+        QUrl url;
+        url.setScheme("serial");
+        url.setPath(p.portName());
+        url.setQuery("115200");
+
+        item->setData(0, Qt::UserRole, url);
+        item->setToolTip(0, url.toEncoded());
     }
 
     for (int i=0; i<serialItems.childCount(); i++) {
@@ -154,16 +188,18 @@ void ConnectionWindow::timer_timeout()
         auto item = findChildOrNew(&wiFlyItems, ci.address.toString());
 
         item->setText(0, ci.address.toString());
-        item->setText(1, QString("RSSI: %1").arg(ci.rssi));
-        item->setText(2, ci.deviceId);
+        item->setText(2, QString("%1, RSSI=%2").arg(ci.deviceId).arg(ci.rssi));
 
         auto age = ci.lastSeen.secsTo(QDateTime::currentDateTime());
         setItemColor(item, age < 10 ? Qt::black : Qt::gray);
 
-        auto path = QString("wifly://%1:%2") .arg(ci.address.toString()) .arg(ci.localPort);
+        auto url = QUrl();
+        url.setScheme("wifly");
+        url.setHost(ci.address.toString());
+        url.setPort(ci.localPort);
 
-        item->setData(0, Qt::UserRole, path);
-        item->setToolTip(0, path);
+        item->setData(0, Qt::UserRole, url);
+        item->setToolTip(0, url.toString());
     }
 
     ui->treeWidget->setUpdatesEnabled(true);
@@ -172,20 +208,23 @@ void ConnectionWindow::timer_timeout()
 
 void ConnectionWindow::actionAdd_triggered()
 {
-    QInputDialog qid;
+    AddConnectionDialog dlg(mainWindow);
 
-    if (getSelectedItem())
-        qid.setTextValue(getSelectedItem()->data(0, Qt::UserRole).toString());
+    auto item = getSelectedItem();
+    if (item) {
+        dlg.ui->qle_name->setText(item->text(0));
+        dlg.ui->qle_url->setText(item->data(0, Qt::UserRole).toString());
+        dlg.ui->qle_desc->setText(item->text(2));
+    }
 
-    if (qid.exec() != QDialog::Accepted)
+    if (dlg.exec() != QDialog::Accepted)
         return;
 
-    auto item = new QTreeWidgetItem();
-    item->setText(0, qid.textValue());
-    item->setData(0,  Qt::UserRole, qid.textValue());
-    favoriteItems.addChild(item);
-
-    item->setFirstColumnSpanned(true);
+    item = findChildOrNew(&favoriteItems, dlg.ui->qle_name->text());
+    item->setText(0, dlg.ui->qle_name->text());
+    item->setText(2, dlg.ui->qle_desc->text());
+    item->setToolTip(0, dlg.ui->qle_url->text());
+    item->setData(0,  Qt::UserRole, QUrl(dlg.ui->qle_url->text()));
 }
 
 
@@ -209,15 +248,15 @@ void ConnectionWindow::actionConnect_triggered()
         QApplication::setOverrideCursor(Qt::WaitCursor);
         QApplication::processEvents();
 
-        auto path = item->data(0, Qt::UserRole).toString();
-        res = mainWindow->connection.open(path);
+        auto url = item->data(0, Qt::UserRole).toUrl();
+        res = mainWindow->connection.openUrl(url);
 
         QApplication::restoreOverrideCursor();
 
         if (!res && QMessageBox::critical(
             mainWindow, "Error",
             QString("Can't open\n%1\n%2")
-                .arg(path)
+                .arg(url.toString())
                 .arg(mainWindow->connection.errorString()),
             QMessageBox::Abort | QMessageBox::Retry
         ) != QMessageBox::Retry) {
@@ -239,13 +278,11 @@ void ConnectionWindow::actionTerminal_triggered()
 
     bool res = false;
     while (!res) {
-        auto portName = item->text(0);
-
         QApplication::setOverrideCursor(Qt::WaitCursor);
         QApplication::processEvents();
 
-        auto path = item->data(0, Qt::UserRole).toString();
-        res = putty->openUrl(path);
+        auto url = item->data(0, Qt::UserRole).toString();
+        res = putty->openUrl(url);
 
         QApplication::restoreOverrideCursor();
 
@@ -260,7 +297,7 @@ void ConnectionWindow::actionTerminal_triggered()
         }
     }
 
-    QMessageBox qmb;
+    QMessageBox qmb(mainWindow);
     qmb.setText("Waiting for PuTTY...");
     qmb.setStandardButtons(QMessageBox::Cancel);
     qmb.setIcon(QMessageBox::Information);
@@ -285,6 +322,7 @@ void ConnectionWindow::treewidget_currentItemChanged()
     auto item = getSelectedItem();
     ui->actionConnect->setEnabled(item);
     ui->actionTerminal->setEnabled(item);
+    ui->actionAdd->setEnabled(true);
     ui->actionRemove->setEnabled(item && item->parent() == &favoriteItems);
 }
 

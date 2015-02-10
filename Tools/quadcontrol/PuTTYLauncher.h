@@ -24,7 +24,7 @@ public:
     QMap<QString, QVariant>  settings;
     QString errorString();
 
-    bool openUrl(const QString &path);
+    bool openUrl(const QUrl &url);
 
 signals:
     void started();

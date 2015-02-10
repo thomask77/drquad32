@@ -30,6 +30,7 @@ private:
     class UpdateWindow      *updateWindow;
     class ConsoleWindow     *consoleWindow;
     class GLWindow          *glWindow;
+    class PlotWindow        *plotWindow;
 
     QLabel statisticsLabel;
     QLabel connectionLabel;
@@ -38,7 +39,8 @@ private:
     QTime old_stats_t;
     Connection::Statistics old_stats;
 
-    void addDockWindow(Qt::DockWidgetArea area, QMainWindow *window);
+    QDockWidget *addDockWindow(Qt::DockWidgetArea area, QMainWindow *window);
+
     void timer_timeout();
     void actionFullscreen_triggered();
 

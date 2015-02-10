@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QSerialPort>
 #include <QTimer>
+#include <QUrl>
 
 #include "../../Bootloader/msg_structs.h"
 
@@ -27,8 +28,8 @@ public:
 
     Statistics stats = Statistics();
 
-    bool    open(const QString &path);
-    QString getUrl();
+    bool openUrl(const QUrl &url);
+    QUrl getUrl();
 
     QString errorString();
 
@@ -43,12 +44,11 @@ signals:
 
 private:
     QIODevice   *ioDevice = NULL;
-    QTimer      timer;
-    QString     m_path;
+    QUrl        m_url;
     QString     m_errorString;
     QByteArray  rx_buf;
 
-    bool open(QIODevice *ioDevice);
+    bool openIoDevice(QIODevice *ioDevice);
     bool openSerial(const QString &getUrl, int baudRate);
     bool openSocket(const QString &address, quint16 port);
     bool openFile(const QString &fileName);

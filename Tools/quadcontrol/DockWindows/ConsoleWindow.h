@@ -21,6 +21,8 @@ public:
     explicit ConsoleWindow(class MainWindow *parent = 0);
     ~ConsoleWindow();
 
+    QSize sizeHint() const override { return QSize(640, 80); }
+
 private:
     Ui::ConsoleWindow *ui;
     class MainWindow *mainWindow;

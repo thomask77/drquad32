@@ -97,7 +97,7 @@ void UpdateWindow::browseButton_clicked()
 void UpdateWindow::updateButton_clicked()
 {
     for (;;) {
-        BootProtocol bp(this, mainWindow->connection);
+        BootProtocol bp(mainWindow->connection, mainWindow);
 
         if (bp.sendHexFile(ui->lineEdit->text()))
             return;

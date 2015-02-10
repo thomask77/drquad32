@@ -52,7 +52,7 @@
       </attribute>
       <column>
        <property name="text">
-        <string>Port</string>
+        <string>Name</string>
        </property>
       </column>
       <column>
@@ -62,7 +62,7 @@
       </column>
       <column>
        <property name="text">
-        <string>Description</string>
+        <string>Comments</string>
        </property>
       </column>
      </widget>

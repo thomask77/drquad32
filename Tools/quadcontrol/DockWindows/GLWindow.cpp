@@ -58,10 +58,13 @@ GLWindow::GLWindow(MainWindow *parent)
 
     connect(ui->actionOrthogonal,   &QAction::triggered, ui->glWidget, &MyGLWidget::setOrtho);
     connect(ui->actionAuto_rotate,  &QAction::triggered, ui->glWidget, &MyGLWidget::setAutoRotate);
-    connect(ui->actionFront,        &QAction::triggered, [=]() { ui->glWidget->setRotation(270,   0,    0); } );
-    connect(ui->actionRight,        &QAction::triggered, [=]() { ui->glWidget->setRotation(270,   0,  270); } );
-    connect(ui->actionTop,          &QAction::triggered, [=]() { ui->glWidget->setRotation(  0,   0,    0); } );
-    connect(ui->actionAngled,       &QAction::triggered, [=]() { ui->glWidget->setRotation(300,   0,  330); } );
+
+    // TODO: Dangerous! No automatic disconnect when receiver is destroyed!
+    //
+    connect(ui->actionFront,  &QAction::triggered, [=]() { ui->glWidget->setRotation(270,   0,    0); } );
+    connect(ui->actionRight,  &QAction::triggered, [=]() { ui->glWidget->setRotation(270,   0,  270); } );
+    connect(ui->actionTop,    &QAction::triggered, [=]() { ui->glWidget->setRotation(  0,   0,    0); } );
+    connect(ui->actionAngled, &QAction::triggered, [=]() { ui->glWidget->setRotation(300,   0,  330); } );
 
     ui->actionAngled->trigger();
 }

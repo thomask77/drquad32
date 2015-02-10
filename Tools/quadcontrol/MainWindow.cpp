@@ -22,6 +22,7 @@
 #include "DockWindows/UpdateWindow.h"
 #include "DockWindows/ConsoleWindow.h"
 #include "DockWindows/GLWindow.h"
+#include "DockWindows/PlotWindow.h"
 
 #include "Connection.h"
 
@@ -53,11 +54,17 @@ MainWindow::MainWindow(QWidget *parent)
     updateWindow     = new class UpdateWindow(this);
     consoleWindow    = new class ConsoleWindow(this);
     glWindow         = new class GLWindow(this);
+    plotWindow       = new class PlotWindow(this);
 
     addDockWindow(Qt::LeftDockWidgetArea, connectionWindow);
-    addDockWindow(Qt::RightDockWidgetArea, updateWindow);
+    addDockWindow(Qt::LeftDockWidgetArea, updateWindow);
+
+    tabifyDockWidget(
+        addDockWindow(Qt::RightDockWidgetArea, glWindow),
+        addDockWindow(Qt::RightDockWidgetArea, plotWindow)
+    );
+
     addDockWindow(Qt::BottomDockWidgetArea, consoleWindow);
-    addDockWindow(Qt::BottomDockWidgetArea, glWindow);
 
     QSettings settings;
     restoreGeometry(settings.value("windowGeometry").toByteArray());
@@ -78,7 +85,10 @@ MainWindow::~MainWindow()
 
 void MainWindow::timer_timeout()
 {
-    connectionLabel.setText(connection.getUrl());
+    if (connection.isOpen())
+        connectionLabel.setText(connection.getUrl().toString());
+    else
+        connectionLabel.setText("Not connected");
 
     // Update RX/TX statistics
     //
@@ -108,7 +118,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 }
 
 
-void MainWindow::addDockWindow(Qt::DockWidgetArea area, QMainWindow *window)
+QDockWidget *MainWindow::addDockWindow(Qt::DockWidgetArea area, QMainWindow *window)
 {
     window->setWindowFlags(Qt::Widget);
 
@@ -125,6 +135,8 @@ void MainWindow::addDockWindow(Qt::DockWidgetArea area, QMainWindow *window)
         ui->menuView->actions().end()[-2],
         dw->toggleViewAction()
     );
+
+    return dw;
 }
 
 
