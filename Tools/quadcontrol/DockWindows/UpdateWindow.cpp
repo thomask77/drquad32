@@ -32,10 +32,9 @@
 #include "MainWindow.h"
 #include "IntelHexFile.h"
 
-UpdateWindow::UpdateWindow(MainWindow *parent)
+UpdateWindow::UpdateWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::UpdateWindow)
-    , mainWindow(parent)
 {
     ui->setupUi(this);
 

@@ -34,6 +34,9 @@
 #include <QDebug>
 
 
+MainWindow *mainWindow;
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , connection(this)
@@ -49,6 +52,22 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->statusBar->addPermanentWidget(&statisticsLabel);
     ui->statusBar->addWidget(&connectionLabel);
+
+    connect(&timer, &QTimer::timeout, this, &MainWindow::timer_timeout);
+    timer.start(500);
+}
+
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+
+void MainWindow::showEvent(QShowEvent *event)
+{
+    if (isInitialized)
+        return;
 
     connectionWindow = new class ConnectionWindow(this);
     updateWindow     = new class UpdateWindow(this);
@@ -72,14 +91,16 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->actionFullscreen->setChecked(windowState() & Qt::WindowFullScreen);
 
-    connect(&timer, &QTimer::timeout, this, &MainWindow::timer_timeout);
-    timer.start(500);
+    isInitialized = true;
 }
 
 
-MainWindow::~MainWindow()
+void MainWindow::closeEvent(QCloseEvent *event)
 {
-    delete ui;
+    QSettings settings;
+    settings.setValue("windowGeometry", saveGeometry());
+    settings.setValue("windowState", saveState());
+    event->accept();
 }
 
 
@@ -109,13 +130,6 @@ void MainWindow::timer_timeout()
 }
 
 
-void MainWindow::closeEvent(QCloseEvent *event)
-{
-    QSettings settings;
-    settings.setValue("windowGeometry", saveGeometry());
-    settings.setValue("windowState", saveState());
-    event->accept();
-}
 
 
 QDockWidget *MainWindow::addDockWindow(Qt::DockWidgetArea area, QMainWindow *window)

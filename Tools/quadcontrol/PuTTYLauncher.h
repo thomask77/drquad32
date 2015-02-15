@@ -1,17 +1,17 @@
 #ifndef PUTTYLAUNCHER_H
 #define PUTTYLAUNCHER_H
 
-#include <QObject>
+#include <QWidget>
 #include <QProcess>
 #include <QMap>
 
 
-class PuTTYLauncher : public QObject
+class PuTTYLauncher : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit PuTTYLauncher(QObject *parent = 0);
+    explicit PuTTYLauncher(QWidget *parent = 0);
     ~PuTTYLauncher();
 
 #ifdef Q_OS_WIN

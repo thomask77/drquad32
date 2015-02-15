@@ -26,8 +26,8 @@
 #include <QDir>
 #include <QUrl>
 
-PuTTYLauncher::PuTTYLauncher(QObject *parent)
-    : QObject(parent)
+PuTTYLauncher::PuTTYLauncher(QWidget *parent)
+    : QWidget(parent)
 {
     connect(&process, &QProcess::started, this, &PuTTYLauncher::started);
     connect(&process, (void (QProcess::*)(int))&QProcess::finished, this, &PuTTYLauncher::finished);

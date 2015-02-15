@@ -16,12 +16,11 @@ class UpdateWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit UpdateWindow(class MainWindow *parent = 0);
+    explicit UpdateWindow(QWidget *parent = 0);
     ~UpdateWindow();
 
 private:
     Ui::UpdateWindow *ui;
-    class MainWindow *mainWindow;
 
     void lineEdit_textChanged();
     void browseButton_clicked();

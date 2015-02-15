@@ -12,12 +12,11 @@ class GLWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit GLWindow(class MainWindow *parent = 0);
+    explicit GLWindow(QWidget *parent = 0);
     ~GLWindow();
 
 private:
     Ui::GLWindow *ui;
-    class MainWindow *mainWindow;
 
     void actionScan_triggered();
     void actionConnect_triggered();

@@ -23,10 +23,9 @@
 #include <math.h>
 
 
-PlotWindow::PlotWindow(MainWindow *parent)
+PlotWindow::PlotWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::PlotWindow)
-    , mainWindow(parent)
 {
     ui->setupUi(this);
 

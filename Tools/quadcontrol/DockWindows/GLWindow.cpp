@@ -24,10 +24,9 @@
 
 #include "MainWindow.h"
 
-GLWindow::GLWindow(MainWindow *parent)
+GLWindow::GLWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::GLWindow)
-    , mainWindow(parent)
 {
     ui->setupUi(this);
 

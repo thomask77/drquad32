@@ -18,6 +18,7 @@
 #include "MainWindow.h"
 #include <QApplication>
 
+
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
@@ -26,8 +27,11 @@ int main(int argc, char *argv[])
     a.setOrganizationName("t-kindler");
     a.setOrganizationDomain("t-kindler.de");
 
-    MainWindow w;
-    w.show();
+    mainWindow = new MainWindow();
+    mainWindow->show();
 
-    return a.exec();
+    auto res = a.exec();
+
+    delete mainWindow;
+    return res;
 }

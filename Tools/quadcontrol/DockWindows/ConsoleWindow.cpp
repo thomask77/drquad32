@@ -42,10 +42,9 @@ static const QBrush ansiPalette[] = {
 };
 
 
-ConsoleWindow::ConsoleWindow(MainWindow *parent)
+ConsoleWindow::ConsoleWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::ConsoleWindow)
-    , mainWindow(parent)
 {
     ui->setupUi(this);
 
@@ -56,7 +55,7 @@ ConsoleWindow::ConsoleWindow(MainWindow *parent)
     connect(&ansiParser, &AnsiParser::attributesChanged, this, &ConsoleWindow::ansi_attributesChanged);
     connect(&ansiParser, &AnsiParser::printText, this, &ConsoleWindow::ansi_print_text);
 
-    connect(&parent->connection, &Connection::messageReceived, this, &ConsoleWindow::connection_messageReceived);
+    connect(&mainWindow->connection, &Connection::messageReceived, this, &ConsoleWindow::connection_messageReceived);
     connect(&timer, &QTimer::timeout, this, &ConsoleWindow::timer_timeout);
 
     cursor = QTextCursor(ui->plainTextEdit->document());

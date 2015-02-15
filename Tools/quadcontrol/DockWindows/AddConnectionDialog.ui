@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>349</width>
-    <height>120</height>
+    <height>227</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,10 +17,16 @@
    <bool>true</bool>
   </property>
   <layout class="QFormLayout" name="formLayout">
+   <property name="fieldGrowthPolicy">
+    <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+   </property>
    <item row="0" column="0">
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>Name</string>
+      <string>&amp;Name</string>
+     </property>
+     <property name="buddy">
+      <cstring>qle_name</cstring>
      </property>
     </widget>
    </item>
@@ -30,24 +36,37 @@
    <item row="1" column="0">
     <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>URL</string>
+      <string>&amp;URL</string>
+     </property>
+     <property name="buddy">
+      <cstring>qle_url</cstring>
      </property>
     </widget>
    </item>
    <item row="1" column="1">
     <widget class="QLineEdit" name="qle_url"/>
    </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="label_3">
+   <item row="2" column="1">
+    <widget class="QLabel" name="label_4">
      <property name="text">
-      <string>Description</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;URL Examples:&lt;br/&gt;serial:COM1?115200&lt;br/&gt;wifly://192.168.0.10:2000&lt;br/&gt;file:///home/foo/logfile.log&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="1">
+   <item row="3" column="0">
+    <widget class="QLabel" name="label_3">
+     <property name="text">
+      <string>&amp;Description</string>
+     </property>
+     <property name="buddy">
+      <cstring>qle_desc</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
     <widget class="QLineEdit" name="qle_desc"/>
    </item>
-   <item row="3" column="0" colspan="2">
+   <item row="4" column="0" colspan="2">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -68,8 +87,8 @@
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
+     <x>257</x>
+     <y>208</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -84,8 +103,8 @@
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
+     <x>325</x>
+     <y>208</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>

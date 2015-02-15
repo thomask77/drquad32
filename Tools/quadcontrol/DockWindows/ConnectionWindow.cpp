@@ -28,10 +28,9 @@
 #include "PuTTYLauncher.h"
 
 
-ConnectionWindow::ConnectionWindow(MainWindow *parent)
+ConnectionWindow::ConnectionWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::ConnectionWindow)
-    , mainWindow(parent)
 {
     ui->setupUi(this);
     ui->treeWidget->sortByColumn(0, Qt::AscendingOrder);
@@ -52,33 +51,36 @@ ConnectionWindow::ConnectionWindow(MainWindow *parent)
 
     boldFont.setBold(true);
 
-    ui->treeWidget->addTopLevelItem(&serialItems);
-    serialItems.setText(0, "Serial Ports");
-    serialItems.setFont(0, boldFont);
-    serialItems.setFlags(Qt::ItemIsEnabled);
-    serialItems.setFirstColumnSpanned(true);
-    serialItems.setExpanded(true);
+    serialItems = new QTreeWidgetItem();
+    ui->treeWidget->addTopLevelItem(serialItems);
+    serialItems->setText(0, "Serial Ports");
+    serialItems->setFont(0, boldFont);
+    serialItems->setFlags(Qt::ItemIsEnabled);
+    serialItems->setFirstColumnSpanned(true);
+    serialItems->setExpanded(true);
 
-    ui->treeWidget->addTopLevelItem(&wiFlyItems);
-    wiFlyItems.setText(0, "WiFly Modules");
-    wiFlyItems.setFont(0, boldFont);
-    wiFlyItems.setFlags(Qt::ItemIsEnabled);
-    wiFlyItems.setFirstColumnSpanned(true);
-    wiFlyItems.setExpanded(true);
+    wiFlyItems = new QTreeWidgetItem();
+    ui->treeWidget->addTopLevelItem(wiFlyItems);
+    wiFlyItems->setText(0, "WiFly Modules");
+    wiFlyItems->setFont(0, boldFont);
+    wiFlyItems->setFlags(Qt::ItemIsEnabled);
+    wiFlyItems->setFirstColumnSpanned(true);
+    wiFlyItems->setExpanded(true);
 
-    ui->treeWidget->addTopLevelItem(&favoriteItems);
-    favoriteItems.setText(0, "Favorites");
-    favoriteItems.setFont(0, boldFont);
-    favoriteItems.setFlags(Qt::ItemIsEnabled);
-    favoriteItems.setFirstColumnSpanned(true);
-    favoriteItems.setExpanded(true);
+    favoriteItems = new QTreeWidgetItem();
+    ui->treeWidget->addTopLevelItem(favoriteItems);
+    favoriteItems->setText(0, "Favorites");
+    favoriteItems->setFont(0, boldFont);
+    favoriteItems->setFlags(Qt::ItemIsEnabled);
+    favoriteItems->setFirstColumnSpanned(true);
+    favoriteItems->setExpanded(true);
 
     QSettings settings;
     int size = settings.beginReadArray("favorites");
     for (int i=0; i<size; i++) {
         settings.setArrayIndex(i);
         auto item = new QTreeWidgetItem();
-        favoriteItems.addChild(item);
+        favoriteItems->addChild(item);
 
         item->setText(0, settings.value("name").toString());
         item->setText(1, settings.value("hwid").toString());
@@ -98,8 +100,8 @@ ConnectionWindow::~ConnectionWindow()
     QSettings settings;
     settings.beginWriteArray("favorites");
 
-    for (int i=0; i<favoriteItems.childCount(); i++) {
-        auto item = favoriteItems.child(i);
+    for (int i=0; i<favoriteItems->childCount(); i++) {
+        auto item = favoriteItems->child(i);
         settings.setArrayIndex(i);
         settings.setValue("name", item->text(0));
         settings.setValue("hwid", item->text(1));
@@ -155,7 +157,7 @@ void ConnectionWindow::timer_timeout()
     auto ports = availablePortsAsync();
 
     for (const auto &p: ports) {
-        auto item = findChildOrNew(&serialItems, p.portName());
+        auto item = findChildOrNew(serialItems, p.portName());
 
         item->setText(0, p.portName());
         item->setText(1, p.systemLocation());
@@ -170,22 +172,23 @@ void ConnectionWindow::timer_timeout()
         item->setToolTip(0, url.toEncoded());
     }
 
-    for (int i=0; i<serialItems.childCount(); i++) {
+    for (int i=0; i<serialItems->childCount(); i++) {
+        auto child = serialItems->child(i);
         bool found = false;
         for (const auto &p: ports) {
-            if (p.portName() == serialItems.child(i)->text(0)) {
+            if (p.portName() == child->text(0)) {
                 found = true;
                 break;
             }
         }
 
-        setItemColor(serialItems.child(i), found ? Qt::black : Qt::gray);
+        setItemColor(child, found ? Qt::black : Qt::gray);
     }
 
     // Update WiFly modules
     //
     for (const auto &ci: wiFlyListener.clients) {
-        auto item = findChildOrNew(&wiFlyItems, ci.address.toString());
+        auto item = findChildOrNew(wiFlyItems, ci.address.toString());
 
         item->setText(0, ci.address.toString());
         item->setText(2, QString("%1, RSSI=%2").arg(ci.deviceId).arg(ci.rssi));
@@ -220,7 +223,7 @@ void ConnectionWindow::actionAdd_triggered()
     if (dlg.exec() != QDialog::Accepted)
         return;
 
-    item = findChildOrNew(&favoriteItems, dlg.ui->qle_name->text());
+    item = findChildOrNew(favoriteItems, dlg.ui->qle_name->text());
     item->setText(0, dlg.ui->qle_name->text());
     item->setText(2, dlg.ui->qle_desc->text());
     item->setToolTip(0, dlg.ui->qle_url->text());
@@ -236,19 +239,14 @@ void ConnectionWindow::actionRemove_triggered()
 }
 
 
-void ConnectionWindow::actionConnect_triggered()
+void ConnectionWindow::tryConnect(const QUrl &url)
 {
-    auto item = getSelectedItem();
-    if (!item)
-        return;
-
     bool res = false;
     while (!res) {
-
         QApplication::setOverrideCursor(Qt::WaitCursor);
         QApplication::processEvents();
 
-        auto url = item->data(0, Qt::UserRole).toUrl();
+        mainWindow->connection.close();
         res = mainWindow->connection.openUrl(url);
 
         QApplication::restoreOverrideCursor();
@@ -266,14 +264,27 @@ void ConnectionWindow::actionConnect_triggered()
 }
 
 
+void ConnectionWindow::actionConnect_triggered()
+{
+    auto item = getSelectedItem();
+    if (!item)
+        return;
+
+    auto url = item->data(0, Qt::UserRole).toUrl();
+
+    tryConnect(url);
+}
+
+
 void ConnectionWindow::actionTerminal_triggered()
 {
     auto item = getSelectedItem();
     if (!item)
         return;
 
-    // TODO: disconnect if connected to current item
-    //
+    auto url = item->data(0, Qt::UserRole).toUrl();
+    auto old_url = mainWindow->connection.getUrl();
+
     auto putty = new PuTTYLauncher(mainWindow);
 
     bool res = false;
@@ -281,7 +292,11 @@ void ConnectionWindow::actionTerminal_triggered()
         QApplication::setOverrideCursor(Qt::WaitCursor);
         QApplication::processEvents();
 
-        auto url = item->data(0, Qt::UserRole).toString();
+        // Disconnect if already connected
+        //
+        if (url == old_url)
+            mainWindow->connection.close();
+
         res = putty->openUrl(url);
 
         QApplication::restoreOverrideCursor();
@@ -305,8 +320,10 @@ void ConnectionWindow::actionTerminal_triggered()
     connect( putty, &PuTTYLauncher::finished, &qmb, &QMessageBox::accept );
 
     if (!res || (qmb.exec() != QMessageBox::Cancel)) {
-        // reconnect if disconnected
+        // Reconnect (only) if we have disconnected
         //
+        if (url == old_url)
+            tryConnect(old_url);
     }
 }
 
@@ -323,7 +340,7 @@ void ConnectionWindow::treewidget_currentItemChanged()
     ui->actionConnect->setEnabled(item);
     ui->actionTerminal->setEnabled(item);
     ui->actionAdd->setEnabled(true);
-    ui->actionRemove->setEnabled(item && item->parent() == &favoriteItems);
+    ui->actionRemove->setEnabled(item && item->parent() == favoriteItems);
 }
 
 

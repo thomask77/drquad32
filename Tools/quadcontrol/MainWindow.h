@@ -13,6 +13,7 @@ namespace Ui {
 class MainWindow;
 }
 
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -32,6 +33,8 @@ private:
     class GLWindow          *glWindow;
     class PlotWindow        *plotWindow;
 
+    bool isInitialized = false;
+
     QLabel statisticsLabel;
     QLabel connectionLabel;
     QTimer timer;
@@ -47,8 +50,12 @@ private:
     void actionAbout_triggered();
     void actionAboutQt_triggered();
 
-    virtual void closeEvent(QCloseEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
+    void showEvent(QShowEvent *event) override;
 };
+
+
+extern MainWindow *mainWindow;   // singleton
 
 
 #endif // MAINWINDOW_H
