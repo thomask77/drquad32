@@ -108,8 +108,6 @@ bool Connection::openFile(const QString &fileName)
 
 bool Connection::openIoDevice(QIODevice *ioDevice)
 {
-    close();
-
     this->ioDevice = ioDevice;
     connect(ioDevice, &QIODevice::readyRead, this, &Connection::ioDevice_readyRead);
 
@@ -124,9 +122,9 @@ void Connection::close()
         ioDevice->close();
         delete ioDevice;
         ioDevice = NULL;
-    }
 
-    emit connectionChanged();
+        emit connectionChanged();
+    }
 }
 
 

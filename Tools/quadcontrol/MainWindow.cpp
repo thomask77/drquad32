@@ -66,7 +66,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::showEvent(QShowEvent *event)
 {
-    if (isInitialized)
+    if (isInitialized || event->spontaneous())
         return;
 
     connectionWindow = new class ConnectionWindow(this);

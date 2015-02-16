@@ -18,6 +18,7 @@
 #include "ConnectionWindow.h"
 #include "ui_ConnectionWindow.h"
 #include "AddConnectionDialog.h"
+#include "TryAction.h"
 
 #include <QSerialPort>
 #include <QMessageBox>
@@ -196,7 +197,7 @@ void ConnectionWindow::timer_timeout()
         auto age = ci.lastSeen.secsTo(QDateTime::currentDateTime());
         setItemColor(item, age < 10 ? Qt::black : Qt::gray);
 
-        auto url = QUrl();
+        QUrl url;
         url.setScheme("wifly");
         url.setHost(ci.address.toString());
         url.setPort(ci.localPort);
@@ -239,40 +240,32 @@ void ConnectionWindow::actionRemove_triggered()
 }
 
 
-void ConnectionWindow::tryConnect(const QUrl &url)
+bool ConnectionWindow::tryConnect(QTreeWidgetItem *item)
 {
-    bool res = false;
-    while (!res) {
-        QApplication::setOverrideCursor(Qt::WaitCursor);
-        QApplication::processEvents();
+    if (!item)
+        return false;
 
-        mainWindow->connection.close();
-        res = mainWindow->connection.openUrl(url);
+    actionDisconnect_triggered();
 
-        QApplication::restoreOverrideCursor();
-
-        if (!res && QMessageBox::critical(
-            mainWindow, "Error",
-            QString("Can't open\n%1\n%2")
-                .arg(url.toString())
-                .arg(mainWindow->connection.errorString()),
-            QMessageBox::Abort | QMessageBox::Retry
-        ) != QMessageBox::Retry) {
-            break;
+    auto url = item->data(0, Qt::UserRole).toUrl();
+    auto ret = tryAction(
+        [&]() { return mainWindow->connection.openUrl(url); },
+        [&]() { return QString("Can't open\n%1\n%2")
+                    .arg(url.toString())
+                    .arg(mainWindow->connection.errorString());
         }
-    }
+    );
+
+    if (ret)
+        item->setFont(0, boldFont);
+
+    return ret;
 }
 
 
 void ConnectionWindow::actionConnect_triggered()
 {
-    auto item = getSelectedItem();
-    if (!item)
-        return;
-
-    auto url = item->data(0, Qt::UserRole).toUrl();
-
-    tryConnect(url);
+    tryConnect(getSelectedItem());
 }
 
 
@@ -285,32 +278,19 @@ void ConnectionWindow::actionTerminal_triggered()
     auto url = item->data(0, Qt::UserRole).toUrl();
     auto old_url = mainWindow->connection.getUrl();
 
+    // Disconnect if already connected
+    //
+    if (url == old_url)
+        actionDisconnect_triggered();
+
     auto putty = new PuTTYLauncher(mainWindow);
-
-    bool res = false;
-    while (!res) {
-        QApplication::setOverrideCursor(Qt::WaitCursor);
-        QApplication::processEvents();
-
-        // Disconnect if already connected
-        //
-        if (url == old_url)
-            mainWindow->connection.close();
-
-        res = putty->openUrl(url);
-
-        QApplication::restoreOverrideCursor();
-
-        if (!res && QMessageBox::critical(
-            mainWindow, "Error",
-            QString("Can't launch\n%1\n%2")
-                .arg(putty->puttyFilename)
-                .arg(putty->errorString()),
-            QMessageBox::Abort | QMessageBox::Retry
-        ) != QMessageBox::Retry) {
-            break;
+    auto res = tryAction(
+        [&]() { return putty->openUrl(url); },
+        [&]() { return QString("Can't launch\n%1\n%2")
+                    .arg(putty->puttyFilename)
+                    .arg(putty->errorString());
         }
-    }
+    );
 
     QMessageBox qmb(mainWindow);
     qmb.setText("Waiting for PuTTY...");
@@ -323,7 +303,7 @@ void ConnectionWindow::actionTerminal_triggered()
         // Reconnect (only) if we have disconnected
         //
         if (url == old_url)
-            tryConnect(old_url);
+            tryConnect(item);
     }
 }
 
@@ -331,6 +311,10 @@ void ConnectionWindow::actionTerminal_triggered()
 void ConnectionWindow::actionDisconnect_triggered()
 {
     mainWindow->connection.close();
+
+    for (auto i: { favoriteItems, serialItems, wiFlyItems })
+        for (int j=0; j < i->childCount(); j++)
+            i->child(j)->setFont(0, ui->treeWidget->font());
 }
 
 
@@ -346,7 +330,6 @@ void ConnectionWindow::treewidget_currentItemChanged()
 
 void ConnectionWindow::connectionChanged()
 {
-    auto c = (Connection*)sender();
-    ui->actionDisconnect->setEnabled( c->isOpen() );
+    ui->actionDisconnect->setEnabled( mainWindow->connection.isOpen() );
 }
 

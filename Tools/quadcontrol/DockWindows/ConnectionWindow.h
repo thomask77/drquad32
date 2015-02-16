@@ -10,7 +10,6 @@
 #include <QTimer>
 #include <QMap>
 
-
 namespace Ui {
 class ConnectionWindow;
 }
@@ -49,7 +48,8 @@ private:
     void actionAdd_triggered();
     void actionRemove_triggered();
 
-    void tryConnect(const  QUrl &url);
+    bool tryConnect(QTreeWidgetItem *item);
+
     void actionConnect_triggered();
     void actionDisconnect_triggered();
     void actionTerminal_triggered();

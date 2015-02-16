@@ -29,6 +29,7 @@
 #include <QScrollBar>
 
 #include "MainWindow.h"
+#include "TryAction.h"
 
 static const QBrush ansiPalette[] = {
     QBrush(QColor("#222")), QBrush(QColor("#C00")),
@@ -79,16 +80,19 @@ ConsoleWindow::ConsoleWindow(QWidget *parent)
     timer.start(100);
 }
 
+
 ConsoleWindow::~ConsoleWindow()
 {
     delete ui;
 }
+
 
 void ConsoleWindow::actionClear_triggered()
 {
     ui->plainTextEdit->clear();
     ansi_attributesChanged(ansiParser.attributes);
 }
+
 
 void ConsoleWindow::actionSave_triggered()
 {
@@ -114,16 +118,12 @@ void ConsoleWindow::actionSave_triggered()
 
     QFile f(fn);
 
-    while (!f.open(QIODevice::WriteOnly)) {
-        if (QMessageBox::critical(
-            mainWindow, "Error",
-            QString("Can't save\n%1\n%2")
-                .arg(fn) .arg(f.errorString()),
-            QMessageBox::Abort | QMessageBox::Retry
-        ) != QMessageBox::Retry) {
-            return;
+    tryAction(
+        [&]() { return f.open(QIODevice::WriteOnly); },
+        [&]() { return QString("Can't save\n%1\n%2")
+                        .arg(fn) .arg(f.errorString());
         }
-    }
+    );
 
     f.write(ui->plainTextEdit->toPlainText().toLatin1());
     f.close();
@@ -144,6 +144,7 @@ void ConsoleWindow::connection_messageReceived(const msg_generic &msg)
     if (msg.h.id == MSG_ID_SHELL_TO_PC)
         rx_buf.append( QByteArray((char*)msg.data, msg.h.data_len) );
 }
+
 
 void ConsoleWindow::timer_timeout()
 {
@@ -168,6 +169,7 @@ void ConsoleWindow::timer_timeout()
     rx_buf.clear();
 }
 
+
 void ConsoleWindow::ansi_attributesChanged(const AnsiParser::Attributes &attr)
 {
     unsigned fg = attr.foreground + (attr.bold ? 8 : 0);
@@ -182,8 +184,8 @@ void ConsoleWindow::ansi_attributesChanged(const AnsiParser::Attributes &attr)
     cursor.setCharFormat(ansiFormat);
 }
 
+
 void ConsoleWindow::ansi_print_text(const QString &text)
 {
     cursor.insertText(text);
 }
-

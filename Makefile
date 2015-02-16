@@ -256,7 +256,7 @@ NM       = $(TOOLCHAIN)nm
 MKDIR    = mkdir
 DOXYGEN  = doxygen
 STLINK   = Tools/st-link/ST-LINK_CLI.exe
-POSTLD   = Tools/add_version_info/add_version_info.py -q
+POSTLD   = Tools/add_version_info/add_version_info.py # -q
 
 # Compiler flags to generate dependency files
 #

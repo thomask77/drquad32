@@ -65,7 +65,9 @@ HEADERS  += MainWindow.h \
     WiFlyListener.h \
     PuTTYLauncher.h \
     Widgets/qcustomplot-1.3.0/qcustomplot.h \
-    DockWindows/AddConnectionDialog.h
+    DockWindows/AddConnectionDialog.h \
+    TryAction.h \
+    InterleavedFuture.h
 
 FORMS    += MainWindow.ui \
     DockWindows/ConnectionWindow.ui \

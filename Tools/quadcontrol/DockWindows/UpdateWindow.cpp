@@ -17,6 +17,7 @@
 
 #include "UpdateWindow.h"
 #include "ui_UpdateWindow.h"
+#include "TryAction.h"
 
 #include <QSettings>
 #include <QFileSystemModel>
@@ -95,22 +96,16 @@ void UpdateWindow::browseButton_clicked()
 
 void UpdateWindow::updateButton_clicked()
 {
-    for (;;) {
-        BootProtocol bp(mainWindow->connection, mainWindow);
+    BootProtocol bp(mainWindow->connection, mainWindow);
 
-        if (bp.sendHexFile(ui->lineEdit->text()))
-            return;
-
-        if (QMessageBox::critical(
-                mainWindow, "Error",
-                QString("Firmware update failed\n%1\n%2")
+    tryAction(
+        [&]() { return bp.sendHexFile(ui->lineEdit->text()); },
+        [&]() { return QString("Firmware update failed\n%1\n%2")
                     .arg(ui->lineEdit->text())
-                    .arg(bp.errorString()),
-                QMessageBox::Abort | QMessageBox::Retry
-        ) != QMessageBox::Retry) {
-            return;
-        }
-    }
+                    .arg(bp.errorString());
+        },
+        Qt::ArrowCursor
+    );
 }
 
 void UpdateWindow::lineEdit_textChanged()

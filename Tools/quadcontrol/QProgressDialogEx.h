@@ -50,7 +50,7 @@ public:
         QProgressDialog::setValue(progress);
 
         if (!winTaskbarButton.window()) {
-            winTaskbarButton.setWindow(parentWidget()->topLevelWidget()->windowHandle());
+            winTaskbarButton.setWindow(topLevelWidget()->windowHandle());
             winTaskbarButton.progress()->setVisible(true);
         }
 
