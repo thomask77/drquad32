@@ -1,0 +1,7 @@
+quadcontrol
+Makefile
+qrc_resources.cpp
+ui_*
+moc_*
+*.o
+*.user

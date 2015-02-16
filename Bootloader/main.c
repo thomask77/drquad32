@@ -217,9 +217,9 @@ static void handle_boot_read_data(struct msg_boot_read_data *msg)
 }
 
 
-static void handle_boot_verify_data(struct msg_boot_verify_data *msg)
+static void handle_boot_verify(struct msg_boot_verify_data *msg)
 {
-    msg_printf("boot_verify_data(0x%04lx, %lu): ",
+    msg_printf("boot_verify(0x%04lx, %lu): ",
         msg->address, msg->length
     );
 
@@ -322,7 +322,7 @@ static void msg_loop(void)
         else if (active) {
             switch (msg.h.id) {
             case MSG_ID_BOOT_READ_DATA:     handle_boot_read_data((void*)&msg);    break;
-            case MSG_ID_BOOT_VERIFY:        handle_boot_verify_data((void*)&msg);  break;
+            case MSG_ID_BOOT_VERIFY:        handle_boot_verify((void*)&msg);       break;
             case MSG_ID_BOOT_WRITE_DATA:    handle_boot_write_data((void*)&msg);   break;
             case MSG_ID_BOOT_ERASE_SECTOR:  handle_boot_erase_sector((void*)&msg); break;
             case MSG_ID_BOOT_EXIT:          handle_boot_exit((void*)&msg);         return;

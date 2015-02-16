@@ -1,0 +1,19 @@
+<RCC>
+    <qresource prefix="/new/prefix1">
+        <file>Images/application_xp_terminal.png</file>
+        <file>Images/arrow_refresh.png</file>
+        <file>Images/carbon_fiber.png</file>
+        <file>Images/carbon_gradient.png</file>
+        <file>Images/clear.png</file>
+        <file>Images/connect.png</file>
+        <file>Images/disconnect.png</file>
+        <file>Images/error.png</file>
+        <file>Images/exclamation.png</file>
+        <file>Images/lightning.png</file>
+        <file>Images/pause.png</file>
+        <file>Images/rainbow.png</file>
+        <file>Images/save.png</file>
+        <file>Images/software-update-available.png</file>
+        <file>Images/wordwrap.png</file>
+    </qresource>
+</RCC>

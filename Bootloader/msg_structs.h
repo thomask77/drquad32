@@ -1,6 +1,7 @@
 #pragma once
 #pragma pack(push, 1)
 
+#include <stdint.h>
 
 enum ids {
     MSG_ID_NOP                  = 0x0000,
@@ -102,7 +103,7 @@ struct msg_boot_write_data
 /**
  * Verify flash memory
  */
-struct msg_boot_verify_data
+struct msg_boot_verify
 {
     struct msg_header h;
     uint32_t    address;
