@@ -1,6 +1,7 @@
 *~
 *.bak
 *.tmp
+build-*
 .project
 .cproject
 .settings

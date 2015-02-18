@@ -1,9 +1,10 @@
 #include "msg_packet.h"
-#include "crc16_sm.h"
 #include "uart.h"
 #include "board.h"
-#include "cobsr.h"
-#include "errors.h"
+
+#include "Shared/crc16_sm.h"
+#include "Shared/cobsr.h"
+#include "Shared/errors.h"
 
 #define PACKET_TIMEOUT  1000     // [ms]
 

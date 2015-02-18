@@ -16,6 +16,7 @@ TARGET = $(OBJDIR)/drquad
 
 # Define all C source files (dependencies are generated automatically)
 #
+INCDIRS += .
 INCDIRS += Source
 
 SOURCES += Source/main.c
@@ -61,12 +62,10 @@ SOURCES += Source/filter.c
 SOURCES += Source/watchdog.c
 SOURCES += Source/version.c
 
-SHARED_DIR = Shared
-INCDIRS += $(SHARED_DIR)
-SOURCES += $(SHARED_DIR)/cobsr.c
-SOURCES += $(SHARED_DIR)/errors.c
-SOURCES += $(SHARED_DIR)/crc16.c
-SOURCES += $(SHARED_DIR)/crc32.c
+SOURCES += Shared/cobsr.c
+SOURCES += Shared/errors.c
+SOURCES += Shared/crc16.c
+SOURCES += Shared/crc32.c
 
 # FatFS
 #
@@ -255,7 +254,7 @@ NM       = $(TOOLCHAIN)nm
 MKDIR    = mkdir
 DOXYGEN  = doxygen
 STLINK   = Tools/st-link/ST-LINK_CLI.exe
-POSTLD   = Tools/add_version_info/add_version_info.py # -q
+POSTLD   = Tools/add_version_info.py # -q
 
 # Compiler flags to generate dependency files
 #

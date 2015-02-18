@@ -1,13 +1,13 @@
 #include "board.h"
 #include "uart.h"
-#include "crc32_sm.h"
 #include "msg_packet.h"
 #include "stm32f4xx.h"
 #include "version.h"
 #include "small_printf.h"
 
-#include "msg_structs.h"
-#include "errors.h"
+#include "Shared/crc32_sm.h"
+#include "Shared/msg_structs.h"
+#include "Shared/errors.h"
 
 #include <string.h>
 #include <stdio.h>

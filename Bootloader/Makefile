@@ -16,7 +16,9 @@ TARGET = $(OBJDIR)/f00b00t
 
 # Define all C source files (dependencies are generated automatically)
 #
+INCDIRS += .
 INCDIRS += Bootloader
+
 SOURCES += Bootloader/small_printf.c
 SOURCES += Bootloader/main.c
 SOURCES += Bootloader/board.c
@@ -24,12 +26,10 @@ SOURCES += Bootloader/uart.c
 SOURCES += Bootloader/msg_packet.c
 SOURCES += Bootloader/version.c
 
-SHARED_DIR = Shared
-INCDIRS += $(SHARED_DIR)
-SOURCES += $(SHARED_DIR)/cobsr.c
-SOURCES += $(SHARED_DIR)/errors.c
-SOURCES += $(SHARED_DIR)/crc16_sm.c
-SOURCES += $(SHARED_DIR)/crc32_sm.c
+SOURCES += Shared/cobsr.c
+SOURCES += Shared/errors.c
+SOURCES += Shared/crc16_sm.c
+SOURCES += Shared/crc32_sm.c
 
 # Standard peripheral library
 #
@@ -160,7 +160,7 @@ MKDIR    = mkdir
 DOXYGEN  = doxygen
 SUBWCREV = SubWCRev
 STLINK   = Tools/st-link/ST-LINK_CLI.exe
-POSTLD   = Tools/add_version_info/add_version_info.py -q
+POSTLD   = Tools/add_version_info.py # -q
 
 # Compiler flags to generate dependency files
 #
