@@ -1,7 +1,7 @@
 /**
  * Record file system for the flash OTP area
  *
- * Copyright (c)2001-2012 Thomas Kindler <mail@t-kindler.de>
+ * Copyright (c)2001-2015 Thomas Kindler <mail@t-kindler.de>
  *
  * 2014-03-17: tk, initial implementation
  *

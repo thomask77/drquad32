@@ -1,8 +1,7 @@
 /**
- * \file
  * Lock-free single reader/single writer ring buffer.
  *
- * Copyright (c)2000-2014 Thomas Kindler <mail@t-kindler.de>
+ * Copyright (c)2000-2015 Thomas Kindler <mail_git@t-kindler.de>
  *
  * 2014-11-22, tk:  rb_get_pointers for zero-copy operation
  * 2014-11-16, tk:  lock-free read_pos/write_pos implementation

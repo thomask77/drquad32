@@ -1,7 +1,7 @@
 /**
  * Small, integer-only printf functions.
  *
- * Copyright (c)2012 Thomas Kindler <mail@t-kindler.de>
+ * Copyright (c)2012-2015 Thomas Kindler <mail_git@t-kindler.de>
  *
  * 2014-07-20: tk, added puts() function.
  * 2012-11-18: tk, added snprintf() function.

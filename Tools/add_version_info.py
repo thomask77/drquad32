@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 #
 # Add CRC checksum and version information to an ELF file
-# Copyright (C)2015 Thomas Kindler <mail@t-kindler.de>
+#
+# Copyright (C)2015 Thomas Kindler <mail_git@t-kindler.de>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +24,7 @@ import getpass, platform
 from StringIO import StringIO
 from datetime import datetime
 
-from crc32 import CRC32
+from crc32_forge import CRC32
 from elf import ELFObject
 
 

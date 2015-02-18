@@ -1,15 +1,17 @@
 /**
  * Consistent Overhead Byte Stuffing--Reduced (COBS/R)
  *
- * Copyright (c) 2010 Craig McQueen
- * Copyright (c) 2015 Thomas Kindler <mail@t-kindler.de>
+ * Copyright(c) 2010 Craig McQueen
+ * Copyright(c) 2015 Thomas Kindler <mail_git@t-kindler.de>
  *
- * 2015-02-18, tk:  Functions now use errno and return -1 on failure.
- *                  Use void pointers for source and destination.
- *                  Assert on NULL-Pointers (it's a programming error!).
- *                  Integrated license text into the source file.
+ * 2015-02-18, tk:
+ *      Functions now use errno and return -1 on failure.
+ *      Use void pointers for source and destination.
+ *      Assert on NULL-Pointers (it's a programming error!).
+ *      Integrated license text into the source file.
  *
- * 2014-07-11, tk:  Downloaded from https://bitbucket.org/cmcqueen1975/cobs-c
+ * 2014-07-11, tk:
+ *      Downloaded from https://bitbucket.org/cmcqueen1975/cobs-c
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
