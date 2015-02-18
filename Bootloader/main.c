@@ -6,8 +6,8 @@
 #include "version.h"
 #include "small_printf.h"
 
-#include "../Source/msg_structs.h"
-#include "../Source/errors.h"
+#include "msg_structs.h"
+#include "errors.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -408,7 +408,9 @@ int main(void)
     board_set_leds(LED_RED);
     uart_init(XBEE_BAUDRATE);
 
-    uart_write((char[]){ 0 }, 1); // flush messages
+    // Send an empty message to flush the receiver
+    //
+    msg_printf("%c", '\0');
 
     msg_printf(
         "\n\n"

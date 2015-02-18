@@ -24,14 +24,12 @@ SOURCES += Bootloader/uart.c
 SOURCES += Bootloader/msg_packet.c
 SOURCES += Bootloader/version.c
 
-SOURCES += Source/errors.c
-
-# CRC functions (small table versions)
-#
-CRC_DIR = Libraries/crc
-INCDIRS += $(CRC_DIR)
-SOURCES += $(CRC_DIR)/crc16_sm.c
-SOURCES += $(CRC_DIR)/crc32_sm.c
+SHARED_DIR = Shared
+INCDIRS += $(SHARED_DIR)
+SOURCES += $(SHARED_DIR)/cobsr.c
+SOURCES += $(SHARED_DIR)/errors.c
+SOURCES += $(SHARED_DIR)/crc16_sm.c
+SOURCES += $(SHARED_DIR)/crc32_sm.c
 
 # Standard peripheral library
 #
@@ -54,12 +52,6 @@ SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_usart.c
 SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_gpio.c
 SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_flash.c
 SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_tim.c
-
-# COBS-Library
-#
-COBS_DIR = Libraries/cobs
-INCDIRS += $(COBS_DIR)
-SOURCES += $(COBS_DIR)/cobsr.c
 
 # CMSIS-Library
 #

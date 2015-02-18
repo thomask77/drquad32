@@ -1,5 +1,5 @@
 /**
- * Copyright (C)2015 Thomas Kindler <mail_drquad@t-kindler.de>
+ * Copyright (C)2015 Thomas Kindlerrr <mail_drquad@t-kindler.de>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,8 +22,9 @@
 #include <QTcpSocket>
 #include <QFile>
 
-#include "../../Libraries/cobs/cobsr.h"
-#include "../../Libraries/crc/crc16.h"
+#include "Shared/cobsr.h"
+#include "Shared/crc16.h"
+#include "Shared/errors.h"
 
 
 Connection::Connection(QObject *parent)
@@ -216,17 +217,17 @@ bool Connection::encodeMessage(msg_header *msg, QByteArray *packet)
         COBSR_ENCODE_DST_BUF_LEN_MAX(2 + 2 + msg->data_len)
     );
 
-    auto r = cobsr_encode(
-        (uchar*)packet->data(), packet->size(),
-        (uchar*)&msg->crc, 2 + 2 + msg->data_len
+    auto res = cobsr_encode(
+        packet->data(), packet->size(),
+        &msg->crc, 2 + 2 + msg->data_len
     );
 
-    if (r.status != COBSR_ENCODE_OK) {
-        m_errorString = QString().sprintf("COBS/R error %d", r.status);
+    if (res < 0) {
+        m_errorString = _user_strerror(errno);
         return false;
     }
 
-    packet->resize(r.out_len);
+    packet->resize(res);
 
     return true;
 }
@@ -234,22 +235,22 @@ bool Connection::encodeMessage(msg_header *msg, QByteArray *packet)
 
 bool Connection::decodeMessage(const QByteArray &packet, msg_generic *msg)
 {
-    auto r = cobsr_decode(
-        (uchar*)&msg->h.crc, 2 + 2 + sizeof(msg_generic::data),
-        (uchar*)packet.data(), packet.size()
+    auto res = cobsr_decode(
+        &msg->h.crc, 2 + 2 + sizeof(msg_generic::data),
+        packet.data(), packet.size()
     );
 
-    if (r.status != COBSR_DECODE_OK) {
-        m_errorString = QString().sprintf("COBS/R error %d", r.status);
+    if (res < 0) {
+        m_errorString = _user_strerror(errno);
         return false;
     }
 
-    if (r.out_len < 2 + 2) {
-        m_errorString = QString().sprintf("Packet too short");
+    if (res < 2 + 2) {
+        m_errorString = _user_strerror(EMSG_TOO_SHORT);
         return false;
     }
 
-    msg->h.data_len = r.out_len -2 -2;
+    msg->h.data_len = res -2 -2;
 
     uint16_t crc;
     crc = crc16_init();

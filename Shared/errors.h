@@ -1,12 +1,6 @@
 #if     !defined(ERRORS_H) || defined(_ERR_MAKE_STRING_TABLE)
 #define ERRORS_H
 
-/**
- * ATTENTION:
- *   This file is used by the DrQuad application as well as the
- *   Bootloader and QuadControl. Check all three if you make
- *   modifications.
- */
 
 #include <errno.h>
 
@@ -26,8 +20,10 @@ enum error_id {
 #endif
 
 _ERR_GROUP( EUSER_BASE, __ELASTERROR )
+_ERR_NAME( ECOBSR_ENCODE_OUT_BUFFER_OVERFLOW, "Encode buffer overflow" )
+_ERR_NAME( ECOBSR_DECODE_OUT_BUFFER_OVERFLOW, "Decode buffer overflow" )
+_ERR_NAME( ECOBSR_DECODE_ZERO_BYTE_IN_INPUT , "Zero byte in input" )
 _ERR_NAME( EMSG_TIMEOUT,        "Message timed out" )
-_ERR_NAME( EMSG_COBSR,          "Message encoding failure" )
 _ERR_NAME( EMSG_TOO_LONG,       "Message too long" )
 _ERR_NAME( EMSG_TOO_SHORT,      "Message too short" )
 _ERR_NAME( EMSG_CRC,            "Message checksum failure" )
@@ -40,6 +36,7 @@ _ERR_NAME( EBOOT_RANGE,         "Invalid address range" )
 _ERR_NAME( EBOOT_CHECKSUM,      "Invalid checksum" )
 _ERR_NAME( EBOOT_MAGIC,         "Invalid magic" )
 
+
 _ERR_GROUP( EFLASH_BASE, EUSER_BASE + 0x200 )
 _ERR_NAME( EFLASH_BUSY,         "EFLASH_BUSY" )
 _ERR_NAME( EFLASH_RD,           "EFLASH_RD" )
@@ -50,6 +47,7 @@ _ERR_NAME( EFLASH_WRP,          "EFLASH_WRP" )
 _ERR_NAME( EFLASH_PROGRAM,      "EFLASH_PROGRAM" )
 _ERR_NAME( EFLASH_OPERATION,    "EFLASH_OPERATION" )
 _ERR_NAME( EFLASH_COMPLETE,     "EFLASH_COMPLETE" )
+
 
 #ifndef _ERR_MAKE_STRING_TABLE
 };

@@ -1,12 +1,7 @@
 /**
  * User defined extension for newlib's strerror() function
  *
- * ATTENTION:
- *   This file is used by the DrQuad application as well as the
- *   Bootloader and QuadControl. Check all three if you make
- *   modifications.
- *
- * Copyright (C)2015 Thomas Kindler <mail_drquad@t-kindler.de>
+ * Copyright (c)2015 Thomas Kindler <mail_drquad@t-kindler.de>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

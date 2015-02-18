@@ -19,6 +19,7 @@ TEMPLATE = app
 CONFIG += c++11
 
 INCLUDEPATH += \
+    ../../  \
     Widgets/qcustomplot-1.3.0 \
     Widgets/qflightinstruments-20140126
 
@@ -30,9 +31,6 @@ SOURCES += main.cpp \
     DockWindows/GLWindow.cpp \
     DockWindows/UpdateWindow.cpp \
     DockWindows/PlotWindow.cpp \
-    ..\..\Libraries\cobs\cobsr.c \
-    ..\..\Libraries\crc\crc16.c \
-    ..\..\Libraries\crc\crc32.c \
     Connection.cpp \
     IntelHexFile.cpp \
     DockWindows/MyGLWidget.cpp \
@@ -43,7 +41,10 @@ SOURCES += main.cpp \
     PuTTYLauncher.cpp \
     Widgets/qcustomplot-1.3.0/qcustomplot.cpp \
     DockWindows/AddConnectionDialog.cpp \
-    ../../Source/errors.c
+    ../../Shared/cobsr.c \
+    ../../Shared/crc16.c \
+    ../../Shared/crc32.c \
+    ../../Shared/errors.c
 
 HEADERS  += MainWindow.h \
     AnsiParser.h \
@@ -53,24 +54,23 @@ HEADERS  += MainWindow.h \
     DockWindows/GLWindow.h \
     DockWindows/UpdateWindow.h \
     DockWindows/PlotWindow.h \
-    ..\..\Libraries\cobs\cobsr.h \
-    ..\..\Libraries\crc\crc16.h \
-    ..\..\Libraries\crc\crc32.h \
     Connection.h \
     IntelHexFile.h \
     DockWindows/MyGLWidget.h \
     BootProtocol.h \
     glut_teapot.h \
     QProgressDialogEx.h \
-    ../../Bootloader/msg_structs.h \
     WiFlyListener.h \
     PuTTYLauncher.h \
     Widgets/qcustomplot-1.3.0/qcustomplot.h \
     DockWindows/AddConnectionDialog.h \
     TryAction.h \
     InterleavedFuture.h \
-    ../../Source/errors.h \
-    ../../Source/msg_structs.h
+    ../../Shared/cobsr.h \
+    ../../Shared/crc16.h \
+    ../../Shared/crc32.h \
+    ../../Shared/errors.h \
+    ../../Shared/msg_structs.h
 
 FORMS    += MainWindow.ui \
     DockWindows/ConnectionWindow.ui \

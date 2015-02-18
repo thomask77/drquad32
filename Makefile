@@ -19,7 +19,6 @@ TARGET = $(OBJDIR)/drquad
 INCDIRS += Source
 
 SOURCES += Source/main.c
-SOURCES += Source/errors.c
 SOURCES += Source/gpn_foo.c
 SOURCES += Source/flight_ctrl.c
 SOURCES += Source/bldc_driver.c
@@ -60,15 +59,14 @@ SOURCES += Source/shell_task.c
 SOURCES += Source/util.c
 SOURCES += Source/filter.c
 SOURCES += Source/watchdog.c
-
 SOURCES += Source/version.c
 
-# CRC functions
-#
-CRC_DIR = Libraries/crc
-INCDIRS += $(CRC_DIR)
-SOURCES += $(CRC_DIR)/crc16.c
-SOURCES += $(CRC_DIR)/crc32.c
+SHARED_DIR = Shared
+INCDIRS += $(SHARED_DIR)
+SOURCES += $(SHARED_DIR)/cobsr.c
+SOURCES += $(SHARED_DIR)/errors.c
+SOURCES += $(SHARED_DIR)/crc16.c
+SOURCES += $(SHARED_DIR)/crc32.c
 
 # FatFS
 #

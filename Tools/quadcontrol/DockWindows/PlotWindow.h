@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QTimer>
 
-#include "../../Source/msg_structs.h"
+#include "Shared/msg_structs.h"
 
 namespace Ui {
 class PlotWindow;

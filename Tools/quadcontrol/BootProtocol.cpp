@@ -16,11 +16,12 @@
  */
 
 #include "BootProtocol.h"
-#include "../../Source/msg_structs.h"
-#include "../../Source/errors.h"
-#include "../../Libraries/crc/crc32.h"
 #include "IntelHexFile.h"
 #include "MainWindow.h"
+
+#include "Shared/msg_structs.h"
+#include "Shared/errors.h"
+#include "Shared/crc32.h"
 
 #include <QDebug>
 #include <QApplication>
