@@ -19,6 +19,7 @@ TARGET = $(OBJDIR)/drquad
 INCDIRS += Source
 
 SOURCES += Source/main.c
+SOURCES += Source/errors.c
 SOURCES += Source/gpn_foo.c
 SOURCES += Source/flight_ctrl.c
 SOURCES += Source/bldc_driver.c

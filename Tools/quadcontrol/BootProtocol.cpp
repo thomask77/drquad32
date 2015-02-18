@@ -16,7 +16,8 @@
  */
 
 #include "BootProtocol.h"
-#include "../../Bootloader/msg_structs.h"
+#include "../../Source/msg_structs.h"
+#include "../../Source/errors.h"
 #include "../../Libraries/crc/crc32.h"
 #include "IntelHexFile.h"
 #include "MainWindow.h"
@@ -63,21 +64,27 @@ bool BootProtocol::bootGetResponse(msg_boot_response *response, int timeout)
 {
     while (timeout > 0) {
         while (!messageQueue.isEmpty()) {
-            auto msg = messageQueue.dequeue();
-            if (msg.h.id == MSG_ID_BOOT_RESPONSE) {
-//tk TODO                qDebug() << "BOOT_RESPONSE: " << msg.data;
+            const auto msg = messageQueue.dequeue();
 
-                *response = *(msg_boot_response*)&msg;
+            if (msg.h.id == MSG_ID_BOOT_RESPONSE) {
+                const auto res = (const msg_boot_response&)msg;
+                if (res.error != 0) {
+                    m_errorString = _user_strerror(res.error);
+                    return false;
+                }
+
+                if (response != NULL)
+                    *response = res;
                 return true;
             }
         }
 
         QApplication::processEvents();
-        QThread::msleep(10);
+        QThread::msleep(10);    // don't hog the cpu..
         timeout -= 10;
     }
 
-    m_errorString = "Response timed out";
+    m_errorString = _user_strerror(EMSG_TIMEOUT);
     return false;
 }
 
@@ -95,10 +102,8 @@ bool BootProtocol::bootResetHack()
 
     connection.sendMessage(&msg.h);
 
-    msg_boot_response res;
-    bootGetResponse(&res);
-
-    return true;
+    bootGetResponse(NULL, 500);
+    return true;    // ignore errors
 }
 
 
@@ -113,18 +118,7 @@ bool BootProtocol::bootEnter()
 
     connection.sendMessage(&msg.h);
 
-    msg_boot_response res;
-    if (!bootGetResponse(&res))
-        return false;
-
-    if (res.data[0] != 1) {
-        m_errorString = QString().sprintf(
-            "Can't enter bootloader: %d", res.data[0]
-        );
-        return false;
-    }
-
-    return true;
+    return bootGetResponse(NULL, 500);
 }
 
 
@@ -133,20 +127,10 @@ bool BootProtocol::bootExit()
     msg_boot_exit msg;
     msg.h.id = MSG_IG_BOOT_EXIT;
     msg.h.data_len = 0;
+
     connection.sendMessage(&msg.h);
 
-    msg_boot_response res;
-    if (!bootGetResponse(&res))
-        return false;
-
-    if (res.data[0] != 1) {
-        m_errorString = QString().sprintf(
-            "Can't exit bootloader: %d", res.data[0]
-        );
-        return false;
-    }
-
-    return true;
+    return bootGetResponse(NULL);
 }
 
 
@@ -156,22 +140,10 @@ bool BootProtocol::bootEraseSector(uint sector)
     msg.h.id = MSG_ID_BOOT_ERASE_SECTOR;
     msg.h.data_len = 4;
     msg.sector = sector;
+
     connection.sendMessage(&msg.h);
 
-    msg_boot_response res;
-    if (!bootGetResponse(&res, 2000))
-        return false;
-
-/*tk TODO
-    if (res.data[0] != FLASH_COMPLETE) {
-        m_errorString = QString().sprintf(
-            "Can't erase sector %d: %s", sector,
-            qPrintable(enumToStr((FLASH_Status)res.data[0]))
-        );
-        return false;
-    }
-*/
-    return true;
+    return bootGetResponse(NULL);
 }
 
 
@@ -220,21 +192,8 @@ bool BootProtocol::bootWriteData(uint addr, const QByteArray &data, int ack_wind
 
         // check responses later to mask the connection latency
         //
-        if (i >= ack_window) {
-            msg_boot_response res;
-
-            if (!bootGetResponse(&res))
-                return false;
-/*tk TODO
-            if (res.data[0] != FLASH_COMPLETE) {
-                m_errorString = QString().sprintf(
-                    "Can't write data at 0x%08x: %s", addr,
-                    qPrintable(enumToStr((FLASH_Status)res.data[0]))
-                );
-                return false;
-            }
-*/
-        }
+        if (i >= ack_window && !bootGetResponse(NULL))
+            return false;
     }
 
     return true;
@@ -251,12 +210,8 @@ bool BootProtocol::bootVerifyData(uint addr, const QByteArray &data)
 
     connection.sendMessage(&msg.h);
 
-    // TK TODO: Just one variable sized message!
-
-    msg_boot_response res, res2;
+    msg_boot_response res;
     if (!bootGetResponse(&res))
-        return false;
-    if (!bootGetResponse(&res2))
         return false;
 
     uint32_t remote_crc;
@@ -267,10 +222,8 @@ bool BootProtocol::bootVerifyData(uint addr, const QByteArray &data)
     local_crc = crc32_finalize(local_crc);
 
     if  (remote_crc != local_crc) {
-        m_errorString = QString().sprintf(
-            "Image CRC check failed. Expected 0x%04x, got 0x%04x",
-            local_crc, remote_crc
-        );
+        m_errorString = QString("CRC failure. Expected %1, got %2")
+                .arg(local_crc, 2, 16) .arg(remote_crc, 2, 16);
         return false;
     }
 
@@ -302,20 +255,15 @@ bool BootProtocol::sendHexFile(const QString &fileName)
         return false;
     }
 
-    QTime t0 = QTime::currentTime();
+    auto t0 = QTime::currentTime();
 
     int tries=0, ok=0;
-    while (tries++ < 100 && !ok) {
-        showProgress(tries, "Entering bootloader");
+    while (!ok) {
+        showProgress(tries++ * 10 % 100, "Entering bootloader");
         STEP( (ok=bootEnter(), true) );
     }
 
-    if (!ok) {
-        m_errorString = "Can't enter boot loader";
-        return false;
-    }
-
-    QTime t_enter = QTime::currentTime();
+    auto t_enter = QTime::currentTime();
 
     for (int i=4; i<12; i++) {
         showProgress(
@@ -325,7 +273,7 @@ bool BootProtocol::sendHexFile(const QString &fileName)
         STEP( bootEraseSector(i) );
     }
 
-    QTime t_erase = QTime::currentTime();
+    auto t_erase = QTime::currentTime();
 
     for (auto s: ih.sections) {
         STEP( bootWriteData(s.offset, s.data) );
@@ -334,14 +282,14 @@ bool BootProtocol::sendHexFile(const QString &fileName)
         STEP( bootVerifyData(s.offset, s.data) );
     }
 
-    QTime t_write = QTime::currentTime();
+    auto t_write = QTime::currentTime();
 
     showProgress(90, "Starting application");
     STEP( bootExit() );
 
     showProgress(100, "Done.");
 
-    QTime t_total =  QTime::currentTime();
+    auto t_total =  QTime::currentTime();
 
     qDebug("  Enter:  %d ms", t0.msecsTo(t_enter));
     qDebug("  Erase:  %d ms", t_enter.msecsTo(t_erase));

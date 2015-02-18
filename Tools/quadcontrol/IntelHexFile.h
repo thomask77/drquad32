@@ -8,10 +8,7 @@ class IntelHexFile
 {
 public:
     IntelHexFile();
-    IntelHexFile(const QString &fileName);
-    IntelHexFile(QTextStream &stream);
-
-    ~IntelHexFile();
+    virtual ~IntelHexFile();
 
     struct Section {
         uint  offset;

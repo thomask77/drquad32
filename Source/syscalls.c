@@ -168,7 +168,6 @@ void __malloc_unlock(struct _reent *r)
 }
 
 
-/* func can be NULL, in which case no function information is given.  */
 void __assert_func(const char *file, int line, const char *func, const char *failedexpr)
 {
     taskDISABLE_INTERRUPTS();

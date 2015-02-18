@@ -1,5 +1,12 @@
 #pragma once
 
+/**
+ * ATTENTION:
+ *   This file is used by the DrQuad application as well as the
+ *   Bootloader and QuadControl. Check all three if you make
+ *   modifications.
+ */
+
 #include <stdint.h>
 #include <assert.h>
 
@@ -16,6 +23,8 @@
 
 enum msg_id {
     MSG_ID_NOP                  = 0x0000,
+
+    MSG_ID_IMU_DATA             = 0x0010,
 
     MSG_ID_BOOT_ENTER           = 0xB000,
     MSG_ID_BOOT_READ_DATA       = 0xB001,
@@ -70,6 +79,17 @@ struct msg_nop
 {
     struct msg_header h;
 };
+
+
+struct msg_imu_data
+{
+    struct msg_header h;
+    float   acc_x, acc_y, acc_z;
+    float   gyro_x, gyro_y, gyro_z;
+    float   mag_x, mag_y, mag_z;
+    float   baro_hpa, baro_temp;
+};
+
 
 
 /**
@@ -143,7 +163,7 @@ struct msg_boot_exit
 struct msg_shell_to_pc
 {
     struct msg_header h;
-    uint8_t     data[MSG_MAX_DATA_SIZE];
+    uint8_t data[MSG_MAX_DATA_SIZE];
 };
 
 
@@ -153,7 +173,7 @@ struct msg_shell_to_pc
 struct msg_shell_from_pc
 {
     struct msg_header h;
-    uint8_t     data[MSG_MAX_DATA_SIZE];
+    uint8_t data[MSG_MAX_DATA_SIZE];
 };
 
 
@@ -163,7 +183,8 @@ struct msg_shell_from_pc
 struct msg_boot_response
 {
     struct msg_header h;
-    uint8_t     data[MSG_MAX_DATA_SIZE];
+    int     error;
+    uint8_t data[MSG_MAX_DATA_SIZE - 4];
 };
 
 

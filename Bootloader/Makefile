@@ -22,8 +22,9 @@ SOURCES += Bootloader/main.c
 SOURCES += Bootloader/board.c
 SOURCES += Bootloader/uart.c
 SOURCES += Bootloader/msg_packet.c
-SOURCES += Bootloader/errors.c
 SOURCES += Bootloader/version.c
+
+SOURCES += Source/errors.c
 
 # CRC functions (small table versions)
 #

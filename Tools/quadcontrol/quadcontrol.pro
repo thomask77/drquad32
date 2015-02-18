@@ -42,7 +42,8 @@ SOURCES += main.cpp \
     GLTools.cpp \
     PuTTYLauncher.cpp \
     Widgets/qcustomplot-1.3.0/qcustomplot.cpp \
-    DockWindows/AddConnectionDialog.cpp
+    DockWindows/AddConnectionDialog.cpp \
+    ../../Source/errors.c
 
 HEADERS  += MainWindow.h \
     AnsiParser.h \
@@ -67,7 +68,9 @@ HEADERS  += MainWindow.h \
     Widgets/qcustomplot-1.3.0/qcustomplot.h \
     DockWindows/AddConnectionDialog.h \
     TryAction.h \
-    InterleavedFuture.h
+    InterleavedFuture.h \
+    ../../Source/errors.h \
+    ../../Source/msg_structs.h
 
 FORMS    += MainWindow.ui \
     DockWindows/ConnectionWindow.ui \

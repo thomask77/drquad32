@@ -19,23 +19,16 @@
 #include "IntelHexFile.h"
 #include <QFile>
 
+
 IntelHexFile::IntelHexFile()
 {
 }
 
-IntelHexFile::IntelHexFile(const QString &fileName)
-{
-    loadHex(fileName);
-}
-
-IntelHexFile::IntelHexFile(QTextStream &stream)
-{
-    loadHex(stream);
-}
 
 IntelHexFile::~IntelHexFile()
 {
 }
+
 
 bool IntelHexFile::loadHex(const QString &fileName)
 {
@@ -48,6 +41,7 @@ bool IntelHexFile::loadHex(const QString &fileName)
     QTextStream stream(&file);
     return loadHex(stream);
 }
+
 
 bool IntelHexFile::loadHex(QTextStream &stream)
 {
@@ -67,10 +61,12 @@ bool IntelHexFile::loadHex(QTextStream &stream)
     return true;
 }
 
+
 QString IntelHexFile::errorString() const
 {
     return m_errorString;
 }
+
 
 int IntelHexFile::checksum(const QString &line)
 {
@@ -87,6 +83,7 @@ int IntelHexFile::checksum(const QString &line)
     return checksum;
 }
 
+
 void IntelHexFile::addData(uint address, const QByteArray &data)
 {
     if (sections.isEmpty() ||
@@ -101,6 +98,7 @@ void IntelHexFile::addData(uint address, const QByteArray &data)
 
     sections.last().data.append(data);
 }
+
 
 bool IntelHexFile::parseLine(const QString &line)
 {

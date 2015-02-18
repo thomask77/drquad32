@@ -2,7 +2,7 @@
 #define CONSOLEWINDOW_H
 
 #include "AnsiParser.h"
-#include "../../Bootloader/msg_structs.h"
+#include "../../Source/msg_structs.h"
 
 #include <QTimer>
 #include <QTextCursor>

@@ -6,7 +6,7 @@
 #include <QTimer>
 #include <QUrl>
 
-#include "../../Bootloader/msg_structs.h"
+#include "../../Source/msg_structs.h"
 
 
 class Connection : public QObject

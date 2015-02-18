@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include <QTimer>
 
+#include "../../Source/msg_structs.h"
+
 namespace Ui {
 class PlotWindow;
 }
@@ -24,6 +26,7 @@ private:
     QTimer timer;
 
     void timer_timeout();
+    void connection_messageReceived(const msg_generic &msg);
 };
 
 #endif // PLOTWINDOW_H

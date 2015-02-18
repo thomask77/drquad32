@@ -31,7 +31,7 @@ private:
     void connection_messageReceived(const msg_generic &msg);
     void showProgress(int value, const QString &text);
 
-    bool bootGetResponse(msg_boot_response *response, int timeout = 500);
+    bool bootGetResponse(msg_boot_response *response, int timeout = 2000);
     bool bootResetHack();
     bool bootEnter();
     bool bootExit();

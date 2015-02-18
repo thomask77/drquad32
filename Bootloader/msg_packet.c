@@ -3,7 +3,8 @@
 #include "uart.h"
 #include "board.h"
 #include "cobsr.h"
-#include "errors.h"
+
+#include "../Source/errors.h"
 
 #define PACKET_TIMEOUT  1000     // [ms]
 
@@ -76,7 +77,6 @@ int msg_recv(struct msg_header *msg)
     );
 
     if (cobsr_res.status != COBSR_DECODE_OK) {
-        msg_printf("dst_len = %d, rx_len = %d, status=%d", cobsr_res.status);
         errno = EMSG_COBSR;
         return -1;
     }

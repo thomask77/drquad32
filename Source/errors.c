@@ -1,6 +1,11 @@
 /**
  * User defined extension for newlib's strerror() function
  *
+ * ATTENTION:
+ *   This file is used by the DrQuad application as well as the
+ *   Bootloader and QuadControl. Check all three if you make
+ *   modifications.
+ *
  * Copyright (C)2015 Thomas Kindler <mail_drquad@t-kindler.de>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,9 +21,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include "errors.h"
-#include "small_printf.h"
+#include <stdio.h>
+
 
 const char *_user_strerror(int errnum)
 {
@@ -26,9 +31,10 @@ const char *_user_strerror(int errnum)
 
     switch (errnum) {
 
-    #undef ERRORS_H
-    #define MAKE_ERROR_TABLE
-    #define ENUM(name, desc)    case name: return desc;
+    #define _ERR_MAKE_STRING_TABLE
+    #define _ERR_GROUP(id, value)
+    #define _ERR_NAME(id, desc)  case id: return desc;
+
     #include "errors.h"
 
     default:

@@ -29,7 +29,8 @@ PlotWindow::PlotWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-//    auto qcp = new QCustomPlot();
+    connect(&mainWindow->connection, &Connection::messageReceived, this, &PlotWindow::connection_messageReceived);
+
 
     ui->plot->addGraph(); // blue line
     ui->plot->graph(0)->setPen(QPen(Qt::blue));
@@ -49,6 +50,9 @@ PlotWindow::PlotWindow(QWidget *parent)
     ui->plot->graph(3)->setPen(QPen(Qt::red));
     ui->plot->graph(3)->setLineStyle(QCPGraph::lsNone);
     ui->plot->graph(3)->setScatterStyle(QCPScatterStyle::ssDisc);
+
+    for (int i=0; i<11; i++)
+        ui->plot->addGraph();
 
     ui->plot->xAxis->setTickLabelType(QCPAxis::ltDateTime);
     ui->plot->xAxis->setDateTimeFormat("hh:mm:ss");
@@ -84,11 +88,6 @@ PlotWindow::~PlotWindow()
 
 void PlotWindow::timer_timeout()
 {
-//    auto g = qcg->graph(0);
-
-//    for (float t=0; t<M_PI*2; t+=0.01)
-//        g->addData(t, sin(t));
-
     double key = QDateTime::currentDateTime().toMSecsSinceEpoch()/1000.0;
 
     static double lastPointKey = 0;
@@ -118,3 +117,26 @@ void PlotWindow::timer_timeout()
     ui->plot->xAxis->setRange(key+0.25, 8, Qt::AlignRight);
     ui->plot->replot();
 }
+
+
+void PlotWindow::connection_messageReceived(const msg_generic &msg)
+{
+    double key = QDateTime::currentDateTime().toMSecsSinceEpoch()/1000.0;
+
+    if (msg.h.id == MSG_ID_IMU_DATA) {
+        auto imu = (const msg_imu_data&)msg;
+
+        ui->plot->graph(4)->addData(key,  imu.acc_x);
+        ui->plot->graph(5)->addData(key,  imu.acc_y);
+        ui->plot->graph(6)->addData(key,  imu.acc_z);
+        ui->plot->graph(7)->addData(key,  imu.gyro_x);
+        ui->plot->graph(8)->addData(key,  imu.gyro_y);
+        ui->plot->graph(9)->addData(key,  imu.gyro_z);
+        ui->plot->graph(10)->addData(key, imu.mag_x);
+        ui->plot->graph(11)->addData(key, imu.mag_y);
+        ui->plot->graph(12)->addData(key, imu.mag_z);
+        ui->plot->graph(13)->addData(key, imu.baro_hpa);
+        ui->plot->graph(14)->addData(key, imu.baro_temp);
+    }
+}
+

@@ -79,6 +79,7 @@ struct stats {
     double mean, var, std;   ///< Mean, variance and standard deviation
 };
 
+
 void  stats_update(struct stats *s, double val);
 void  stats_reset(struct stats *s);
 
