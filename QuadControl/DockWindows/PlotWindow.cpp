@@ -89,6 +89,8 @@ PlotWindow::~PlotWindow()
 
 void PlotWindow::timer_timeout()
 {
+    /*
+
     double key = QDateTime::currentDateTime().toMSecsSinceEpoch()/1000.0;
 
     static double lastPointKey = 0;
@@ -117,11 +119,14 @@ void PlotWindow::timer_timeout()
     //
     ui->plot->xAxis->setRange(key+0.25, 8, Qt::AlignRight);
     ui->plot->replot();
+    */
 }
 
 
 void PlotWindow::connection_messageReceived(const msg_generic &msg)
 {
+    qDebug() << "foo";
+
     double key = QDateTime::currentDateTime().toMSecsSinceEpoch()/1000.0;
 
     if (msg.h.id == MSG_ID_IMU_DATA) {
@@ -138,6 +143,15 @@ void PlotWindow::connection_messageReceived(const msg_generic &msg)
         ui->plot->graph(12)->addData(key, imu.mag_z);
         ui->plot->graph(13)->addData(key, imu.baro_hpa);
         ui->plot->graph(14)->addData(key, imu.baro_temp);
+
+        for (int i=4; i<15; i++)
+            ui->plot->graph(i)->rescaleValueAxis(true);
     }
+
+    // make key axis range scroll with the data (at a constant range size of 8):
+    //
+    ui->plot->xAxis->setRange(key+0.25, 8, Qt::AlignRight);
+    ui->plot->replot();
+
 }
 
