@@ -280,8 +280,10 @@ void ConnectionWindow::actionTerminal_triggered()
 
     // Disconnect if already connected
     //
-    if (url == old_url)
+    if (url == old_url) {
         actionDisconnect_triggered();
+        QThread::msleep(500);
+    }
 
     auto putty = new PuTTYLauncher(mainWindow);
     auto res = tryAction(
