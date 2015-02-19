@@ -120,7 +120,7 @@ def elf_to_bin(elf, elf_data):
     return str(bin_data)
 
 
-def patch_section(elf, elf_data, section, data):
+def patch_section(elf_data, section, data):
     elf_data[section.sh_offset : section.sh_offset + len(data)] = data
 
 
@@ -148,14 +148,14 @@ def patch_elf():
     
     info = VersionInfo(elf)
 
-    patch_section(elf, elf_data, section, info.pack())
+    patch_section(elf_data, section, info.pack())
 
     info.image_crc = CRC32().forge(
         0x00000000, elf_to_bin(elf, elf_data), 
         section.lma - elf.getSections()[0].lma
     )
     
-    patch_section(elf, elf_data, section, info.pack())
+    patch_section(elf_data, section, info.pack())
     
     dprint("  image_crc  = 0x%08x" % info.image_crc)
     dprint("  image_size = %d"     % info.image_size)
