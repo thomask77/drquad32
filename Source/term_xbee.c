@@ -61,13 +61,14 @@ static ssize_t xbee_write_r(struct _reent *r, int fd, const void *ptr, size_t le
     int sent = 0;
 
     while (len--) {
+/*
         // Convert c-newlines to terminal CRLF
         //
         if (*src == '\n') {
             xQueueSend(tx_queue, "\r", portMAX_DELAY);
             USART3->CR1 |= USART_CR1_TXEIE;
         }
-
+*/
         xQueueSend(tx_queue, src++, portMAX_DELAY);
         USART3->CR1 |= USART_CR1_TXEIE;
 

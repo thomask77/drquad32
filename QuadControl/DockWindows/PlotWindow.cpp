@@ -32,7 +32,6 @@ PlotWindow::PlotWindow(QWidget *parent)
 
     connect(&mainWindow->connection, &Connection::messageReceived, this, &PlotWindow::connection_messageReceived);
 
-
     ui->plot->addGraph(); // blue line
     ui->plot->graph(0)->setPen(QPen(Qt::blue));
     ui->plot->graph(0)->setBrush(QBrush(QColor(240, 255, 200)));
@@ -55,10 +54,14 @@ PlotWindow::PlotWindow(QWidget *parent)
     for (int i=0; i<11; i++)
         ui->plot->addGraph();
 
-    ui->plot->xAxis->setTickLabelType(QCPAxis::ltDateTime);
-    ui->plot->xAxis->setDateTimeFormat("hh:mm:ss");
-    ui->plot->xAxis->setAutoTickStep(false);
-    ui->plot->xAxis->setTickStep(2);
+//    ui->plot->xAxis->setTickLabelType(QCPAxis::ltDateTime);
+//    ui->plot->xAxis->setDateTimeFormat("hh:mm:ss");
+
+//    ui->plot->xAxis->setTickLabelType(QCPAxis::);
+
+//    ui->plot->xAxis->setAutoTickStep(false);
+//    ui->plot->xAxis->setTickStep(2);
+
     ui->plot->axisRect()->setupFullAxesBox();
 
     // make left and bottom axes transfer their ranges to right and top axes:
@@ -77,7 +80,7 @@ PlotWindow::PlotWindow(QWidget *parent)
     //  QCustomPlot::setNoAntialiasingOnDrag
     //
     connect(&timer, &QTimer::timeout, this, &PlotWindow::timer_timeout);
-    timer.start(30);
+    timer.start(100);
 }
 
 
@@ -86,6 +89,8 @@ PlotWindow::~PlotWindow()
     delete ui;
 }
 
+
+double key;
 
 void PlotWindow::timer_timeout()
 {
@@ -120,18 +125,23 @@ void PlotWindow::timer_timeout()
     ui->plot->xAxis->setRange(key+0.25, 8, Qt::AlignRight);
     ui->plot->replot();
     */
+
+
+    // make key axis range scroll with the data (at a constant range size of 8):
+    //
+    ui->plot->xAxis->setRange(key+1, 1000, Qt::AlignRight);
+
+    for (int i=4; i<15; i++)
+        ui->plot->graph(i)->rescaleValueAxis(true);
+
+    ui->plot->replot();
 }
 
 
 void PlotWindow::connection_messageReceived(const msg_generic &msg)
 {
-    qDebug() << "foo";
-
-    double key = QDateTime::currentDateTime().toMSecsSinceEpoch()/1000.0;
-
     if (msg.h.id == MSG_ID_IMU_DATA) {
         auto imu = (const msg_imu_data&)msg;
-
         ui->plot->graph(4)->addData(key,  imu.acc_x);
         ui->plot->graph(5)->addData(key,  imu.acc_y);
         ui->plot->graph(6)->addData(key,  imu.acc_z);
@@ -143,15 +153,7 @@ void PlotWindow::connection_messageReceived(const msg_generic &msg)
         ui->plot->graph(12)->addData(key, imu.mag_z);
         ui->plot->graph(13)->addData(key, imu.baro_hpa);
         ui->plot->graph(14)->addData(key, imu.baro_temp);
-
-        for (int i=4; i<15; i++)
-            ui->plot->graph(i)->rescaleValueAxis(true);
+        key += 1;
     }
-
-    // make key axis range scroll with the data (at a constant range size of 8):
-    //
-    ui->plot->xAxis->setRange(key+0.25, 8, Qt::AlignRight);
-    ui->plot->replot();
-
 }
 

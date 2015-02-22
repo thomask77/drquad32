@@ -49,14 +49,13 @@ int  msg_send(struct msg_header *msg)
     //
     tx_buf[res++] = 0;
 
-    write(STDOUT_FILENO, "\0", 1);
     write(STDOUT_FILENO, tx_buf, res);
 
     return msg->data_len;
 }
 
 
-static void send_imu_data(void)
+void send_imu_data(void)
 {
     struct msg_imu_data msg;
     msg.h.id = MSG_ID_IMU_DATA;
