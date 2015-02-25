@@ -62,19 +62,19 @@ void send_imu_data(void)
     msg.h.data_len = sizeof(struct msg_imu_data) -
                         sizeof(struct msg_header);
 
-    float t = xTaskGetTickCount() / 1000.0;
+    float t = xTaskGetTickCount() * M_TWOPI / 1000.0;
 
-    msg.acc_x       = sinf(t + 0.01) * 1;
-    msg.acc_y       = sinf(t + 0.02) * 2;
-    msg.acc_z       = sinf(t + 0.03) * 3;
-    msg.gyro_x      = sinf(t + 0.04) * 1;
-    msg.gyro_y      = sinf(t + 0.05) * 2;
-    msg.gyro_z      = sinf(t + 0.06) * 3;
-    msg.mag_x       = sinf(t + 0.07) * 1;
-    msg.mag_y       = sinf(t + 0.08) * 2;
-    msg.mag_z       = sinf(t + 0.09) * 3;
-    msg.baro_hpa    = sinf(t + 0.10) * 1;
-    msg.baro_temp   = sinf(t + 0.11) * 2;
+    msg.acc_x       = sinf(t + 0.0  * M_TWOPI) * 1;
+    msg.acc_y       = sinf(t + 0.1  * M_TWOPI) * 1;
+    msg.acc_z       = sinf(t + 0.2  * M_TWOPI) * 1;
+    msg.gyro_x      = sinf(t + 0.3  * M_TWOPI) * 2;
+    msg.gyro_y      = sinf(t + 0.4  * M_TWOPI) * 2;
+    msg.gyro_z      = sinf(t + 0.5  * M_TWOPI) * 2;
+    msg.mag_x       = sinf(t + 0.6  * M_TWOPI) * 3;
+    msg.mag_y       = sinf(t + 0.7  * M_TWOPI) * 3;
+    msg.mag_z       = sinf(t + 0.8  * M_TWOPI) * 3;
+    msg.baro_hpa    = sinf(t + 0.9  * M_TWOPI) * 4;
+    msg.baro_temp   = sinf(t + 0.95 * M_TWOPI) * 4;
 
     msg_send(&msg.h);
 }

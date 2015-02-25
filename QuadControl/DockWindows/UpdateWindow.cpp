@@ -18,8 +18,8 @@
 #include "UpdateWindow.h"
 
 #include "ui_UpdateWindow.h"
-#include <QSettings>
 #include <QFileSystemModel>
+#include <QSettings>
 #include <QCompleter>
 #include <QMimeData>
 #include <QFileDialog>
@@ -33,18 +33,18 @@
 #include "../TryAction.h"
 #include "MainWindow.h"
 
+
 UpdateWindow::UpdateWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::UpdateWindow)
 {
     ui->setupUi(this);
 
-    ui->lineEdit->setText( QSettings().value("update_filename").toString() );
-
     connect(ui->lineEdit, &QLineEdit::textChanged, this, &UpdateWindow::lineEdit_textChanged);
     connect(ui->browseButton, &QPushButton::clicked, this, &UpdateWindow::browseButton_clicked);
     connect(ui->updateButton, &QPushButton::clicked, this, &UpdateWindow::updateButton_clicked);
-    connect(&mainWindow->connection, &Connection::connectionChanged, this, &UpdateWindow::connectionChanged);
+    connect(&watcher, &QFileSystemWatcher::fileChanged, this, &UpdateWindow::watcher_fileChanged);
+    connect(&mainWindow->connection, &Connection::connectionChanged, this, &UpdateWindow::connection_changed);
 
     auto model = new QFileSystemModel(this);
     model->setRootPath(QDir::currentPath());
@@ -60,12 +60,33 @@ UpdateWindow::UpdateWindow(QWidget *parent)
     // that take a long time to load.
     //
     ui->lineEdit->setCompleter(completer);
+
+    QSettings s;
+    s.beginGroup(objectName());
+    ui->lineEdit->setText( s.value("filename").toString() );
+    ui->cb_updateOnFilecChange->setChecked(s.value("on_change").toBool());
 }
+
 
 UpdateWindow::~UpdateWindow()
 {
+    QSettings s;
+    s.beginGroup(objectName());
+    s.setValue("filename", ui->lineEdit->text());
+    s.setValue("on_change", ui->cb_updateOnFilecChange->isChecked());
+
     delete ui;
 }
+
+
+void UpdateWindow::watchFile(const QString &fn)
+{
+    if (watcher.files().count())
+        watcher.removePaths(watcher.files());
+
+    watcher.addPath(fn);
+}
+
 
 void UpdateWindow::dragEnterEvent(QDragEnterEvent *event)
 {
@@ -74,12 +95,14 @@ void UpdateWindow::dragEnterEvent(QDragEnterEvent *event)
         event->acceptProposedAction();
 }
 
+
 void UpdateWindow::dropEvent(QDropEvent *event)
 {
     ui->lineEdit->setText(
         event->mimeData()->urls()[0].toLocalFile()
     );
 }
+
 
 void UpdateWindow::browseButton_clicked()
 {
@@ -94,6 +117,7 @@ void UpdateWindow::browseButton_clicked()
     ui->lineEdit->setText(fn);
 }
 
+
 void UpdateWindow::updateButton_clicked()
 {
     BootProtocol bp(mainWindow->connection, mainWindow);
@@ -103,18 +127,29 @@ void UpdateWindow::updateButton_clicked()
         [&]() { return QString("Firmware update failed\n%1\n%2")
                     .arg(ui->lineEdit->text())
                     .arg(bp.errorString());
-        },
-        Qt::ArrowCursor
+        }, Qt::ArrowCursor
     );
 }
 
+
 void UpdateWindow::lineEdit_textChanged()
 {
-    QSettings().setValue("update_filename", ui->lineEdit->text());
+    watchFile(ui->lineEdit->text());
 }
 
-void UpdateWindow::connectionChanged()
+
+void UpdateWindow::connection_changed()
 {
-    auto c = (Connection*)sender();
-    ui->updateButton->setEnabled( c->isOpen() );
+    ui->updateButton->setEnabled(
+        mainWindow->connection.isOpen()
+    );
+}
+
+
+void UpdateWindow::watcher_fileChanged()
+{
+    if (ui->cb_updateOnFilecChange->isChecked())
+        updateButton_clicked();
+
+    watchFile(ui->lineEdit->text());    // renew
 }
