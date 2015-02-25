@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QTimer>
+#include <QQueue>
 
 #include "Shared/msg_structs.h"
 
@@ -24,6 +25,7 @@ private:
     Ui::PlotWindow *ui;
 
     QTimer timer;
+    QList<msg_imu_data> queue;
 
     void timer_timeout();
     void connection_messageReceived(const msg_generic &msg);

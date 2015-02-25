@@ -64,7 +64,7 @@ UpdateWindow::UpdateWindow(QWidget *parent)
     QSettings s;
     s.beginGroup(objectName());
     ui->lineEdit->setText( s.value("filename").toString() );
-    ui->cb_updateOnFilecChange->setChecked(s.value("on_change").toBool());
+    ui->cb_updateOnFileChange->setChecked(s.value("on_change").toBool());
 }
 
 
@@ -73,7 +73,7 @@ UpdateWindow::~UpdateWindow()
     QSettings s;
     s.beginGroup(objectName());
     s.setValue("filename", ui->lineEdit->text());
-    s.setValue("on_change", ui->cb_updateOnFilecChange->isChecked());
+    s.setValue("on_change", ui->cb_updateOnFileChange->isChecked());
 
     delete ui;
 }
@@ -148,7 +148,7 @@ void UpdateWindow::connection_changed()
 
 void UpdateWindow::watcher_fileChanged()
 {
-    if (ui->cb_updateOnFilecChange->isChecked())
+    if (ui->cb_updateOnFileChange->isChecked())
         updateButton_clicked();
 
     watchFile(ui->lineEdit->text());    // renew

@@ -36,7 +36,7 @@
      </layout>
     </item>
     <item>
-     <widget class="QCheckBox" name="cb_updateOnFilecChange">
+     <widget class="QCheckBox" name="cb_updateOnFileChange">
       <property name="text">
        <string>&amp;Auto update on file change</string>
       </property>
@@ -92,7 +92,7 @@
  <tabstops>
   <tabstop>lineEdit</tabstop>
   <tabstop>browseButton</tabstop>
-  <tabstop>cb_updateOnFilecChange</tabstop>
+  <tabstop>cb_updateOnFileChange</tabstop>
  </tabstops>
  <resources>
   <include location="../resources.qrc"/>

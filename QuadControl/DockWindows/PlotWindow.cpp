@@ -51,8 +51,10 @@ PlotWindow::PlotWindow(QWidget *parent)
     ui->plot->graph(3)->setLineStyle(QCPGraph::lsNone);
     ui->plot->graph(3)->setScatterStyle(QCPScatterStyle::ssDisc);
 
-    for (int i=0; i<11; i++)
-        ui->plot->addGraph();
+    ui->plot->addGraph();
+
+/*    for (int i=0; i<11; i++)
+        ui->plot->addGraph(); */
 
 //    ui->plot->xAxis->setTickLabelType(QCPAxis::ltDateTime);
 //    ui->plot->xAxis->setDateTimeFormat("hh:mm:ss");
@@ -80,7 +82,7 @@ PlotWindow::PlotWindow(QWidget *parent)
     //  QCustomPlot::setNoAntialiasingOnDrag
     //
     connect(&timer, &QTimer::timeout, this, &PlotWindow::timer_timeout);
-    timer.start(100);
+    timer.start(10);
 }
 
 
@@ -126,34 +128,38 @@ void PlotWindow::timer_timeout()
     ui->plot->replot();
     */
 
+    for (const auto &imu: queue) {
+        ui->plot->graph( 4)->addData(key, imu.acc_x);
+/*
+        ui->plot->graph( 5)->addData(key, imu.acc_y);
+        ui->plot->graph( 6)->addData(key, imu.acc_z);
+        ui->plot->graph( 7)->addData(key, imu.gyro_x);
+        ui->plot->graph( 8)->addData(key, imu.gyro_y);
+        ui->plot->graph( 9)->addData(key, imu.gyro_z);
+        ui->plot->graph(10)->addData(key, imu.mag_x);
+        ui->plot->graph(11)->addData(key, imu.mag_y);
+        ui->plot->graph(12)->addData(key, imu.mag_z);
+        ui->plot->graph(13)->addData(key, imu.baro_hpa);
+        ui->plot->graph(14)->addData(key, imu.baro_temp); */
+        key += 1;
+    }
 
-    // make key axis range scroll with the data (at a constant range size of 8):
+    queue.clear();
+
+    // make key axis range scroll with the data (at a constant range size of 1000):
     //
     ui->plot->xAxis->setRange(key+1, 1000, Qt::AlignRight);
-
+/*
     for (int i=4; i<15; i++)
         ui->plot->graph(i)->rescaleValueAxis(true);
-
+*/
     ui->plot->replot();
 }
 
 
 void PlotWindow::connection_messageReceived(const msg_generic &msg)
 {
-    if (msg.h.id == MSG_ID_IMU_DATA) {
-        auto imu = (const msg_imu_data&)msg;
-        ui->plot->graph(4)->addData(key,  imu.acc_x);
-        ui->plot->graph(5)->addData(key,  imu.acc_y);
-        ui->plot->graph(6)->addData(key,  imu.acc_z);
-        ui->plot->graph(7)->addData(key,  imu.gyro_x);
-        ui->plot->graph(8)->addData(key,  imu.gyro_y);
-        ui->plot->graph(9)->addData(key,  imu.gyro_z);
-        ui->plot->graph(10)->addData(key, imu.mag_x);
-        ui->plot->graph(11)->addData(key, imu.mag_y);
-        ui->plot->graph(12)->addData(key, imu.mag_z);
-        ui->plot->graph(13)->addData(key, imu.baro_hpa);
-        ui->plot->graph(14)->addData(key, imu.baro_temp);
-        key += 1;
-    }
+    if (msg.h.id == MSG_ID_IMU_DATA)
+        queue.append((const msg_imu_data&)msg);
 }
 
