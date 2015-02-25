@@ -30,17 +30,70 @@ PlotWindow::PlotWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    connect(&mainWindow->connection, &Connection::messageReceived, this, &PlotWindow::connection_messageReceived);
+    auto axisRect = ui->plot->axisRect();
 
-    ui->plot->addGraph(); // blue line
-    ui->plot->graph(0)->setPen(QPen(Qt::blue));
-    ui->plot->graph(0)->setBrush(QBrush(QColor(240, 255, 200)));
-    ui->plot->graph(0)->setAntialiasedFill(false);
+    // acc
+    //
+    auto axis = axisRect->axis(QCPAxis::atLeft);
+    axis->setLabel("Acceleration [m/s²]");
+    axis->setRange(-10, 10);
 
-    ui->plot->addGraph(); // red line
-    ui->plot->graph(1)->setPen(QPen(Qt::red));
-    ui->plot->graph(0)->setChannelFillGraph(ui->plot->graph(1));
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(Qt::red, 1, Qt::SolidLine));
 
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(Qt::green, 1, Qt::SolidLine));
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(Qt::blue, 1, Qt::SolidLine));
+
+    // gyro
+    //
+    axis = axisRect->addAxis(QCPAxis::atLeft);
+    axis->setLabel("Angular velocity [rad/s]");
+    axis->setRange(-300, 300);
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(Qt::red, 1, Qt::DashLine));
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(Qt::green, 1, Qt::DashLine));
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(Qt::blue, 1, Qt::DashLine));
+
+    // mag
+    //
+    axis = axisRect->addAxis(QCPAxis::atLeft);
+    axis->setLabel("Magnetic field [µT]");
+    axis->setRange(-5000, 5000);
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(Qt::red, 1, Qt::DotLine));
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(Qt::green, 1, Qt::DotLine));
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(Qt::blue, 1, Qt::DotLine));
+
+    // baro
+    //
+    axis = axisRect->addAxis(QCPAxis::atLeft);
+    axis->setLabel("Pressure [hPa]");
+    axis->setRange(900, 1100);
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(Qt::yellow));
+
+    axis = axisRect->addAxis(QCPAxis::atLeft);
+    axis->setLabel("Temperature [°C]");
+    axis->setRange(-40, 100);
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(Qt::darkYellow));
+
+/*
     ui->plot->addGraph(); // blue dot
     ui->plot->graph(2)->setPen(QPen(Qt::blue));
     ui->plot->graph(2)->setLineStyle(QCPGraph::lsNone);
@@ -50,19 +103,13 @@ PlotWindow::PlotWindow(QWidget *parent)
     ui->plot->graph(3)->setPen(QPen(Qt::red));
     ui->plot->graph(3)->setLineStyle(QCPGraph::lsNone);
     ui->plot->graph(3)->setScatterStyle(QCPScatterStyle::ssDisc);
-
     ui->plot->addGraph();
 
-/*    for (int i=0; i<11; i++)
-        ui->plot->addGraph(); */
-
-//    ui->plot->xAxis->setTickLabelType(QCPAxis::ltDateTime);
-//    ui->plot->xAxis->setDateTimeFormat("hh:mm:ss");
-
-//    ui->plot->xAxis->setTickLabelType(QCPAxis::);
-
-//    ui->plot->xAxis->setAutoTickStep(false);
-//    ui->plot->xAxis->setTickStep(2);
+    ui->plot->xAxis->setTickLabelType(QCPAxis::ltDateTime);
+    ui->plot->xAxis->setDateTimeFormat("hh:mm:ss");
+    ui->plot->xAxis->setTickLabelType(QCPAxis::);
+    ui->plot->xAxis->setAutoTickStep(false);
+    ui->plot->xAxis->setTickStep(2);
 
     ui->plot->axisRect()->setupFullAxesBox();
 
@@ -78,11 +125,15 @@ PlotWindow::PlotWindow(QWidget *parent)
         ui->plot->yAxis,   (void (QCPAxis::*)(const QCPRange &)) &QCPAxis::rangeChanged,
         ui->plot->yAxis2,  (void (QCPAxis::*)(const QCPRange &)) &QCPAxis::setRange
     );
+*/
 
-    //  QCustomPlot::setNoAntialiasingOnDrag
-    //
+/*
+    QCustomPlot::setNoAntialiasingOnDrag
+*/
+
+    connect(&mainWindow->connection, &Connection::messageReceived, this, &PlotWindow::connection_messageReceived);
     connect(&timer, &QTimer::timeout, this, &PlotWindow::timer_timeout);
-    timer.start(10);
+    timer.start(30);
 }
 
 
@@ -92,12 +143,9 @@ PlotWindow::~PlotWindow()
 }
 
 
-double key;
-
 void PlotWindow::timer_timeout()
 {
     /*
-
     double key = QDateTime::currentDateTime().toMSecsSinceEpoch()/1000.0;
 
     static double lastPointKey = 0;
@@ -128,19 +176,20 @@ void PlotWindow::timer_timeout()
     ui->plot->replot();
     */
 
+    static double key;
+
     for (const auto &imu: queue) {
-        ui->plot->graph( 4)->addData(key, imu.acc_x);
-/*
-        ui->plot->graph( 5)->addData(key, imu.acc_y);
-        ui->plot->graph( 6)->addData(key, imu.acc_z);
-        ui->plot->graph( 7)->addData(key, imu.gyro_x);
-        ui->plot->graph( 8)->addData(key, imu.gyro_y);
-        ui->plot->graph( 9)->addData(key, imu.gyro_z);
-        ui->plot->graph(10)->addData(key, imu.mag_x);
-        ui->plot->graph(11)->addData(key, imu.mag_y);
-        ui->plot->graph(12)->addData(key, imu.mag_z);
-        ui->plot->graph(13)->addData(key, imu.baro_hpa);
-        ui->plot->graph(14)->addData(key, imu.baro_temp); */
+        ui->plot->graph( 0)->addData(key, imu.acc_x);
+        ui->plot->graph( 1)->addData(key, imu.acc_y);
+        ui->plot->graph( 2)->addData(key, imu.acc_z);
+        ui->plot->graph( 3)->addData(key, imu.gyro_x);
+        ui->plot->graph( 4)->addData(key, imu.gyro_y);
+        ui->plot->graph( 5)->addData(key, imu.gyro_z);
+        ui->plot->graph( 6)->addData(key, imu.mag_x);
+        ui->plot->graph( 7)->addData(key, imu.mag_y);
+        ui->plot->graph( 8)->addData(key, imu.mag_z);
+        ui->plot->graph( 9)->addData(key, imu.baro_hpa);
+        ui->plot->graph(10)->addData(key, imu.baro_temp);
         key += 1;
     }
 
@@ -148,9 +197,9 @@ void PlotWindow::timer_timeout()
 
     // make key axis range scroll with the data (at a constant range size of 1000):
     //
-    ui->plot->xAxis->setRange(key+1, 1000, Qt::AlignRight);
-/*
-    for (int i=4; i<15; i++)
+    ui->plot->xAxis->setRange(key, 1000, Qt::AlignRight);
+
+/*    for (int i=0; i<ui->plot->graphCount(); i++)
         ui->plot->graph(i)->rescaleValueAxis(true);
 */
     ui->plot->replot();
