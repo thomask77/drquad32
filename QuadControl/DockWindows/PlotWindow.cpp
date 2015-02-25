@@ -46,6 +46,13 @@ PlotWindow::PlotWindow(QWidget *parent)
     // x-axis
     //
     ui->plot->xAxis->setLabel("Samples");
+/*
+    ui->plot->xAxis->setTickLabelType(QCPAxis::ltDateTime);
+    ui->plot->xAxis->setDateTimeFormat("hh:mm:ss");
+    ui->plot->xAxis->setTickLabelType(QCPAxis::);
+    ui->plot->xAxis->setAutoTickStep(false);
+    ui->plot->xAxis->setTickStep(2);
+*/
 
     // acc
     //
@@ -102,7 +109,7 @@ PlotWindow::PlotWindow(QWidget *parent)
     axis->setRange(900, 1100);
     axis->setSelectableParts(QCPAxis::spAxis);
     ui->plot->addGraph(ui->plot->xAxis, axis);
-    ui->plot->graph()->setPen(QPen(Qt::yellow));
+    ui->plot->graph()->setPen(QPen(Qt::cyan));
 
     // temperature
     //
@@ -112,7 +119,7 @@ PlotWindow::PlotWindow(QWidget *parent)
     axis->setSelectableParts(QCPAxis::spAxis);
 
     ui->plot->addGraph(ui->plot->xAxis, axis);
-    ui->plot->graph()->setPen(QPen(Qt::darkYellow));
+    ui->plot->graph()->setPen(QPen(Qt::magenta));
 
 /*
     ui->plot->addGraph(); // blue dot
@@ -126,11 +133,6 @@ PlotWindow::PlotWindow(QWidget *parent)
     ui->plot->graph(3)->setScatterStyle(QCPScatterStyle::ssDisc);
     ui->plot->addGraph();
 
-    ui->plot->xAxis->setTickLabelType(QCPAxis::ltDateTime);
-    ui->plot->xAxis->setDateTimeFormat("hh:mm:ss");
-    ui->plot->xAxis->setTickLabelType(QCPAxis::);
-    ui->plot->xAxis->setAutoTickStep(false);
-    ui->plot->xAxis->setTickStep(2);
 */
 
     connect(
