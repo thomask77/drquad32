@@ -4,7 +4,6 @@
 #include <QFuture>
 #include <QtConcurrent>
 
-
 template <class T, T(*F)()>
 struct InterleavedFuture {
     QFuture<T> f = QtConcurrent::run(F);
@@ -15,6 +14,5 @@ struct InterleavedFuture {
         return res;
     }
 };
-
 
 #endif

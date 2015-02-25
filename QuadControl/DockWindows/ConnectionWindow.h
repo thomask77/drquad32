@@ -33,8 +33,8 @@ private:
     // availablePorts takes fucking ages on windows,
     // so we execute it in a background thread.
     //
-    InterleavedFuture2<
-        // QList<QSerialPortInfo>,
+    InterleavedFuture<
+        QList<QSerialPortInfo>,
         &QSerialPortInfo::availablePorts
     > availablePortsAsync;
 
