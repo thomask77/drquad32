@@ -5,6 +5,7 @@
 #include <QTimer>
 #include <QQueue>
 
+#include "qcustomplot.h"
 #include "Shared/msg_structs.h"
 
 namespace Ui {
@@ -29,6 +30,9 @@ private:
 
     void timer_timeout();
     void connection_messageReceived(const msg_generic &msg);
+
+    void axisClick(QCPAxis *axis);
+
 };
 
 #endif // PLOTWINDOW_H

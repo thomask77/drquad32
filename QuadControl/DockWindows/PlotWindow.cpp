@@ -18,7 +18,6 @@
 #include "PlotWindow.h"
 
 #include "ui_PlotWindow.h"
-#include "qcustomplot.h"
 
 #include <math.h>
 #include "../MainWindow.h"
@@ -29,14 +28,31 @@ PlotWindow::PlotWindow(QWidget *parent)
     , ui(new Ui::PlotWindow)
 {
     ui->setupUi(this);
-
     auto axisRect = ui->plot->axisRect();
+
+    axisRect->setupFullAxesBox();
+
+    axisRect->setRangeDrag(Qt::Vertical);
+
+    ui->plot->setInteractions(
+        QCP::iRangeDrag |
+        QCP::iRangeZoom |
+        QCP::iMultiSelect |
+        QCP::iSelectAxes
+    );
+
+    ui->plot->setNoAntialiasingOnDrag(true);
+
+    // x-axis
+    //
+    ui->plot->xAxis->setLabel("Samples");
 
     // acc
     //
     auto axis = axisRect->axis(QCPAxis::atLeft);
     axis->setLabel("Acceleration [m/s²]");
     axis->setRange(-10, 10);
+    axis->setSelectableParts(QCPAxis::spAxis);
 
     ui->plot->addGraph(ui->plot->xAxis, axis);
     ui->plot->graph()->setPen(QPen(Qt::red, 1, Qt::SolidLine));
@@ -52,6 +68,7 @@ PlotWindow::PlotWindow(QWidget *parent)
     axis = axisRect->addAxis(QCPAxis::atLeft);
     axis->setLabel("Angular velocity [rad/s]");
     axis->setRange(-300, 300);
+    axis->setSelectableParts(QCPAxis::spAxis);
 
     ui->plot->addGraph(ui->plot->xAxis, axis);
     ui->plot->graph()->setPen(QPen(Qt::red, 1, Qt::DashLine));
@@ -67,6 +84,7 @@ PlotWindow::PlotWindow(QWidget *parent)
     axis = axisRect->addAxis(QCPAxis::atLeft);
     axis->setLabel("Magnetic field [µT]");
     axis->setRange(-5000, 5000);
+    axis->setSelectableParts(QCPAxis::spAxis);
 
     ui->plot->addGraph(ui->plot->xAxis, axis);
     ui->plot->graph()->setPen(QPen(Qt::red, 1, Qt::DotLine));
@@ -82,13 +100,16 @@ PlotWindow::PlotWindow(QWidget *parent)
     axis = axisRect->addAxis(QCPAxis::atLeft);
     axis->setLabel("Pressure [hPa]");
     axis->setRange(900, 1100);
-
+    axis->setSelectableParts(QCPAxis::spAxis);
     ui->plot->addGraph(ui->plot->xAxis, axis);
     ui->plot->graph()->setPen(QPen(Qt::yellow));
 
+    // temperature
+    //
     axis = axisRect->addAxis(QCPAxis::atLeft);
     axis->setLabel("Temperature [°C]");
     axis->setRange(-40, 100);
+    axis->setSelectableParts(QCPAxis::spAxis);
 
     ui->plot->addGraph(ui->plot->xAxis, axis);
     ui->plot->graph()->setPen(QPen(Qt::darkYellow));
@@ -110,26 +131,12 @@ PlotWindow::PlotWindow(QWidget *parent)
     ui->plot->xAxis->setTickLabelType(QCPAxis::);
     ui->plot->xAxis->setAutoTickStep(false);
     ui->plot->xAxis->setTickStep(2);
-
-    ui->plot->axisRect()->setupFullAxesBox();
-
-    // make left and bottom axes transfer their ranges to right and top axes:
-    // rangeChanged is overloaded, requiring some convoluted casts..
-    //
-    connect(
-        ui->plot->xAxis,   (void (QCPAxis::*)(const QCPRange &)) &QCPAxis::rangeChanged,
-        ui->plot->xAxis2,  (void (QCPAxis::*)(const QCPRange &)) &QCPAxis::setRange
-    );
-
-    connect(
-        ui->plot->yAxis,   (void (QCPAxis::*)(const QCPRange &)) &QCPAxis::rangeChanged,
-        ui->plot->yAxis2,  (void (QCPAxis::*)(const QCPRange &)) &QCPAxis::setRange
-    );
 */
 
-/*
-    QCustomPlot::setNoAntialiasingOnDrag
-*/
+    connect(
+        ui->plot, &QCustomPlot::axisClick,
+        this,     &PlotWindow::axisClick
+    );
 
     connect(&mainWindow->connection, &Connection::messageReceived, this, &PlotWindow::connection_messageReceived);
     connect(&timer, &QTimer::timeout, this, &PlotWindow::timer_timeout);
@@ -145,37 +152,6 @@ PlotWindow::~PlotWindow()
 
 void PlotWindow::timer_timeout()
 {
-    /*
-    double key = QDateTime::currentDateTime().toMSecsSinceEpoch()/1000.0;
-
-    static double lastPointKey = 0;
-    if (key-lastPointKey > 0.01) // at most add point every 10 ms
-    {
-        double value0 = qSin(key); //qSin(key*1.6+qCos(key*1.7)*2)*10 + qSin(key*1.2+0.56)*20 + 26;
-        double value1 = qCos(key); //qSin(key*1.3+qCos(key*1.2)*1.2)*7 + qSin(key*0.9+0.26)*24 + 26;
-        // add data to lines:
-        ui->plot->graph(0)->addData(key, value0);
-        ui->plot->graph(1)->addData(key, value1);
-        // set data of dots:
-        ui->plot->graph(2)->clearData();
-        ui->plot->graph(2)->addData(key, value0);
-        ui->plot->graph(3)->clearData();
-        ui->plot->graph(3)->addData(key, value1);
-        // remove data of lines that's outside visible range:
-        ui->plot->graph(0)->removeDataBefore(key-8);
-        ui->plot->graph(1)->removeDataBefore(key-8);
-        // rescale value (vertical) axis to fit the current data:
-        ui->plot->graph(0)->rescaleValueAxis();
-        ui->plot->graph(1)->rescaleValueAxis(true);
-        lastPointKey = key;
-    }
-
-    // make key axis range scroll with the data (at a constant range size of 8):
-    //
-    ui->plot->xAxis->setRange(key+0.25, 8, Qt::AlignRight);
-    ui->plot->replot();
-    */
-
     static double key;
 
     for (const auto &imu: queue) {
@@ -193,16 +169,12 @@ void PlotWindow::timer_timeout()
         key += 1;
     }
 
-    queue.clear();
+    if (queue.count()) {
+        ui->plot->xAxis->setRange(key + 10, 1000, Qt::AlignRight);
+        ui->plot->replot();
 
-    // make key axis range scroll with the data (at a constant range size of 1000):
-    //
-    ui->plot->xAxis->setRange(key, 1000, Qt::AlignRight);
-
-/*    for (int i=0; i<ui->plot->graphCount(); i++)
-        ui->plot->graph(i)->rescaleValueAxis(true);
-*/
-    ui->plot->replot();
+        queue.clear();
+    }
 }
 
 
@@ -210,5 +182,16 @@ void PlotWindow::connection_messageReceived(const msg_generic &msg)
 {
     if (msg.h.id == MSG_ID_IMU_DATA)
         queue.append((const msg_imu_data&)msg);
+}
+
+
+void PlotWindow::axisClick(QCPAxis *axis)
+{
+    auto axisRect = ui->plot->axisRect();
+    axisRect->setRangeDragAxes(ui->plot->xAxis, axis);
+    axisRect->setRangeZoomAxes(ui->plot->xAxis, axis);
+
+    for (auto a: axisRect->axes(QCPAxis::atLeft))
+        a->grid()->setVisible(a == axis);
 }
 
