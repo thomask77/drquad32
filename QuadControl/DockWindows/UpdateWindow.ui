@@ -71,6 +71,20 @@
        </spacer>
       </item>
       <item>
+       <widget class="QPushButton" name="rebootButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Reboot</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../resources.qrc">
+          <normaloff>:/new/prefix1/Images/arrow_refresh.png</normaloff>:/new/prefix1/Images/arrow_refresh.png</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="updateButton">
         <property name="enabled">
          <bool>false</bool>

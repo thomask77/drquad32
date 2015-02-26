@@ -30,6 +30,7 @@ private:
     void lineEdit_textChanged();
     void browseButton_clicked();
     void updateButton_clicked();
+    void rebootButton_clicked();
     void connection_changed();
     void watcher_fileChanged();
 

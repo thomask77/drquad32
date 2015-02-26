@@ -43,6 +43,7 @@ UpdateWindow::UpdateWindow(QWidget *parent)
     connect(ui->lineEdit, &QLineEdit::textChanged, this, &UpdateWindow::lineEdit_textChanged);
     connect(ui->browseButton, &QPushButton::clicked, this, &UpdateWindow::browseButton_clicked);
     connect(ui->updateButton, &QPushButton::clicked, this, &UpdateWindow::updateButton_clicked);
+    connect(ui->rebootButton, &QPushButton::clicked, this, &UpdateWindow::rebootButton_clicked);
     connect(&watcher, &QFileSystemWatcher::fileChanged, this, &UpdateWindow::watcher_fileChanged);
     connect(&mainWindow->connection, &Connection::connectionChanged, this, &UpdateWindow::connection_changed);
 
@@ -132,6 +133,13 @@ void UpdateWindow::updateButton_clicked()
 }
 
 
+void UpdateWindow::rebootButton_clicked()
+{
+    BootProtocol(mainWindow->connection, mainWindow).bootReboot();
+}
+
+
+
 void UpdateWindow::lineEdit_textChanged()
 {
     watchFile(ui->lineEdit->text());
@@ -140,9 +148,9 @@ void UpdateWindow::lineEdit_textChanged()
 
 void UpdateWindow::connection_changed()
 {
-    ui->updateButton->setEnabled(
-        mainWindow->connection.isOpen()
-    );
+    auto en = mainWindow->connection.isOpen();
+    ui->updateButton->setEnabled(en);
+    ui->rebootButton->setEnabled(en);
 }
 
 

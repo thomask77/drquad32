@@ -89,9 +89,10 @@ bool BootProtocol::bootGetResponse(msg_boot_response *response, int timeout)
 }
 
 
-bool BootProtocol::bootResetHack()
+bool BootProtocol::bootReboot()
 {
-    // Hack: send ctrl-c + reset
+    // TODO: implement reboot command in firmware
+    // HACK: send ctrl-c + reset
     //
     const char *s = "\03\nreset\n";
 
@@ -109,7 +110,7 @@ bool BootProtocol::bootResetHack()
 
 bool BootProtocol::bootEnter()
 {
-    bootResetHack();
+    bootReboot();
 
     msg_boot_enter msg;
     msg.h.id = MSG_ID_BOOT_ENTER;

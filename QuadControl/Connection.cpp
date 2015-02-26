@@ -62,7 +62,8 @@ bool Connection::openSerial(const QString &portName, int baudRate)
     auto serialPort = new QSerialPort(portName, this);
 
     if (!serialPort->open(QIODevice::ReadWrite) ||
-        !serialPort->setBaudRate(baudRate) )
+        !serialPort->setBaudRate(baudRate) ||
+        !serialPort->setFlowControl(QSerialPort::HardwareControl))
     {
         m_errorString = serialPort->errorString();
         serialPort->close();
@@ -176,6 +177,7 @@ void Connection::ioDevice_readyRead()
         return;
 
     auto buf = ioDevice->readAll();
+
     rx_buf.append(buf);
     stats.rx_bytes += buf.size();
 
