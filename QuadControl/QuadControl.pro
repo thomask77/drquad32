@@ -43,7 +43,8 @@ SOURCES += main.cpp \
     ../Shared/cobsr.c \
     ../Shared/crc16.c \
     ../Shared/crc32.c \
-    ../Shared/errors.c
+    ../Shared/errors.c \
+    TangoColors.cpp
 
 HEADERS  += MainWindow.h \
     AnsiParser.h \
@@ -69,7 +70,8 @@ HEADERS  += MainWindow.h \
     ../Shared/crc16.h \
     ../Shared/crc32.h \
     ../Shared/errors.h \
-    ../Shared/msg_structs.h
+    ../Shared/msg_structs.h \
+    TangoColors.h
 
 FORMS    += MainWindow.ui \
     DockWindows/ConnectionWindow.ui \

@@ -16,11 +16,10 @@
  */
 
 #include "PlotWindow.h"
-
 #include "ui_PlotWindow.h"
-
+#include "TangoColors.h"
+#include "MainWindow.h"
 #include <math.h>
-#include "../MainWindow.h"
 
 
 PlotWindow::PlotWindow(QWidget *parent)
@@ -53,85 +52,104 @@ PlotWindow::PlotWindow(QWidget *parent)
     ui->plot->xAxis->setTickStep(2);
 */
 
-    // acc
+    // Accelerometer
     //
     auto axis = axisRect->axis(QCPAxis::atLeft);
+    auto color = TangoColors::Aluminium6;
+    axis->setBasePen(QPen(color));
+    axis->setTickPen(QPen(color));
+    axis->setSubTickPen(QPen(color));
     axis->setLabel("Acceleration [m/s²]");
+    axis->setLabelPadding(0);
+    axis->setTickLabelRotation(-90);
     axis->setRange(-10, 10);
     axis->setSelectableParts(QCPAxis::spAxis);
 
     ui->plot->addGraph(ui->plot->xAxis, axis);
-    ui->plot->graph()->setPen(QPen(Qt::red, 1, Qt::SolidLine));
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::SolidLine));
 
     ui->plot->addGraph(ui->plot->xAxis, axis);
-    ui->plot->graph()->setPen(QPen(Qt::green, 1, Qt::SolidLine));
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::DashLine));
 
     ui->plot->addGraph(ui->plot->xAxis, axis);
-    ui->plot->graph()->setPen(QPen(Qt::blue, 1, Qt::SolidLine));
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::DotLine));
 
-    // gyro
+    // Gyroscope
     //
     axis = axisRect->addAxis(QCPAxis::atLeft);
+    color = TangoColors::ScarletRed3;
+    axis->setBasePen(QPen(color));
+    axis->setTickPen(QPen(color));
+    axis->setSubTickPen(QPen(color));
     axis->setLabel("Angular velocity [rad/s]");
+    axis->setLabelPadding(0);
+    axis->setTickLabelRotation(-90);
     axis->setRange(-300, 300);
     axis->setSelectableParts(QCPAxis::spAxis);
 
-    ui->plot->addGraph(ui->plot->xAxis, axis);
-    ui->plot->graph()->setPen(QPen(Qt::red, 1, Qt::DashLine));
 
     ui->plot->addGraph(ui->plot->xAxis, axis);
-    ui->plot->graph()->setPen(QPen(Qt::green, 1, Qt::DashLine));
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::SolidLine));
 
     ui->plot->addGraph(ui->plot->xAxis, axis);
-    ui->plot->graph()->setPen(QPen(Qt::blue, 1, Qt::DashLine));
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::DashLine));
 
-    // mag
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::DotLine));
+
+    // Magnetic sensor
     //
     axis = axisRect->addAxis(QCPAxis::atLeft);
+    color = TangoColors::Chameleon3;
+    axis->setBasePen(QPen(color));
+    axis->setTickPen(QPen(color));
+    axis->setSubTickPen(QPen(color));
     axis->setLabel("Magnetic field [µT]");
+    axis->setLabelPadding(0);
+    axis->setTickLabelRotation(-90);
     axis->setRange(-5000, 5000);
     axis->setSelectableParts(QCPAxis::spAxis);
 
     ui->plot->addGraph(ui->plot->xAxis, axis);
-    ui->plot->graph()->setPen(QPen(Qt::red, 1, Qt::DotLine));
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::SolidLine));
 
     ui->plot->addGraph(ui->plot->xAxis, axis);
-    ui->plot->graph()->setPen(QPen(Qt::green, 1, Qt::DotLine));
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::DashLine));
 
     ui->plot->addGraph(ui->plot->xAxis, axis);
-    ui->plot->graph()->setPen(QPen(Qt::blue, 1, Qt::DotLine));
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::DotLine));
 
-    // baro
+    // Barometric sensor
     //
     axis = axisRect->addAxis(QCPAxis::atLeft);
+    color = TangoColors::SkyBlue3;
+    axis->setBasePen(QPen(color));
+    axis->setTickPen(QPen(color));
+    axis->setSubTickPen(QPen(color));
     axis->setLabel("Pressure [hPa]");
+    axis->setLabelPadding(0);
+    axis->setTickLabelRotation(-90);
     axis->setRange(900, 1100);
     axis->setSelectableParts(QCPAxis::spAxis);
-    ui->plot->addGraph(ui->plot->xAxis, axis);
-    ui->plot->graph()->setPen(QPen(Qt::cyan));
 
-    // temperature
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::SolidLine));
+
+    // Temperature
     //
     axis = axisRect->addAxis(QCPAxis::atLeft);
+    color = TangoColors::Orange3;
+    axis->setBasePen(QPen(color));
+    axis->setTickPen(QPen(color));
+    axis->setSubTickPen(QPen(color));
     axis->setLabel("Temperature [°C]");
+    axis->setLabelPadding(0);
+    axis->setTickLabelRotation(-90);
     axis->setRange(-40, 100);
     axis->setSelectableParts(QCPAxis::spAxis);
 
     ui->plot->addGraph(ui->plot->xAxis, axis);
-    ui->plot->graph()->setPen(QPen(Qt::magenta));
-
-/*
-    ui->plot->addGraph(); // blue dot
-    ui->plot->graph(2)->setPen(QPen(Qt::blue));
-    ui->plot->graph(2)->setLineStyle(QCPGraph::lsNone);
-    ui->plot->graph(2)->setScatterStyle(QCPScatterStyle::ssDisc);
-
-    ui->plot->addGraph(); // red dot
-    ui->plot->graph(3)->setPen(QPen(Qt::red));
-    ui->plot->graph(3)->setLineStyle(QCPGraph::lsNone);
-    ui->plot->graph(3)->setScatterStyle(QCPScatterStyle::ssDisc);
-    ui->plot->addGraph();
-*/
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::SolidLine));
 
     connect(
         ui->plot, &QCustomPlot::axisClick,

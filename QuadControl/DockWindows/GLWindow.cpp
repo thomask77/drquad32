@@ -23,7 +23,7 @@
 #include <QSerialPortInfo>
 #include <QAction>
 
-#include "../MainWindow.h"
+#include "MainWindow.h"
 
 GLWindow::GLWindow(QWidget *parent)
     : QMainWindow(parent)

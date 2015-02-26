@@ -23,8 +23,8 @@
 #include <QDebug>
 #include <QSettings>
 
-#include "../PuTTYLauncher.h"
-#include "../TryAction.h"
+#include "PuTTYLauncher.h"
+#include "TryAction.h"
 #include "AddConnectionDialog.h"
 #include "MainWindow.h"
 

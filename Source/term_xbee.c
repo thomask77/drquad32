@@ -130,6 +130,7 @@ static void xbee_init_uart(void)
 
     // Enable peripheral clocks
     //
+    RCC->AHB1ENR |= RCC_AHB1Periph_GPIOB;
     RCC->AHB1ENR |= RCC_AHB1Periph_GPIOD;
     RCC->APB1ENR |= RCC_APB1Periph_USART3;
 

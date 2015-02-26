@@ -29,8 +29,8 @@
 #include <QByteArray>
 #include <QTime>
 
-#include "../IntelHexFile.h"
-#include "../TryAction.h"
+#include "IntelHexFile.h"
+#include "TryAction.h"
 #include "MainWindow.h"
 
 

@@ -19,8 +19,8 @@
 
 #include <QGLFormat>
 
-#include "../glut_teapot.h"
-#include "../GLTools.h"
+#include "glut_teapot.h"
+#include "GLTools.h"
 
 MyGLWidget::MyGLWidget(QWidget *parent)
     : QGLWidget(parent)
