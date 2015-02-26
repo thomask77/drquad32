@@ -31,13 +31,12 @@ PlotWindow::PlotWindow(QWidget *parent)
     auto axisRect = ui->plot->axisRect();
 
     axisRect->setupFullAxesBox();
-
-    axisRect->setRangeDrag(Qt::Vertical);
+    axisRect->setRangeDrag(0);
+    axisRect->setRangeZoom(0);
 
     ui->plot->setInteractions(
         QCP::iRangeDrag |
         QCP::iRangeZoom |
-        QCP::iMultiSelect |
         QCP::iSelectAxes
     );
 
@@ -132,7 +131,6 @@ PlotWindow::PlotWindow(QWidget *parent)
     ui->plot->graph(3)->setLineStyle(QCPGraph::lsNone);
     ui->plot->graph(3)->setScatterStyle(QCPScatterStyle::ssDisc);
     ui->plot->addGraph();
-
 */
 
     connect(
@@ -172,9 +170,10 @@ void PlotWindow::timer_timeout()
     }
 
     if (queue.count()) {
-        ui->plot->xAxis->setRange(key + 10, 1000, Qt::AlignRight);
-        ui->plot->replot();
+        if (!ui->plot->axisRect()->dragging())
+            ui->plot->xAxis->setRange(key + 10, 1000, Qt::AlignRight);
 
+        ui->plot->replot();
         queue.clear();
     }
 }
@@ -190,8 +189,19 @@ void PlotWindow::connection_messageReceived(const msg_generic &msg)
 void PlotWindow::axisClick(QCPAxis *axis)
 {
     auto axisRect = ui->plot->axisRect();
-    axisRect->setRangeDragAxes(ui->plot->xAxis, axis);
-    axisRect->setRangeZoomAxes(ui->plot->xAxis, axis);
+
+    if (axis == ui->plot->xAxis) {
+        axisRect->setRangeDrag(Qt::Horizontal);
+        axisRect->setRangeZoom(Qt::Horizontal);
+        axisRect->setRangeDragAxes(ui->plot->xAxis, NULL);
+        axisRect->setRangeZoomAxes(ui->plot->xAxis, NULL);
+    }
+    else {
+        axisRect->setRangeDrag(Qt::Vertical);
+        axisRect->setRangeZoom(Qt::Vertical);
+        axisRect->setRangeDragAxes(NULL, axis);
+        axisRect->setRangeZoomAxes(NULL, axis);
+    }
 
     for (auto a: axisRect->axes(QCPAxis::atLeft))
         a->grid()->setVisible(a == axis);
