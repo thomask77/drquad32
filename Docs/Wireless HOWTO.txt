@@ -21,7 +21,7 @@ SN,MyDevice   # Set device name
 SP,1234       # Set pin code (Default ist 1234)
 ST,255        # Enable local and remote config forever
 
-SU,921K       # 921600 Baud
+SU,115K       # 115200 Baud
 
 R,1           # Reboot.. or..
 
@@ -42,7 +42,7 @@ get everything
 # - 921600 seems to loose bytes, but 460800 works fine.
 #
 get uart
-set uart baud 460800
+set uart baud 115200
 set uart flow 1
 
 # Disable status messages
