@@ -1,0 +1,3 @@
+* memmang 4
+* ccm-ram direkt eintragen (NOLOAD)
+
