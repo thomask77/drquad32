@@ -23,6 +23,26 @@ static QueueHandle_t rx_queue = NULL;
 static QueueHandle_t tx_queue = NULL;
 
 
+int rts_hack;
+
+
+void EXTI15_10_IRQHandler(void)
+{
+    if (GPIOB->IDR & GPIO_Pin_14) {
+        rts_hack = 1;
+        USART3->CR1 &= ~USART_CR1_TXEIE;
+    }
+    else {
+        rts_hack = 0;
+        USART3->CR1 |= USART_CR1_TXEIE;
+    }
+
+    EXTI->PR = EXTI_Line14;
+    EXTI->PR;   // dummy read to prevent glitches
+}
+
+
+
 void USART3_IRQHandler(void)
 {
     portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
@@ -143,7 +163,7 @@ static void xbee_init_uart(void)
         .USART_WordLength = USART_WordLength_8b,
         .USART_StopBits = USART_StopBits_1,
         .USART_Parity = USART_Parity_No ,
-        .USART_HardwareFlowControl = USART_HardwareFlowControl_RTS_CTS,
+//        .USART_HardwareFlowControl = USART_HardwareFlowControl_RTS_CTS,  // See HACK above
         .USART_Mode = USART_Mode_Rx | USART_Mode_Tx
     });
 
@@ -214,6 +234,26 @@ void xbee_init(void)
     });
 
     USART_ITConfig(USART3, USART_IT_RXNE, ENABLE);
+
+    // Interrupt on RTS change
+    //
+    RCC->APB2ENR |= RCC_APB2Periph_SYSCFG;
+    SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOB, EXTI_PinSource14);
+
+    EXTI_Init(&(EXTI_InitTypeDef) {
+        .EXTI_Line    = EXTI_Line14,
+        .EXTI_Mode    = EXTI_Mode_Interrupt,
+        .EXTI_Trigger = EXTI_Trigger_Both,
+        .EXTI_LineCmd = ENABLE
+    });
+
+    NVIC_Init(&(NVIC_InitTypeDef) {
+        .NVIC_IRQChannel = EXTI15_10_IRQn,
+        .NVIC_IRQChannelPreemptionPriority =
+                configLIBRARY_LOWEST_INTERRUPT_PRIORITY,
+        .NVIC_IRQChannelSubPriority = 0,
+        .NVIC_IRQChannelCmd = ENABLE
+    });
 
     dev_register("xbee", &term_xbee_ops);
 }
