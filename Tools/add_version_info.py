@@ -52,8 +52,9 @@ class VersionInfo:
         self.build_date   = now.strftime("%Y-%m-%d")
         self.build_time   = now.strftime("%H:%M:%S")
 
-    def pack(self):
-        return struct.pack( self.format,
+    def pack_into(self, buffer, offset):
+        return struct.pack_into( 
+            self.format, buffer, offset,
             self.image_crc, self.image_size,
             self.git_version, 
             self.build_user, self.build_host, 
@@ -120,10 +121,6 @@ def elf_to_bin(elf, elf_data):
     return str(bin_data)
 
 
-def patch_section(elf_data, section, data):
-    elf_data[section.sh_offset : section.sh_offset + len(data)] = data
-
-
 def patch_elf():
     dprint("Loading \"%s\"..." % args.source)
 
@@ -148,14 +145,14 @@ def patch_elf():
     
     info = VersionInfo(elf)
 
-    patch_section(elf_data, section, info.pack())
+    info.pack_into(elf_data, section.sh_offset)
 
     info.image_crc = CRC32().forge(
         0x00000000, elf_to_bin(elf, elf_data), 
         section.lma - elf.getSections()[0].lma
     )
     
-    patch_section(elf_data, section, info.pack())
+    info.pack_into(elf_data, section.sh_offset)
     
     dprint("  image_crc  = 0x%08x" % info.image_crc)
     dprint("  image_size = %d"     % info.image_size)
