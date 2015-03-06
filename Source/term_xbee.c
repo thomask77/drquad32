@@ -235,6 +235,7 @@ void xbee_init(void)
 
     USART_ITConfig(USART3, USART_IT_RXNE, ENABLE);
 
+/*
     // Interrupt on RTS change
     //
     RCC->APB2ENR |= RCC_APB2Periph_SYSCFG;
@@ -243,7 +244,7 @@ void xbee_init(void)
     EXTI_Init(&(EXTI_InitTypeDef) {
         .EXTI_Line    = EXTI_Line14,
         .EXTI_Mode    = EXTI_Mode_Interrupt,
-        .EXTI_Trigger = EXTI_Trigger_Both,
+        .EXTI_Trigger = EXTI_Trigger_Rising_Falling,
         .EXTI_LineCmd = ENABLE
     });
 
@@ -254,6 +255,7 @@ void xbee_init(void)
         .NVIC_IRQChannelSubPriority = 0,
         .NVIC_IRQChannelCmd = ENABLE
     });
+*/
 
     dev_register("xbee", &term_xbee_ops);
 }
