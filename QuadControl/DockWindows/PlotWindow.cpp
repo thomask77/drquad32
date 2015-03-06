@@ -55,7 +55,7 @@ PlotWindow::PlotWindow(QWidget *parent)
     // Accelerometer
     //
     auto axis = axisRect->axis(QCPAxis::atLeft);
-    auto color = TangoColors::Aluminium6;
+    auto color = TangoColors::Aluminium4;
     axis->setBasePen(QPen(color));
     axis->setTickPen(QPen(color));
     axis->setSubTickPen(QPen(color));
@@ -77,7 +77,7 @@ PlotWindow::PlotWindow(QWidget *parent)
     // Gyroscope
     //
     axis = axisRect->addAxis(QCPAxis::atLeft);
-    color = TangoColors::ScarletRed3;
+    color = TangoColors::ScarletRed1;
     axis->setBasePen(QPen(color));
     axis->setTickPen(QPen(color));
     axis->setSubTickPen(QPen(color));
@@ -100,7 +100,7 @@ PlotWindow::PlotWindow(QWidget *parent)
     // Magnetic sensor
     //
     axis = axisRect->addAxis(QCPAxis::atLeft);
-    color = TangoColors::Chameleon3;
+    color = TangoColors::Chameleon1;
     axis->setBasePen(QPen(color));
     axis->setTickPen(QPen(color));
     axis->setSubTickPen(QPen(color));
@@ -122,7 +122,7 @@ PlotWindow::PlotWindow(QWidget *parent)
     // Barometric sensor
     //
     axis = axisRect->addAxis(QCPAxis::atLeft);
-    color = TangoColors::SkyBlue3;
+    color = TangoColors::SkyBlue1;
     axis->setBasePen(QPen(color));
     axis->setTickPen(QPen(color));
     axis->setSubTickPen(QPen(color));
@@ -138,7 +138,7 @@ PlotWindow::PlotWindow(QWidget *parent)
     // Temperature
     //
     axis = axisRect->addAxis(QCPAxis::atLeft);
-    color = TangoColors::Orange3;
+    color = TangoColors::Orange1;
     axis->setBasePen(QPen(color));
     axis->setTickPen(QPen(color));
     axis->setSubTickPen(QPen(color));
