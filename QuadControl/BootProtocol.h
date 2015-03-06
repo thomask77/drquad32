@@ -15,7 +15,7 @@ class BootProtocol : public QObject
     Q_OBJECT
 
 public:
-    BootProtocol(Connection &connection, QWidget *parent = 0);
+    BootProtocol(Connection &connection, QObject *parent = 0);
     ~BootProtocol();
 
     QString errorString();
