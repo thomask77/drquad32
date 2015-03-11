@@ -64,8 +64,9 @@ UpdateWindow::UpdateWindow(QWidget *parent)
 
     QSettings s;
     s.beginGroup(objectName());
-    ui->lineEdit->setText( s.value("filename").toString() );
-    ui->cb_updateOnFileChange->setChecked(s.value("on_change").toBool());
+    ui->lineEdit->setText(s.value("filename").toString());
+    ui->cbUpdateOnFileChange->setChecked(s.value("onChange").toBool());
+    ui->sbAckWindow->setValue(s.value("ackWindow").toInt());
 }
 
 
@@ -74,8 +75,8 @@ UpdateWindow::~UpdateWindow()
     QSettings s;
     s.beginGroup(objectName());
     s.setValue("filename", ui->lineEdit->text());
-    s.setValue("on_change", ui->cb_updateOnFileChange->isChecked());
-
+    s.setValue("onChange", ui->cbUpdateOnFileChange->isChecked());
+    s.setValue("ackWindow", ui->sbAckWindow->value());
     delete ui;
 }
 
@@ -126,6 +127,8 @@ void UpdateWindow::updateButton_clicked()
 
     BootProtocol bp(mainWindow->connection);
 
+    bp.ack_window = ui->sbAckWindow->value();
+
     tryAction(
         [&]() { return bp.sendHexFile(ui->lineEdit->text()); },
         [&]() { return QString("Firmware update failed\n%1\n%2")
@@ -159,7 +162,7 @@ void UpdateWindow::connection_changed()
 
 void UpdateWindow::watcher_fileChanged()
 {
-    if (ui->cb_updateOnFileChange->isChecked())
+    if (ui->cbUpdateOnFileChange->isChecked())
         updateButton_clicked();
 
     watchFile(ui->lineEdit->text());    // renew

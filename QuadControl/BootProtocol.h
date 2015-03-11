@@ -20,6 +20,8 @@ public:
 
     QString errorString();
 
+    int ack_window = 10;
+
     bool bootReboot();
     bool sendHexFile(const QString &fileName);
 
@@ -37,7 +39,7 @@ private:
     bool bootExit();
     bool bootEraseSector(uint sector);
     bool bootWriteDataAsync(uint addr, const QByteArray &data);
-    bool bootWriteData(uint addr, const QByteArray &data, int ack_window = 10);
+    bool bootWriteData(uint addr, const QByteArray &data);
     bool bootVerifyData(uint addr, const QByteArray &data);
 };
 
