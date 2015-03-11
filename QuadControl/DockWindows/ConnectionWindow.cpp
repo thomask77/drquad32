@@ -167,7 +167,7 @@ void ConnectionWindow::timer_timeout()
         QUrl url;
         url.setScheme("serial");
         url.setPath(p.portName());
-        url.setQuery("115200");
+        url.setQuery("460800");
 
         item->setData(0, Qt::UserRole, url);
         item->setToolTip(0, url.toEncoded());
@@ -282,7 +282,7 @@ void ConnectionWindow::actionTerminal_triggered()
     //
     if (url == old_url) {
         actionDisconnect_triggered();
-        QThread::msleep(500);
+        QThread::msleep(1000);
     }
 
     auto putty = new PuTTYLauncher(mainWindow);

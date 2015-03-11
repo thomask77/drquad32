@@ -15,7 +15,11 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-#define XBEE_BAUDRATE       115200
+// #define XBEE_BAUDRATE  115200
+// #define XBEE_BAUDRATE  230400
+#define XBEE_BAUDRATE  460800
+// #define XBEE_BAUDRATE  921600
+
 #define BOOT_TIMEOUT        2000        // [ms]
 
 #define APP_START           0x08010000
