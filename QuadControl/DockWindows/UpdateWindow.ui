@@ -36,7 +36,47 @@
      </layout>
     </item>
     <item>
-     <widget class="QCheckBox" name="cb_updateOnFileChange">
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Acknowledge &amp;Window</string>
+        </property>
+        <property name="buddy">
+         <cstring>sbAckWindow</cstring>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSpinBox" name="sbAckWindow">
+        <property name="minimum">
+         <number>0</number>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>16</number>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QCheckBox" name="cbUpdateOnFileChange">
       <property name="text">
        <string>&amp;Auto update on file change</string>
       </property>
@@ -106,7 +146,10 @@
  <tabstops>
   <tabstop>lineEdit</tabstop>
   <tabstop>browseButton</tabstop>
-  <tabstop>cb_updateOnFileChange</tabstop>
+  <tabstop>sbAckWindow</tabstop>
+  <tabstop>cbUpdateOnFileChange</tabstop>
+  <tabstop>rebootButton</tabstop>
+  <tabstop>updateButton</tabstop>
  </tabstops>
  <resources>
   <include location="../resources.qrc"/>

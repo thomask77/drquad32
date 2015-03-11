@@ -165,17 +165,16 @@ bool BootProtocol::bootWriteDataAsync(uint addr, const QByteArray &data)
 }
 
 
-bool BootProtocol::bootWriteData(uint addr, const QByteArray &data, int ack_window)
+bool BootProtocol::bootWriteData(uint addr, const QByteArray &data)
 {
     static const int chunk_size = sizeof(msg_boot_write_data::data);
 
     int chunks = (data.length() + chunk_size - 1) / chunk_size;
     int offset = 0;
 
-    if (ack_window > chunks)
-        ack_window = chunks;
+    int window = std::min(ack_window, chunks);
 
-    for (int i=0; i < chunks + ack_window; i++) {
+    for (int i=0; i < chunks + window; i++) {
         // send data
         //
         if (i < chunks) {
@@ -193,7 +192,7 @@ bool BootProtocol::bootWriteData(uint addr, const QByteArray &data, int ack_wind
 
         // check responses later to mask the connection latency
         //
-        if (i >= ack_window && !bootGetResponse(NULL))
+        if (i >= window && !bootGetResponse(NULL))
             return false;
     }
 
