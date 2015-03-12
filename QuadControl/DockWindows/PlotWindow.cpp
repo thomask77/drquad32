@@ -59,8 +59,8 @@ PlotWindow::PlotWindow(QWidget *parent)
     axis->setBasePen(QPen(color));
     axis->setTickPen(QPen(color));
     axis->setSubTickPen(QPen(color));
-    axis->setLabel("Acceleration [m/s²]");
-    axis->setLabelPadding(0);
+    axis->setLabel("m/s²");
+    axis->setLabelPadding(-16);
     axis->setTickLabelRotation(-90);
     axis->setRange(-10, 10);
     axis->setSelectableParts(QCPAxis::spAxis);
@@ -81,8 +81,9 @@ PlotWindow::PlotWindow(QWidget *parent)
     axis->setBasePen(QPen(color));
     axis->setTickPen(QPen(color));
     axis->setSubTickPen(QPen(color));
-    axis->setLabel("Angular velocity [rad/s]");
-    axis->setLabelPadding(0);
+    axis->setLabel("rad/s");
+    axis->setLabelPadding(-16);
+
     axis->setTickLabelRotation(-90);
     axis->setRange(-300, 300);
     axis->setSelectableParts(QCPAxis::spAxis);
@@ -104,8 +105,8 @@ PlotWindow::PlotWindow(QWidget *parent)
     axis->setBasePen(QPen(color));
     axis->setTickPen(QPen(color));
     axis->setSubTickPen(QPen(color));
-    axis->setLabel("Magnetic field [µT]");
-    axis->setLabelPadding(0);
+    axis->setLabel("µT");
+    axis->setLabelPadding(-16);
     axis->setTickLabelRotation(-90);
     axis->setRange(-5000, 5000);
     axis->setSelectableParts(QCPAxis::spAxis);
@@ -126,8 +127,8 @@ PlotWindow::PlotWindow(QWidget *parent)
     axis->setBasePen(QPen(color));
     axis->setTickPen(QPen(color));
     axis->setSubTickPen(QPen(color));
-    axis->setLabel("Pressure [hPa]");
-    axis->setLabelPadding(0);
+    axis->setLabel("hPa");
+    axis->setLabelPadding(-16);
     axis->setTickLabelRotation(-90);
     axis->setRange(900, 1100);
     axis->setSelectableParts(QCPAxis::spAxis);
@@ -142,8 +143,8 @@ PlotWindow::PlotWindow(QWidget *parent)
     axis->setBasePen(QPen(color));
     axis->setTickPen(QPen(color));
     axis->setSubTickPen(QPen(color));
-    axis->setLabel("Temperature [°C]");
-    axis->setLabelPadding(0);
+    axis->setLabel("°C");
+    axis->setLabelPadding(-16);
     axis->setTickLabelRotation(-90);
     axis->setRange(-40, 100);
     axis->setSelectableParts(QCPAxis::spAxis);
