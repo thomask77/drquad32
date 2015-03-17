@@ -16,12 +16,12 @@ A work-around seems to be the latency-optimized mode "SQ,16".
 
 
 $$$             # Enter command mode
-             
-SU,460          # 460800 Baud
-SQ,16           # Optimize for Latency (see above)
-
+ST,255          # Enable local and remote config forever             
 SN,MyDevice     # Set device name
 SP,1234         # Set pin code (Default is 1234)
+
+SU,460          # 460800 Baud
+SQ,16           # Optimize for Latency (see above)
 
 R,1             # Reboot
 
