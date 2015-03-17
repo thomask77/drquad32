@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
 #
 # Copyright(c) 2013 StalkR <github-misc@stalkr.net>
 # Copyright(c) 2015 Thomas Kindler <mail_git@t-kindler.de> 
