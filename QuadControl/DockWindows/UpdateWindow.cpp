@@ -40,11 +40,10 @@ UpdateWindow::UpdateWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    connect(ui->lineEdit, &QLineEdit::textChanged, this, &UpdateWindow::lineEdit_textChanged);
     connect(ui->browseButton, &QPushButton::clicked, this, &UpdateWindow::browseButton_clicked);
     connect(ui->updateButton, &QPushButton::clicked, this, &UpdateWindow::updateButton_clicked);
     connect(ui->rebootButton, &QPushButton::clicked, this, &UpdateWindow::rebootButton_clicked);
-    connect(&watcher, &QFileSystemWatcher::fileChanged, this, &UpdateWindow::watcher_fileChanged);
+    connect(ui->lineEdit, &QLineEdit::textChanged, this, &UpdateWindow::lineEdit_textChanged);
     connect(&mainWindow->connection, &Connection::connectionChanged, this, &UpdateWindow::connection_changed);
 
     auto model = new QFileSystemModel(this);
@@ -67,6 +66,9 @@ UpdateWindow::UpdateWindow(QWidget *parent)
     ui->lineEdit->setText(s.value("filename").toString());
     ui->cbUpdateOnFileChange->setChecked(s.value("onChange").toBool());
     ui->sbAckWindow->setValue( s.value("ackWindow", ui->sbAckWindow->value() ).toInt());
+
+    connect(&timer, &QTimer::timeout, this, &UpdateWindow::timer_timeout);
+    timer.start(1000);
 }
 
 
@@ -78,15 +80,6 @@ UpdateWindow::~UpdateWindow()
     s.setValue("onChange", ui->cbUpdateOnFileChange->isChecked());
     s.setValue("ackWindow", ui->sbAckWindow->value());
     delete ui;
-}
-
-
-void UpdateWindow::watchFile(const QString &fn)
-{
-    if (watcher.files().count())
-        watcher.removePaths(watcher.files());
-
-    watcher.addPath(fn);
 }
 
 
@@ -145,13 +138,6 @@ void UpdateWindow::rebootButton_clicked()
 }
 
 
-
-void UpdateWindow::lineEdit_textChanged()
-{
-    watchFile(ui->lineEdit->text());
-}
-
-
 void UpdateWindow::connection_changed()
 {
     auto en = mainWindow->connection.isOpen();
@@ -160,10 +146,21 @@ void UpdateWindow::connection_changed()
 }
 
 
-void UpdateWindow::watcher_fileChanged()
+void UpdateWindow::lineEdit_textChanged()
 {
-    if (ui->cbUpdateOnFileChange->isChecked())
-        updateButton_clicked();
+    QFileInfo fi(ui->lineEdit->text());
+    lastModified = fi.lastModified();
+}
 
-    watchFile(ui->lineEdit->text());    // renew
+
+void UpdateWindow::timer_timeout()
+{
+    if (!ui->cbUpdateOnFileChange->isChecked())
+        return;
+
+    QFileInfo fi(ui->lineEdit->text());
+    if (fi.exists() && lastModified != fi.lastModified()) {
+        updateButton_clicked();
+        lastModified = fi.lastModified();
+    }
 }
