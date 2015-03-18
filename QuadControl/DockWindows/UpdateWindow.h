@@ -5,7 +5,6 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QProgressDialog>
-#include <QFileSystemWatcher>
 
 #include "../BootProtocol.h"
 
@@ -23,16 +22,16 @@ public:
 
 private:
     Ui::UpdateWindow *ui;
-    QFileSystemWatcher watcher;
+    QTimer timer;
+    QDateTime lastModified;
 
-    void watchFile(const QString &fn);
-
-    void lineEdit_textChanged();
     void browseButton_clicked();
     void updateButton_clicked();
     void rebootButton_clicked();
     void connection_changed();
-    void watcher_fileChanged();
+
+    void lineEdit_textChanged();
+    void timer_timeout();
 
     virtual void dragEnterEvent(QDragEnterEvent *event) override;
     virtual void dropEvent(QDropEvent *event) override;
