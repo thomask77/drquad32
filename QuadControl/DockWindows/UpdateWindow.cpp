@@ -66,7 +66,7 @@ UpdateWindow::UpdateWindow(QWidget *parent)
     s.beginGroup(objectName());
     ui->lineEdit->setText(s.value("filename").toString());
     ui->cbUpdateOnFileChange->setChecked(s.value("onChange").toBool());
-    ui->sbAckWindow->setValue(s.value("ackWindow").toInt());
+    ui->sbAckWindow->setValue( s.value("ackWindow", ui->sbAckWindow->value() ).toInt());
 }
 
 
