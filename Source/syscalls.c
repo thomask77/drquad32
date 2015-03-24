@@ -205,3 +205,9 @@ void vApplicationStackOverflowHook(TaskHandle_t *pxTask, char *pcTaskName)
     __BKPT(2);
     for(;;);
 }
+
+
+void vApplicationMallocFailedHook(void)
+{
+    assert(0 && "malloc failed");
+}

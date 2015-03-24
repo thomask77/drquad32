@@ -1,8 +1,9 @@
 # Optimization level, can be [0, 1, 2, 3, s]. 
 #     0 = turn off optimization. s = optimize for size.
 # 
-OPT = -O2 -flto
+
 # OPT = -O1         # for debugging
+OPT = -O2
 
 BOARD ?= REV_A
 
@@ -77,7 +78,7 @@ SOURCES   += $(FATFS_DIR)/ff.c
 
 # FreeRTOS
 #
-FREERTOS_BASE = Libraries/FreeRTOSV8.1.2
+FREERTOS_BASE = Libraries/FreeRTOSV8.2.1
 FREERTOS_DIR = $(FREERTOS_BASE)/FreeRTOS/Source
 
 INCDIRS += $(FREERTOS_DIR)/include
@@ -88,6 +89,7 @@ SOURCES += $(FREERTOS_DIR)/queue.c
 SOURCES += $(FREERTOS_DIR)/list.c
 SOURCES += $(FREERTOS_DIR)/croutine.c
 SOURCES += $(FREERTOS_DIR)/portable/GCC/ARM_CM4F/port.c
+SOURCES += $(FREERTOS_DIR)/portable/MemMang/heap_4.c
 
 # Tracealyzer
 #

@@ -25,6 +25,11 @@
 
 #include "matrix3f.h"
 
+// see heap_4.c
+//
+uint8_t ucHeap[configTOTAL_HEAP_SIZE]
+    __attribute__ ((section(".ccmram")));
+
 static TaskHandle_t wdog_handle;
 static TaskHandle_t sensor_handle;
 static TaskHandle_t led_handle;
@@ -32,6 +37,7 @@ static TaskHandle_t shell_handle;
 static TaskHandle_t usb_handle;
 static TaskHandle_t bldc_handle;
 static TaskHandle_t flight_handle;
+
 
 static void init_task(void *pvParameters)
 {
