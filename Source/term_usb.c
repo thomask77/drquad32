@@ -52,7 +52,7 @@ static uint16_t VCP_DataTx(uint8_t *buf, uint32_t len)
 {
     portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 
-    for (int i=0; i<uxQueueMessagesWaitingFromISR(tx_queue); i++)
+    for (uint32_t i=0; i<uxQueueMessagesWaitingFromISR(tx_queue); i++)
     {
         char c;
         xQueueReceiveFromISR(tx_queue, &c, &xHigherPriorityTaskWoken);
@@ -76,7 +76,7 @@ static uint16_t VCP_DataRx(uint8_t *buf, uint32_t len)
 {
     portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 
-    for (int i=0; i<len; i++) {
+    for (uint32_t i=0; i<len; i++) {
         if (xQueueSendFromISR(rx_queue, &buf[i], &xHigherPriorityTaskWoken))
             usb_stats.rx_bytes++;
         else
@@ -102,7 +102,7 @@ const CDC_IF_Prop_TypeDef VCP_fops = {
 static ssize_t usb_write_r(struct _reent *r, int fd, const void *ptr, size_t len)
 {
     const char *src = ptr;
-    int sent = 0;
+    ssize_t sent = 0;
 
     while (len--) {
         // Convert c-newlines to terminal CRLF
@@ -124,7 +124,7 @@ static ssize_t usb_read_r(struct _reent *r, int fd, void *ptr, size_t len)
     unsigned timeout = portMAX_DELAY;
 
     char *dest = ptr;
-    int  received = 0;
+    ssize_t  received = 0;
     static char last_c;
 
     while (len--) {
