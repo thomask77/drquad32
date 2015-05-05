@@ -1,0 +1,10 @@
+DMA1_Stream0    I2C1_RX
+DMA1_Stream1    TODO: USART3_RX
+DMA1_Stream3    TODO: USART3_TX
+DMA1_Stream7    I2C1_TX
+
+DMA2_Stream0    BLDC ADCs
+DMA2_Stream2    DMA I/O: ws2812_bits -> BSSRL 
+DMA2_Stream3    DMA I/O: tx_dma_buf  -> BSSRH
+DMA2_Stream4    DMA I/O: ws2812_bits -> BSSRH 
+DMA2_Stream7    DMA I/O: PWM Input
