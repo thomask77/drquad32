@@ -1,6 +1,7 @@
 #pragma once
 
 #include "matrix3f.h"
+#include "sensors.h"
 
 struct dcm {
     mat3f matrix;       ///< current direction cosine matrix
@@ -23,5 +24,5 @@ struct dcm {
 
 extern struct dcm dcm;
 
-extern void dcm_update(vec3f gyro, vec3f acc, float dt);
+extern void dcm_update(struct sensor_data *sensor, float dt);
 extern void dcm_reset(void);

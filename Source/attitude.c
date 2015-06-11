@@ -1,5 +1,6 @@
 #include "attitude.h"
 #include "util.h"
+#include "sensors.h"
 #include <stdio.h>
 
 struct dcm dcm = {
@@ -63,13 +64,13 @@ static mat3f dcm_integrate(mat3f A, vec3f w, float dt)
 }
 
 
-extern void dcm_update(vec3f gyro, vec3f acc, float dt)
+extern void dcm_update(struct sensor_data *sensor, float dt)
 {
     dcm.offset_p = vec3f_zero;
 
     // Apply accelerometer correction
     //
-    vec3f down  = vec3f_matmul(dcm.matrix, vec3f_norm(acc));
+    vec3f down  = vec3f_matmul(dcm.matrix, vec3f_norm(sensor->acc));
     vec3f error = vec3f_cross(down, dcm.down_ref);
 
     dcm.debug = error;
@@ -81,7 +82,7 @@ extern void dcm_update(vec3f gyro, vec3f acc, float dt)
 
     // Calculate drift-corrected roll, pitch and yaw angles
     //
-    dcm.omega = gyro;
+    dcm.omega = sensor->gyro;
     dcm.omega = vec3f_add(dcm.omega, dcm.offset_p);
     dcm.omega = vec3f_add(dcm.omega, dcm.offset_i);
 
