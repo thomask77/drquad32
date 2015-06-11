@@ -4,28 +4,27 @@ Wireless HOWTO
 
 Bluetooth with Microchip RN41XV / RN42XV
 ========================================
+
 The modules can be configured remotely for up to 60s after power-on.
-(See configuration timer settings in the manual).
+
+Important 
+---------
+The bluetooth firmware has reliability problems with baudrates > 57600,
+leading to stuttering data transfers and random disconnects.
+  
+A work-around seems to be the latency-optimized mode "SQ,16".
 
 
-$$$           # Enter command mode
+$$$             # Enter command mode
+ST,255          # Enable local and remote config forever             
+SN,MyDevice     # Set device name
+SP,1234         # Set pin code (Default is 1234)
 
-X             # Check configuration
-H             # See list of commands
+SU,460          # 460800 Baud
+SQ,16           # Optimize for Latency (see above)
 
-L             # Toggle link quality display
-              # First byte : 00 .. FF (worst .. best) 
-              # Second byte: low watermark
-             
-SN,MyDevice   # Set device name
-SP,1234       # Set pin code (Default ist 1234)
-ST,255        # Enable local and remote config forever
+R,1             # Reboot
 
-SU,921K       # 921600 Baud
-
-R,1           # Reboot.. or..
-
----           # Exit command mode
 
 
 WLAN with Microchip WiFly RN171XV
@@ -39,10 +38,10 @@ $$$
 get everything
 
 # Set up UART
-# - 921600 seems to loose bytes, but 460800 works fine.
+# - 921600 looses bytes, but 460800 works fine.
 #
 get uart
-set uart baud 460800
+set uart baud 466800
 set uart flow 1
 
 # Disable status messages
@@ -97,7 +96,6 @@ For Firmware >= 4.0.0
 ---------------------
 
 # http://www.curiousmarc.com/r2-touch-r2-d2-remote-control-iphone-app/setting-up-the-wifly-radio
-
 
 set ip dhcp 4
 

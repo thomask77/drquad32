@@ -166,7 +166,7 @@ void MainWindow::actionAbout_triggered()
 {
     QMessageBox::about(this,
         "QuadControl",
-        "Copyright (c)2015 Thomas Kindler <a href=\"mailto:mail@t-kindler.de\">&lt;mail@t-kindler.de&gt;</a>"
+        "Copyright (c)2015 Thomas Kindler <a href=\"mailto:mail_drquad@t-kindler.de\">&lt;mail_drquad@t-kindler.de&gt;</a>"
         "<p>"
         "This program is free software: you can redistribute it and/or modify "
         "it under the terms of the GNU General Public License as published by "

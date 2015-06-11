@@ -97,6 +97,9 @@ static void init_task(void *pvParameters)
 //    xTaskCreate(gpn_foo_task, "gpn_foo", 1024, NULL, 1, NULL);
 //    vTaskDelay(100);
 
+    while (!stdin_chars_avail())
+        send_imu_data();
+
     // We're not needed any more.
     //
     vTaskDelete(NULL);

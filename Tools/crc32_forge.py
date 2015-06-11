@@ -1,6 +1,16 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
 #
-# Copyright 2013 StalkR <github-misc@stalkr.net>
+# Copyright(c) 2013 StalkR <github-misc@stalkr.net>
+# Copyright(c) 2015 Thomas Kindler <mail_git@t-kindler.de> 
+#
+# 2015-01-29, tk:  
+#   Changed forge() semantics to /change/ the bytes at pos instead of
+#   inserting there. Also return the forged CRC instead of changed data.
+#
+# 2015-01-28, tk:  
+#   Taken from github, added copyright header. See
+#       https://github.com/StalkR/misc/blob/master/crypto/crc32.py
+#       http://blog.stalkr.net/2011/03/crc-32-forging.html
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,17 +23,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-#
-# 2015-01-28, Thomas Kindler <mail@t-kindler.de>: 
-#
-#    * Taken from github, added copyright header. See:
-#        https://github.com/StalkR/misc/blob/master/crypto/crc32.py
-#        http://blog.stalkr.net/2011/03/crc-32-forging.html
-#
-#    * Changed forge() semantics to /change/ the bytes at pos instead of
-#      inserting there. Also return the forged CRC instead of changed data.
-#
 #
 
 """Calculate and manipulate CRC32.

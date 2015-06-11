@@ -8,6 +8,7 @@
  */
 
 #include <stdint.h>
+#include <stddef.h>
 #include <assert.h>
 
 // XBee Series 1:           100 bytes

@@ -23,8 +23,8 @@
 #include <QDebug>
 #include <QSettings>
 
-#include "../PuTTYLauncher.h"
-#include "../TryAction.h"
+#include "PuTTYLauncher.h"
+#include "TryAction.h"
 #include "AddConnectionDialog.h"
 #include "MainWindow.h"
 
@@ -167,7 +167,7 @@ void ConnectionWindow::timer_timeout()
         QUrl url;
         url.setScheme("serial");
         url.setPath(p.portName());
-        url.setQuery("115200");
+        url.setQuery("460800");
 
         item->setData(0, Qt::UserRole, url);
         item->setToolTip(0, url.toEncoded());
@@ -280,8 +280,10 @@ void ConnectionWindow::actionTerminal_triggered()
 
     // Disconnect if already connected
     //
-    if (url == old_url)
+    if (url == old_url) {
         actionDisconnect_triggered();
+        QThread::msleep(1000);
+    }
 
     auto putty = new PuTTYLauncher(mainWindow);
     auto res = tryAction(

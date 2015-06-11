@@ -19,6 +19,7 @@ TARGET = $(OBJDIR)/drquad
 INCDIRS += .
 INCDIRS += Source
 
+SOURCES += Source/test.c
 SOURCES += Source/main.c
 SOURCES += Source/gpn_foo.c
 SOURCES += Source/flight_ctrl.c
@@ -134,18 +135,20 @@ STDPERIPH_DIR = Libraries/STM32F4xx_StdPeriph_Driver-1.4.0
 INCDIRS += $(STDPERIPH_DIR)/inc
 
 SOURCES += $(STDPERIPH_DIR)/src/misc.c
-SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_spi.c
-SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_i2c.c
-SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_dma.c
 SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_adc.c
 SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_dac.c
+SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_dma.c
 SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_exti.c
+SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_flash.c
+SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_gpio.c
+SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_i2c.c
 SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_iwdg.c
 SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_rcc.c
-SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_usart.c
-SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_gpio.c
-SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_flash.c
+SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_spi.c
+SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_syscfg.c
 SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_tim.c
+SOURCES += $(STDPERIPH_DIR)/src/stm32f4xx_usart.c
+
 
 # CMSIS-Library
 #

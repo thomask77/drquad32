@@ -29,8 +29,8 @@
 #include <QMessageBox>
 #include <QScrollBar>
 
-#include "../MainWindow.h"
-#include "../TryAction.h"
+#include "MainWindow.h"
+#include "TryAction.h"
 
 static const QBrush ansiPalette[] = {
     QBrush(QColor("#222")), QBrush(QColor("#C00")),

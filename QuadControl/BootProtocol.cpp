@@ -28,9 +28,9 @@
 #include "MainWindow.h"
 
 
-BootProtocol::BootProtocol(Connection &connection, QWidget *parent)
+BootProtocol::BootProtocol(Connection &connection, QObject *parent)
     : QObject(parent)
-    , progressDialog(parent)
+    , progressDialog(mainWindow)
     , connection(connection)
 {
     progressDialog.setWindowModality(Qt::WindowModal);
@@ -89,9 +89,10 @@ bool BootProtocol::bootGetResponse(msg_boot_response *response, int timeout)
 }
 
 
-bool BootProtocol::bootResetHack()
+bool BootProtocol::bootReboot()
 {
-    // Hack: send ctrl-c + reset
+    // TODO: implement reboot command in firmware
+    // HACK: send ctrl-c + reset
     //
     const char *s = "\03\nreset\n";
 
@@ -109,7 +110,7 @@ bool BootProtocol::bootResetHack()
 
 bool BootProtocol::bootEnter()
 {
-    bootResetHack();
+    bootReboot();
 
     msg_boot_enter msg;
     msg.h.id = MSG_ID_BOOT_ENTER;
@@ -164,17 +165,16 @@ bool BootProtocol::bootWriteDataAsync(uint addr, const QByteArray &data)
 }
 
 
-bool BootProtocol::bootWriteData(uint addr, const QByteArray &data, int ack_window)
+bool BootProtocol::bootWriteData(uint addr, const QByteArray &data)
 {
     static const int chunk_size = sizeof(msg_boot_write_data::data);
 
     int chunks = (data.length() + chunk_size - 1) / chunk_size;
     int offset = 0;
 
-    if (ack_window > chunks)
-        ack_window = chunks;
+    int window = std::min(ack_window, chunks);
 
-    for (int i=0; i < chunks + ack_window; i++) {
+    for (int i=0; i < chunks + window; i++) {
         // send data
         //
         if (i < chunks) {
@@ -192,7 +192,7 @@ bool BootProtocol::bootWriteData(uint addr, const QByteArray &data, int ack_wind
 
         // check responses later to mask the connection latency
         //
-        if (i >= ack_window && !bootGetResponse(NULL))
+        if (i >= window && !bootGetResponse(NULL))
             return false;
     }
 

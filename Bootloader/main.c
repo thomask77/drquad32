@@ -15,18 +15,24 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
+// #define XBEE_BAUDRATE  115200
+// #define XBEE_BAUDRATE  230400
+#define XBEE_BAUDRATE  460800
+// #define XBEE_BAUDRATE  921600
 
-#define XBEE_BAUDRATE       115200
 #define BOOT_TIMEOUT        2000        // [ms]
-
 
 #define APP_START           0x08010000
 #define APP_END             0x08100000
 
-
-#define APP_RANGE_VALID(a, s)   \
-    (!(((a) | (s)) & 3) && (a) >= APP_START && ((a) + (s)) <= APP_END)
-
+#define APP_RANGE_VALID(a, s) (     \
+    (a & 3) == 0 &&                 \
+    (s & 3) == 0 &&                 \
+    (a) >= APP_START &&             \
+    (a) <= APP_END   &&             \
+    (s) <= APP_END - APP_START &&   \
+    ((a)+(s)) <= APP_END            \
+)
 
 #define ARRAY_SIZE(arr)     (sizeof(arr) / sizeof((arr)[0]))
 #define FIELD_SIZEOF(t, f)  (sizeof(((t*)0)->f))

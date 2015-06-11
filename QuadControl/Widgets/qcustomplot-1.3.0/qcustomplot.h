@@ -1989,6 +1989,8 @@ public:
   Qt::AspectRatioMode backgroundScaledMode() const { return mBackgroundScaledMode; }
   Qt::Orientations rangeDrag() const { return mRangeDrag; }
   Qt::Orientations rangeZoom() const { return mRangeZoom; }
+  bool dragging() const { return mDragging; }
+
   QCPAxis *rangeDragAxis(Qt::Orientation orientation);
   QCPAxis *rangeZoomAxis(Qt::Orientation orientation);
   double rangeZoomFactor(Qt::Orientation orientation);
