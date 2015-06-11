@@ -18,8 +18,8 @@
 #include "UpdateWindow.h"
 
 #include "ui_UpdateWindow.h"
-#include <QSettings>
 #include <QFileSystemModel>
+#include <QSettings>
 #include <QCompleter>
 #include <QMimeData>
 #include <QFileDialog>
@@ -29,9 +29,10 @@
 #include <QByteArray>
 #include <QTime>
 
-#include "../IntelHexFile.h"
-#include "../TryAction.h"
+#include "IntelHexFile.h"
+#include "TryAction.h"
 #include "MainWindow.h"
+
 
 UpdateWindow::UpdateWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -39,12 +40,11 @@ UpdateWindow::UpdateWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    ui->lineEdit->setText( QSettings().value("update_filename").toString() );
-
-    connect(ui->lineEdit, &QLineEdit::textChanged, this, &UpdateWindow::lineEdit_textChanged);
     connect(ui->browseButton, &QPushButton::clicked, this, &UpdateWindow::browseButton_clicked);
     connect(ui->updateButton, &QPushButton::clicked, this, &UpdateWindow::updateButton_clicked);
-    connect(&mainWindow->connection, &Connection::connectionChanged, this, &UpdateWindow::connectionChanged);
+    connect(ui->rebootButton, &QPushButton::clicked, this, &UpdateWindow::rebootButton_clicked);
+    connect(ui->lineEdit, &QLineEdit::textChanged, this, &UpdateWindow::lineEdit_textChanged);
+    connect(&mainWindow->connection, &Connection::connectionChanged, this, &UpdateWindow::connection_changed);
 
     auto model = new QFileSystemModel(this);
     model->setRootPath(QDir::currentPath());
@@ -60,12 +60,28 @@ UpdateWindow::UpdateWindow(QWidget *parent)
     // that take a long time to load.
     //
     ui->lineEdit->setCompleter(completer);
+
+    QSettings s;
+    s.beginGroup(objectName());
+    ui->lineEdit->setText(s.value("filename").toString());
+    ui->cbUpdateOnFileChange->setChecked(s.value("onChange").toBool());
+    ui->sbAckWindow->setValue( s.value("ackWindow", ui->sbAckWindow->value() ).toInt());
+
+    connect(&timer, &QTimer::timeout, this, &UpdateWindow::timer_timeout);
+    timer.start(1000);
 }
+
 
 UpdateWindow::~UpdateWindow()
 {
+    QSettings s;
+    s.beginGroup(objectName());
+    s.setValue("filename", ui->lineEdit->text());
+    s.setValue("onChange", ui->cbUpdateOnFileChange->isChecked());
+    s.setValue("ackWindow", ui->sbAckWindow->value());
     delete ui;
 }
+
 
 void UpdateWindow::dragEnterEvent(QDragEnterEvent *event)
 {
@@ -74,12 +90,14 @@ void UpdateWindow::dragEnterEvent(QDragEnterEvent *event)
         event->acceptProposedAction();
 }
 
+
 void UpdateWindow::dropEvent(QDropEvent *event)
 {
     ui->lineEdit->setText(
         event->mimeData()->urls()[0].toLocalFile()
     );
 }
+
 
 void UpdateWindow::browseButton_clicked()
 {
@@ -94,27 +112,55 @@ void UpdateWindow::browseButton_clicked()
     ui->lineEdit->setText(fn);
 }
 
+
 void UpdateWindow::updateButton_clicked()
 {
-    BootProtocol bp(mainWindow->connection, mainWindow);
+    if (!mainWindow->connection.isOpen())
+        return;
+
+    BootProtocol bp(mainWindow->connection);
+
+    bp.ack_window = ui->sbAckWindow->value();
 
     tryAction(
         [&]() { return bp.sendHexFile(ui->lineEdit->text()); },
         [&]() { return QString("Firmware update failed\n%1\n%2")
                     .arg(ui->lineEdit->text())
                     .arg(bp.errorString());
-        },
-        Qt::ArrowCursor
+        }, Qt::ArrowCursor
     );
 }
 
-void UpdateWindow::lineEdit_textChanged()
+
+void UpdateWindow::rebootButton_clicked()
 {
-    QSettings().setValue("update_filename", ui->lineEdit->text());
+    BootProtocol(mainWindow->connection, mainWindow).bootReboot();
 }
 
-void UpdateWindow::connectionChanged()
+
+void UpdateWindow::connection_changed()
 {
-    auto c = (Connection*)sender();
-    ui->updateButton->setEnabled( c->isOpen() );
+    auto en = mainWindow->connection.isOpen();
+    ui->updateButton->setEnabled(en);
+    ui->rebootButton->setEnabled(en);
+}
+
+
+void UpdateWindow::lineEdit_textChanged()
+{
+    QFileInfo fi(ui->lineEdit->text());
+    lastModified = fi.lastModified();
+}
+
+
+void UpdateWindow::timer_timeout()
+{
+    if (!ui->cbUpdateOnFileChange->isChecked())
+        return;
+
+    QFileInfo fi(ui->lineEdit->text());
+    if (fi.exists() && lastModified != fi.lastModified()) {
+        updateButton_clicked();
+        lastModified = fi.lastModified();
+    }
 }

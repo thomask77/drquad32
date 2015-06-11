@@ -6,10 +6,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define XBEE_BAUDRATE  115200
+// #define XBEE_BAUDRATE  115200
+// #define XBEE_BAUDRATE  230400
+#define XBEE_BAUDRATE  460800
+// #define XBEE_BAUDRATE  921600
 
 #define RX_QUEUE_SIZE  1024
 #define TX_QUEUE_SIZE  1024
+
 
 static volatile struct xbee_stats {
     uint32_t    rx_bytes;
@@ -61,14 +65,16 @@ static ssize_t xbee_write_r(struct _reent *r, int fd, const void *ptr, size_t le
     int sent = 0;
 
     while (len--) {
+/*
         // Convert c-newlines to terminal CRLF
         //
         if (*src == '\n') {
             xQueueSend(tx_queue, "\r", portMAX_DELAY);
             USART3->CR1 |= USART_CR1_TXEIE;
         }
-
+*/
         xQueueSend(tx_queue, src++, portMAX_DELAY);
+
         USART3->CR1 |= USART_CR1_TXEIE;
 
         sent++;
@@ -129,6 +135,7 @@ static void xbee_init_uart(void)
 
     // Enable peripheral clocks
     //
+    RCC->AHB1ENR |= RCC_AHB1Periph_GPIOB;
     RCC->AHB1ENR |= RCC_AHB1Periph_GPIOD;
     RCC->APB1ENR |= RCC_APB1Periph_USART3;
 

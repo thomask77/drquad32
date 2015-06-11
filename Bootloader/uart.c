@@ -1,6 +1,6 @@
 #include "uart.h"
 #include "stm32f4xx.h"
-#include "ringbuf.h"
+#include "Shared/ringbuf.h"
 
 static struct ringbuf rx_buf = RINGBUF( 4096 );
 static struct ringbuf tx_buf = RINGBUF( 4096 );

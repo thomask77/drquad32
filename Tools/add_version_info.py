@@ -1,7 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 #
 # Add CRC checksum and version information to an ELF file
-# Copyright (C)2015 Thomas Kindler <mail@t-kindler.de>
+#
+# Copyright (C)2015 Thomas Kindler <mail_git@t-kindler.de>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +24,7 @@ import getpass, platform
 from StringIO import StringIO
 from datetime import datetime
 
-from crc32 import CRC32
+from crc32_forge import CRC32
 from elf import ELFObject
 
 
@@ -51,8 +52,9 @@ class VersionInfo:
         self.build_date   = now.strftime("%Y-%m-%d")
         self.build_time   = now.strftime("%H:%M:%S")
 
-    def pack(self):
-        return struct.pack( self.format,
+    def pack_into(self, buffer, offset):
+        return struct.pack_into( 
+            self.format, buffer, offset,
             self.image_crc, self.image_size,
             self.git_version, 
             self.build_user, self.build_host, 
@@ -119,10 +121,6 @@ def elf_to_bin(elf, elf_data):
     return str(bin_data)
 
 
-def patch_section(elf, elf_data, section, data):
-    elf_data[section.sh_offset : section.sh_offset + len(data)] = data
-
-
 def patch_elf():
     dprint("Loading \"%s\"..." % args.source)
 
@@ -147,14 +145,14 @@ def patch_elf():
     
     info = VersionInfo(elf)
 
-    patch_section(elf, elf_data, section, info.pack())
+    info.pack_into(elf_data, section.sh_offset)
 
     info.image_crc = CRC32().forge(
         0x00000000, elf_to_bin(elf, elf_data), 
         section.lma - elf.getSections()[0].lma
     )
     
-    patch_section(elf, elf_data, section, info.pack())
+    info.pack_into(elf_data, section.sh_offset)
     
     dprint("  image_crc  = 0x%08x" % info.image_crc)
     dprint("  image_size = %d"     % info.image_size)

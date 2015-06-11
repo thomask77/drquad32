@@ -16,12 +16,10 @@
  */
 
 #include "PlotWindow.h"
-
 #include "ui_PlotWindow.h"
-#include "qcustomplot.h"
-
+#include "TangoColors.h"
+#include "MainWindow.h"
 #include <math.h>
-#include "../MainWindow.h"
 
 
 PlotWindow::PlotWindow(QWidget *parent)
@@ -29,53 +27,137 @@ PlotWindow::PlotWindow(QWidget *parent)
     , ui(new Ui::PlotWindow)
 {
     ui->setupUi(this);
+    auto axisRect = ui->plot->axisRect();
 
-    connect(&mainWindow->connection, &Connection::messageReceived, this, &PlotWindow::connection_messageReceived);
+    axisRect->setupFullAxesBox();
+    axisRect->setRangeDrag(0);
+    axisRect->setRangeZoom(0);
 
+    ui->plot->setInteractions(
+        QCP::iRangeDrag |
+        QCP::iRangeZoom |
+        QCP::iSelectAxes
+    );
 
-    ui->plot->addGraph(); // blue line
-    ui->plot->graph(0)->setPen(QPen(Qt::blue));
-    ui->plot->graph(0)->setBrush(QBrush(QColor(240, 255, 200)));
-    ui->plot->graph(0)->setAntialiasedFill(false);
+    ui->plot->setNoAntialiasingOnDrag(true);
 
-    ui->plot->addGraph(); // red line
-    ui->plot->graph(1)->setPen(QPen(Qt::red));
-    ui->plot->graph(0)->setChannelFillGraph(ui->plot->graph(1));
-
-    ui->plot->addGraph(); // blue dot
-    ui->plot->graph(2)->setPen(QPen(Qt::blue));
-    ui->plot->graph(2)->setLineStyle(QCPGraph::lsNone);
-    ui->plot->graph(2)->setScatterStyle(QCPScatterStyle::ssDisc);
-
-    ui->plot->addGraph(); // red dot
-    ui->plot->graph(3)->setPen(QPen(Qt::red));
-    ui->plot->graph(3)->setLineStyle(QCPGraph::lsNone);
-    ui->plot->graph(3)->setScatterStyle(QCPScatterStyle::ssDisc);
-
-    for (int i=0; i<11; i++)
-        ui->plot->addGraph();
-
+    // x-axis
+    //
+    ui->plot->xAxis->setLabel("Samples");
+/*
     ui->plot->xAxis->setTickLabelType(QCPAxis::ltDateTime);
     ui->plot->xAxis->setDateTimeFormat("hh:mm:ss");
+    ui->plot->xAxis->setTickLabelType(QCPAxis::);
     ui->plot->xAxis->setAutoTickStep(false);
     ui->plot->xAxis->setTickStep(2);
-    ui->plot->axisRect()->setupFullAxesBox();
+*/
 
-    // make left and bottom axes transfer their ranges to right and top axes:
-    // rangeChanged is overloaded, requiring some convoluted casts..
+    // Accelerometer
     //
+    auto axis = axisRect->axis(QCPAxis::atLeft);
+    auto color = TangoColors::Aluminium4;
+    axis->setBasePen(QPen(color));
+    axis->setTickPen(QPen(color));
+    axis->setSubTickPen(QPen(color));
+    axis->setLabel("m/s²");
+    axis->setLabelPadding(-16);
+    axis->setTickLabelRotation(-90);
+    axis->setRange(-10, 10);
+    axis->setSelectableParts(QCPAxis::spAxis);
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::SolidLine));
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::DashLine));
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::DotLine));
+
+    // Gyroscope
+    //
+    axis = axisRect->addAxis(QCPAxis::atLeft);
+    color = TangoColors::ScarletRed1;
+    axis->setBasePen(QPen(color));
+    axis->setTickPen(QPen(color));
+    axis->setSubTickPen(QPen(color));
+    axis->setLabel("rad/s");
+    axis->setLabelPadding(-16);
+
+    axis->setTickLabelRotation(-90);
+    axis->setRange(-300, 300);
+    axis->setSelectableParts(QCPAxis::spAxis);
+
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::SolidLine));
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::DashLine));
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::DotLine));
+
+    // Magnetic sensor
+    //
+    axis = axisRect->addAxis(QCPAxis::atLeft);
+    color = TangoColors::Chameleon1;
+    axis->setBasePen(QPen(color));
+    axis->setTickPen(QPen(color));
+    axis->setSubTickPen(QPen(color));
+    axis->setLabel("µT");
+    axis->setLabelPadding(-16);
+    axis->setTickLabelRotation(-90);
+    axis->setRange(-5000, 5000);
+    axis->setSelectableParts(QCPAxis::spAxis);
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::SolidLine));
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::DashLine));
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::DotLine));
+
+    // Barometric sensor
+    //
+    axis = axisRect->addAxis(QCPAxis::atLeft);
+    color = TangoColors::SkyBlue1;
+    axis->setBasePen(QPen(color));
+    axis->setTickPen(QPen(color));
+    axis->setSubTickPen(QPen(color));
+    axis->setLabel("hPa");
+    axis->setLabelPadding(-16);
+    axis->setTickLabelRotation(-90);
+    axis->setRange(900, 1100);
+    axis->setSelectableParts(QCPAxis::spAxis);
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::SolidLine));
+
+    // Temperature
+    //
+    axis = axisRect->addAxis(QCPAxis::atLeft);
+    color = TangoColors::Orange1;
+    axis->setBasePen(QPen(color));
+    axis->setTickPen(QPen(color));
+    axis->setSubTickPen(QPen(color));
+    axis->setLabel("°C");
+    axis->setLabelPadding(-16);
+    axis->setTickLabelRotation(-90);
+    axis->setRange(-40, 100);
+    axis->setSelectableParts(QCPAxis::spAxis);
+
+    ui->plot->addGraph(ui->plot->xAxis, axis);
+    ui->plot->graph()->setPen(QPen(color, 1, Qt::SolidLine));
+
     connect(
-        ui->plot->xAxis,   (void (QCPAxis::*)(const QCPRange &)) &QCPAxis::rangeChanged,
-        ui->plot->xAxis2,  (void (QCPAxis::*)(const QCPRange &)) &QCPAxis::setRange
+        ui->plot, &QCustomPlot::axisClick,
+        this,     &PlotWindow::axisClick
     );
 
-    connect(
-        ui->plot->yAxis,   (void (QCPAxis::*)(const QCPRange &)) &QCPAxis::rangeChanged,
-        ui->plot->yAxis2,  (void (QCPAxis::*)(const QCPRange &)) &QCPAxis::setRange
-    );
-
-    //  QCustomPlot::setNoAntialiasingOnDrag
-    //
+    connect(&mainWindow->connection, &Connection::messageReceived, this, &PlotWindow::connection_messageReceived);
     connect(&timer, &QTimer::timeout, this, &PlotWindow::timer_timeout);
     timer.start(30);
 }
@@ -89,55 +171,58 @@ PlotWindow::~PlotWindow()
 
 void PlotWindow::timer_timeout()
 {
-    double key = QDateTime::currentDateTime().toMSecsSinceEpoch()/1000.0;
+    static double key;
 
-    static double lastPointKey = 0;
-    if (key-lastPointKey > 0.01) // at most add point every 10 ms
-    {
-        double value0 = qSin(key); //qSin(key*1.6+qCos(key*1.7)*2)*10 + qSin(key*1.2+0.56)*20 + 26;
-        double value1 = qCos(key); //qSin(key*1.3+qCos(key*1.2)*1.2)*7 + qSin(key*0.9+0.26)*24 + 26;
-        // add data to lines:
-        ui->plot->graph(0)->addData(key, value0);
-        ui->plot->graph(1)->addData(key, value1);
-        // set data of dots:
-        ui->plot->graph(2)->clearData();
-        ui->plot->graph(2)->addData(key, value0);
-        ui->plot->graph(3)->clearData();
-        ui->plot->graph(3)->addData(key, value1);
-        // remove data of lines that's outside visible range:
-        ui->plot->graph(0)->removeDataBefore(key-8);
-        ui->plot->graph(1)->removeDataBefore(key-8);
-        // rescale value (vertical) axis to fit the current data:
-        ui->plot->graph(0)->rescaleValueAxis();
-        ui->plot->graph(1)->rescaleValueAxis(true);
-        lastPointKey = key;
+    for (const auto &imu: queue) {
+        ui->plot->graph( 0)->addData(key, imu.acc_x);
+        ui->plot->graph( 1)->addData(key, imu.acc_y);
+        ui->plot->graph( 2)->addData(key, imu.acc_z);
+        ui->plot->graph( 3)->addData(key, imu.gyro_x);
+        ui->plot->graph( 4)->addData(key, imu.gyro_y);
+        ui->plot->graph( 5)->addData(key, imu.gyro_z);
+        ui->plot->graph( 6)->addData(key, imu.mag_x);
+        ui->plot->graph( 7)->addData(key, imu.mag_y);
+        ui->plot->graph( 8)->addData(key, imu.mag_z);
+        ui->plot->graph( 9)->addData(key, imu.baro_hpa);
+        ui->plot->graph(10)->addData(key, imu.baro_temp);
+        key += 1;
     }
 
-    // make key axis range scroll with the data (at a constant range size of 8):
-    //
-    ui->plot->xAxis->setRange(key+0.25, 8, Qt::AlignRight);
-    ui->plot->replot();
+    if (queue.count()) {
+        if (!ui->plot->axisRect()->dragging())
+            ui->plot->xAxis->setRange(key + 10, 1000, Qt::AlignRight);
+
+        ui->plot->replot();
+        queue.clear();
+    }
 }
 
 
 void PlotWindow::connection_messageReceived(const msg_generic &msg)
 {
-    double key = QDateTime::currentDateTime().toMSecsSinceEpoch()/1000.0;
+    if (msg.h.id == MSG_ID_IMU_DATA)
+        queue.append((const msg_imu_data&)msg);
+}
 
-    if (msg.h.id == MSG_ID_IMU_DATA) {
-        auto imu = (const msg_imu_data&)msg;
 
-        ui->plot->graph(4)->addData(key,  imu.acc_x);
-        ui->plot->graph(5)->addData(key,  imu.acc_y);
-        ui->plot->graph(6)->addData(key,  imu.acc_z);
-        ui->plot->graph(7)->addData(key,  imu.gyro_x);
-        ui->plot->graph(8)->addData(key,  imu.gyro_y);
-        ui->plot->graph(9)->addData(key,  imu.gyro_z);
-        ui->plot->graph(10)->addData(key, imu.mag_x);
-        ui->plot->graph(11)->addData(key, imu.mag_y);
-        ui->plot->graph(12)->addData(key, imu.mag_z);
-        ui->plot->graph(13)->addData(key, imu.baro_hpa);
-        ui->plot->graph(14)->addData(key, imu.baro_temp);
+void PlotWindow::axisClick(QCPAxis *axis)
+{
+    auto axisRect = ui->plot->axisRect();
+
+    if (axis == ui->plot->xAxis) {
+        axisRect->setRangeDrag(Qt::Horizontal);
+        axisRect->setRangeZoom(Qt::Horizontal);
+        axisRect->setRangeDragAxes(ui->plot->xAxis, NULL);
+        axisRect->setRangeZoomAxes(ui->plot->xAxis, NULL);
     }
+    else {
+        axisRect->setRangeDrag(Qt::Vertical);
+        axisRect->setRangeZoom(Qt::Vertical);
+        axisRect->setRangeDragAxes(NULL, axis);
+        axisRect->setRangeZoomAxes(NULL, axis);
+    }
+
+    for (auto a: axisRect->axes(QCPAxis::atLeft))
+        a->grid()->setVisible(a == axis);
 }
 

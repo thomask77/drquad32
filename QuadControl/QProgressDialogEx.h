@@ -36,8 +36,10 @@ public:
 
     QProgressDialogEx(QWidget *parent = 0, Qt::WindowFlags flags = 0)
         : QProgressDialog(parent, flags)
-        , winTaskbarButton(this)
+        , winTaskbarButton(parent)
     {
+        if (parent)
+            winTaskbarButton.setWindow(parent->windowHandle());
     }
 
     virtual ~QProgressDialogEx()
@@ -48,13 +50,8 @@ public:
     void setValue(int progress)
     {
         QProgressDialog::setValue(progress);
-
-        if (!winTaskbarButton.window()) {
-            winTaskbarButton.setWindow(topLevelWidget()->windowHandle());
-            winTaskbarButton.progress()->setVisible(true);
-        }
-
         winTaskbarButton.progress()->setValue(progress);
+        winTaskbarButton.progress()->setVisible(true);
     }
     #else
 

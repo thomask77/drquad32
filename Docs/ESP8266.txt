@@ -1,0 +1,47 @@
+ESP8266
+=======
+
+ESP-03
+======
+
+Setup using PuTTY
+-----------------
+
+Connect to the module using 9600 Baud 8N1
+
+Note:
+
+The module expects '\r\n' at the end of each line. Unfortunately, PuTTY just sends
+'\r' when you press RETURN - so the '\n' must be sent manually by pressing CTRL-J.
+
+It's even easier to press CTRL-M CTRL-J instead of RETURN CTRL-J
+
+  AT		# should print OK
+  AT+GMR	# show version
+
+
+Joining a network
+-----------------
+
+  AT+CWMODE=1   # station mode
+  AT+RST        # reset
+
+  ..
+
+  AT+CWLAP			# list available networks
+  AT+CWJAP="ssid","password"	# join network
+
+  AT+CWJAP?	# show connected network
+
+
+
+Testing the connection
+--------------------
+  AT+CIFSR		# show IP address
+
+  AT+CIPMUX=1		#
+  AT+CIPSERVER=1	# start tcp server on port 333
+
+
+Use PuTTY to open a new telnet connection to port 333
+

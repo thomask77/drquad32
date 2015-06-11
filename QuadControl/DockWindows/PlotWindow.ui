@@ -18,6 +18,21 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
     <item>
      <widget class="QCustomPlot" name="plot" native="true">
       <property name="minimumSize">
@@ -25,72 +40,6 @@
         <width>64</width>
         <height>64</height>
        </size>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QSlider" name="xSlider">
-      <property name="maximum">
-       <number>360</number>
-      </property>
-      <property name="singleStep">
-       <number>1</number>
-      </property>
-      <property name="pageStep">
-       <number>15</number>
-      </property>
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-      <property name="tickPosition">
-       <enum>QSlider::TicksBelow</enum>
-      </property>
-      <property name="tickInterval">
-       <number>15</number>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QSlider" name="ySlider">
-      <property name="maximum">
-       <number>360</number>
-      </property>
-      <property name="singleStep">
-       <number>1</number>
-      </property>
-      <property name="pageStep">
-       <number>15</number>
-      </property>
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-      <property name="tickPosition">
-       <enum>QSlider::TicksBelow</enum>
-      </property>
-      <property name="tickInterval">
-       <number>15</number>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QSlider" name="zSlider">
-      <property name="maximum">
-       <number>360</number>
-      </property>
-      <property name="singleStep">
-       <number>1</number>
-      </property>
-      <property name="pageStep">
-       <number>15</number>
-      </property>
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-      <property name="tickPosition">
-       <enum>QSlider::TicksBelow</enum>
-      </property>
-      <property name="tickInterval">
-       <number>15</number>
       </property>
      </widget>
     </item>

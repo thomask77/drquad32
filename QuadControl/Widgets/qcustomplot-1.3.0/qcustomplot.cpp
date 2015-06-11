@@ -6143,6 +6143,8 @@ void QCPAxisPainterPrivate::draw(QCPPainter *painter)
   {
     painter->setPen(tickPen);
     int tickDir = (type == QCPAxis::atBottom || type == QCPAxis::atRight) ? -1 : 1; // direction of ticks ("inward" is right for left axis and left for right axis)
+    tickDir = -1;
+
     if (QCPAxis::orientation(type) == Qt::Horizontal)
     {
       for (int i=0; i<tickPositions.size(); ++i)
@@ -6160,6 +6162,8 @@ void QCPAxisPainterPrivate::draw(QCPPainter *painter)
     painter->setPen(subTickPen);
     // direction of ticks ("inward" is right for left axis and left for right axis)
     int tickDir = (type == QCPAxis::atBottom || type == QCPAxis::atRight) ? -1 : 1;
+    tickDir = -1;
+
     if (QCPAxis::orientation(type) == Qt::Horizontal)
     {
       for (int i=0; i<subTickPositions.size(); ++i)
@@ -6177,10 +6181,12 @@ void QCPAxisPainterPrivate::draw(QCPPainter *painter)
   painter->setAntialiasing(true); // always want endings to be antialiased, even if base and ticks themselves aren't
   painter->setBrush(QBrush(basePen.color()));
   QVector2D baseLineVector(baseLine.dx(), baseLine.dy());
+
   if (lowerEnding.style() != QCPLineEnding::esNone)
     lowerEnding.draw(painter, QVector2D(baseLine.p1())-baseLineVector.normalized()*lowerEnding.realLength()*(lowerEnding.inverted()?-1:1), -baseLineVector);
   if (upperEnding.style() != QCPLineEnding::esNone)
     upperEnding.draw(painter, QVector2D(baseLine.p2())+baseLineVector.normalized()*upperEnding.realLength()*(upperEnding.inverted()?-1:1), baseLineVector);
+
   painter->setAntialiasing(antialiasingBackup);
   
   // tick labels:
@@ -6201,7 +6207,7 @@ void QCPAxisPainterPrivate::draw(QCPPainter *painter)
     int distanceToAxis = margin;
     if (tickLabelSide == QCPAxis::lsInside)
       distanceToAxis = -(qMax(tickLengthIn, subTickLengthIn)+tickLabelPadding);
-    for (int i=0; i<maxLabelIndex; ++i)
+    for (int i=0; i<maxLabelIndex-1; ++i)   /* TK: HACK */
       placeTickLabel(painter, tickPositions.at(i), distanceToAxis, tickLabels.at(i), &tickLabelsSize);
     if (tickLabelSide == QCPAxis::lsOutside)
       margin += (QCPAxis::orientation(type) == Qt::Horizontal) ? tickLabelsSize.height() : tickLabelsSize.width();
@@ -6222,7 +6228,17 @@ void QCPAxisPainterPrivate::draw(QCPPainter *painter)
       QTransform oldTransform = painter->transform();
       painter->translate((origin.x()-margin-labelBounds.height()), origin.y());
       painter->rotate(-90);
-      painter->drawText(0, 0, axisRect.height(), labelBounds.height(), Qt::TextDontClip | Qt::AlignCenter, label);
+
+      /* TK: HACK */
+      QRect foo(axisRect.height() - labelBounds.width(), 0, labelBounds.width(), labelBounds.height());
+      foo.adjust(-4, 0, 4, 0);
+      painter->setBrush(Qt::white);
+      painter->setPen(Qt::NoPen);
+      painter->drawRect(foo);
+
+      painter->setPen(QPen(labelColor));
+
+      painter->drawText(0, 0, axisRect.height(), labelBounds.height(), Qt::TextDontClip | Qt::AlignRight, label);
       painter->setTransform(oldTransform);
     }
     else if (type == QCPAxis::atRight)

@@ -15,12 +15,15 @@ class BootProtocol : public QObject
     Q_OBJECT
 
 public:
-    BootProtocol(Connection &connection, QWidget *parent = 0);
+    BootProtocol(Connection &connection, QObject *parent = 0);
     ~BootProtocol();
 
-    bool sendHexFile(const QString &fileName);
-
     QString errorString();
+
+    int ack_window = 10;
+
+    bool bootReboot();
+    bool sendHexFile(const QString &fileName);
 
 private:
     QString m_errorString;
@@ -32,12 +35,11 @@ private:
     void showProgress(int value, const QString &text);
 
     bool bootGetResponse(msg_boot_response *response, int timeout = 2000);
-    bool bootResetHack();
     bool bootEnter();
     bool bootExit();
     bool bootEraseSector(uint sector);
     bool bootWriteDataAsync(uint addr, const QByteArray &data);
-    bool bootWriteData(uint addr, const QByteArray &data, int ack_window = 10);
+    bool bootWriteData(uint addr, const QByteArray &data);
     bool bootVerifyData(uint addr, const QByteArray &data);
 };
 

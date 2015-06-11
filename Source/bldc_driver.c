@@ -238,15 +238,15 @@ void DMA2_Stream0_IRQHandler(void)
     bldc_set_outputs();
     bldc_irq_time3 = TIM7->CNT;
 
-    DMA2->LIFCR = DMA_LIFCR_CTCIF0;
-    DMA2->LIFCR;  // dummy read to prevent IRQ glitches
-
-    bldc_irq_count++;
-
     bldc_irq_time3 = (uint16_t)(bldc_irq_time3 - bldc_irq_time2);
     bldc_irq_time2 = (uint16_t)(bldc_irq_time2 - bldc_irq_time1);
     bldc_irq_time1 = (uint16_t)(bldc_irq_time1 - tim7_cnt);
     bldc_irq_time  = (uint16_t)(TIM7->CNT - tim7_cnt);
+
+    bldc_irq_count++;
+
+    DMA2->LIFCR = DMA_LIFCR_CTCIF0;
+    DMA2->LIFCR;  // dummy read to prevent IRQ glitches
 }
 
 
@@ -303,22 +303,22 @@ void bldc_driver_init(void)
         TIM_OC1Init(x, y);  TIM_OC2Init(x, y);  \
         TIM_OC3Init(x, y);  TIM_OC4Init(x, y);
 
-    // FL 0°
+    // FL 0
     oc_init.TIM_OCPolarity = TIM_OCPolarity_High;
     TIM_OC1234Init(TIM3, &oc_init);
     TIM_SetCounter(TIM3, PWM_MAX_COUNT * 0 / 2);
 
-    // FR 90°
+    // FR 90
     oc_init.TIM_OCPolarity = TIM_OCPolarity_Low;
     TIM_OC1234Init(TIM2, &oc_init);
     TIM_SetCounter(TIM2, PWM_MAX_COUNT * 1 / 2);
 
-    // RL 270°
+    // RL 270
     oc_init.TIM_OCPolarity = TIM_OCPolarity_High;
     TIM_OC1234Init(TIM4, &oc_init);
     TIM_SetCounter(TIM4, PWM_MAX_COUNT * 1 / 2);
 
-    // RR 180°
+    // RR 180
     oc_init.TIM_OCPolarity = TIM_OCPolarity_Low;
     TIM_OC1234Init(TIM1, &oc_init);
     TIM_SetCounter(TIM1, PWM_MAX_COUNT * 0 / 2);
@@ -616,7 +616,7 @@ static void cmd_set_pwm(int argc, char *argv[])
     int step = atoi(argv[2]);
 	if (id < 0 || id > 7)
 	    goto usage;
-	
+
 	bldc_state.motors[id].step = step;
     bldc_state.motors[id].u_pwm = atof(argv[2]);
     return;

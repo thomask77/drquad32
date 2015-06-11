@@ -5,6 +5,7 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QProgressDialog>
+#include <QDateTime>
 
 #include "../BootProtocol.h"
 
@@ -22,11 +23,16 @@ public:
 
 private:
     Ui::UpdateWindow *ui;
+    QTimer timer;
+    QDateTime lastModified;
 
-    void lineEdit_textChanged();
     void browseButton_clicked();
     void updateButton_clicked();
-    void connectionChanged();
+    void rebootButton_clicked();
+    void connection_changed();
+
+    void lineEdit_textChanged();
+    void timer_timeout();
 
     virtual void dragEnterEvent(QDragEnterEvent *event) override;
     virtual void dropEvent(QDropEvent *event) override;
