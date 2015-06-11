@@ -11,15 +11,16 @@
 static struct sensor_data   sensor_data;
 static struct rc_input      rc_input;
 
-struct pid_ctrl   pid_pitch = { .kp = 1, .ki = 0, .kd = 0, .min = -5, .max = 5, .dt = 1e-3 };
-struct pid_ctrl   pid_roll  = { .kp = 1, .ki = 0, .kd = 0, .min = -5, .max = 5, .dt = 1e-3 };
-struct pid_ctrl   pid_yaw   = { .kp = 1, .ki = 0, .kd = 0, .min = -5, .max = 5, .dt = 1e-3 };
+struct pid_ctrl pid_pitch = { .min = -5, .max = 5, .dt = 1e-3 };
+struct pid_ctrl pid_roll  = { .min = -5, .max = 5, .dt = 1e-3 };
+struct pid_ctrl pid_yaw   = { .min = -5, .max = 5, .dt = 1e-3 };
 
-float   rc_pitch, rc_roll, rc_yaw, rc_thrust;
+float rc_pitch, rc_roll, rc_yaw, rc_thrust;
 
-float foo = 1;
-float bar = 0;
-float baz = 0;
+float pid_p = 1;
+float pid_i = 0;
+float pid_d = 0;
+uint8_t fc_state = 0;
 
 void flight_ctrl(void *pvParameters)
 {
@@ -32,8 +33,8 @@ void flight_ctrl(void *pvParameters)
 
     vTaskDelay(1000);
 
-    int ok = 0;
-    int old_ok = 0;
+    uint8_t ok = 0;
+    uint8_t old_ok = 0;
 
     for (;;) {
         sensor_read(&sensor_data);
@@ -60,17 +61,19 @@ void flight_ctrl(void *pvParameters)
             ok = 0;
         }
 
-        pid_pitch.kp = foo;
-        pid_roll.kp = foo;
-        pid_yaw.kp = foo;
+        if (fc_state & 1) {
+            pid_pitch.kp = pid_p;
+            pid_roll .kp = pid_p;
+            pid_yaw  .kp = pid_p;
 
-        pid_pitch.ki = bar;
-        pid_roll.ki = bar;
-        pid_yaw.ki = bar;
+            pid_pitch.ki = pid_i;
+            pid_roll .ki = pid_i;
+            pid_yaw  .ki = pid_i;
 
-        pid_pitch.kd = baz;
-        pid_roll.kd = baz;
-        pid_yaw.kd = baz;
+            pid_pitch.kd = pid_d;
+            pid_roll .kd = pid_d;
+            pid_yaw  .kd = pid_d;
+        }
 
         pid_update(&pid_pitch, (rc_pitch - sensor_data.gyro.x), 0);
         pid_update(&pid_roll , (rc_roll  + sensor_data.gyro.y), 0);

@@ -7,10 +7,9 @@
 #include "rc_ppm.h"
 #include "dma_io_driver.h"
 #include "sensors.h"
+#include "flight_ctrl.h"
 
 static int board_address;
-
-extern float foo, bar, baz;
 
 const struct param_info  param_table[] = {
     {    1, P_INT32(&board_address    ), READONLY, .name = "board_address" },
@@ -96,9 +95,58 @@ const struct param_info  param_table[] = {
             .help = "PPM sum signal synchronization pulse width"
     },
 
-    { 300, P_FLOAT(&foo) },
-    { 301, P_FLOAT(&bar) },
-    { 302, P_FLOAT(&baz) },
+    {  300, P_FLOAT(&pid_p, 1, 0 , 10),
+       .name = "pid_p",
+       .help = "all gyro PID P Part"
+    },
+    {  301, P_FLOAT(&pid_i, 0, 0, 10),
+       .name = "pid_i",
+       .help = "all gyro PID I Part"
+    },
+    {  302, P_FLOAT(&pid_d, 0, 0, 10),
+       .name = "pid_d",
+       .help = "all gyro PID D Part"
+    },
+
+
+    {  310, P_FLOAT(&pid_pitch.kp, 1, 0, 10),
+       .name = "pid_pitch.kp",
+       .help = "gyro pitch PID P Part"
+    },
+    {  311, P_FLOAT(&pid_pitch.ki, 0, 0 ,10),
+       .name = "pid_pitch.ki",
+       .help = "gyro pitch PID I Part"
+    },
+    {  312, P_FLOAT(&pid_pitch.kd, 0, 0, 10),
+       .name = "pid_pitch.kd",
+       .help = "gyro pitch PID D Part"
+    },
+
+    {  320, P_FLOAT(&pid_roll.kp, 1, 0, 10),
+        .name = "pid_roll.kp",
+        .help = "gyro roll PID P Part"
+    },
+    {  321, P_FLOAT(&pid_roll.ki, 0, 0, 10),
+        .name = "pid_roll.ki",
+        .help = "gyro roll PID I Part"
+    },
+    {  322, P_FLOAT(&pid_roll.kd, 0, 0, 10),
+        .name = "pid_roll.kd",
+        .help = "gyro roll PID D Part"
+    },
+
+    {  330, P_FLOAT(&pid_yaw.kp, 1, 0, 10),
+        .name = "pid_yaw.kp",
+        .help = "gyro yaw PID P Part"
+    },
+    {  331, P_FLOAT(&pid_yaw.ki, 0, 0, 10),
+        .name = "pid_yaw.ki",
+        .help = "gyro yaw PID I Part"
+    },
+    {  332, P_FLOAT(&pid_yaw.kd, 0, 0, 10),
+        .name = "pid_yaw.kd",
+        .help = "gyro yaw PID D Part"
+    },
 
     // Debug DAC outputs
     //
