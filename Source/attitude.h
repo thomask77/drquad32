@@ -25,6 +25,3 @@ extern struct dcm dcm;
 
 extern void dcm_update(vec3f gyro, vec3f acc, float dt);
 extern void dcm_reset(void);
-
-extern void cmd_dcm_show(void);
-

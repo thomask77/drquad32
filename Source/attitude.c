@@ -103,12 +103,13 @@ void  dcm_reset(void)
 
 // -----
 #include <string.h>
+#include "command.h"
 
 
-void cmd_dcm_show(void)
+static void cmd_dcm_show(void)
 {
     struct dcm d;
-    ATOMIC_COPY(&d, &dcm, sizeof(d));
+    memcpy(&d, &dcm, sizeof(d));
 
     printf("                x/roll    y/pitch      z/yaw\n");
     printf("down_ref  : %10.4f %10.4f %10.4f\n", d.down_ref.x, d.down_ref.y, d.down_ref.z);
@@ -126,3 +127,5 @@ void cmd_dcm_show(void)
     printf("\n");
     printf("debug     : %10.4f %10.4f %10.4f\n", d.debug.x, d.debug.y, d.debug.z);
 }
+
+SHELL_CMD(dcm_show, (cmdfunc_t)cmd_dcm_show, "show dcm values")
