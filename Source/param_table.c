@@ -8,6 +8,7 @@
 #include "dma_io_driver.h"
 #include "sensors.h"
 #include "flight_ctrl.h"
+#include "attitude.h"
 
 static int board_address;
 
@@ -146,6 +147,16 @@ const struct param_info  param_table[] = {
     {  332, P_FLOAT(&pid_yaw.kd, 0, 0, 10),
         .name = "pid_yaw.kd",
         .help = "gyro yaw PID D Part"
+    },
+
+    {  360, P_FLOAT(&dcm.acc_kp, 0, 0, 10),
+        .name = "dcm.acc_kp",
+        .help = "DCM acc P Part"
+    },
+
+    {  361, P_FLOAT(&dcm.acc_ki, 0, 0, 10),
+       .name = "dcm.acc_ki",
+       .help = "DCM acc I Part"
     },
 
     // Debug DAC outputs
