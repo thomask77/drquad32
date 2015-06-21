@@ -22,7 +22,9 @@ float rc_pitch, rc_roll, rc_yaw, rc_thrust;
 float pid_p = 1;
 float pid_i = 0;
 float pid_d = 0;
-uint8_t fc_state = 0;
+
+struct s_fc_config fc_config;
+
 
 /*
 void systick_handler(void)
@@ -70,11 +72,11 @@ void flight_ctrl(void *pvParameters)
 
         if (rc_output.rc_input.valid && (rc_output.channels[RC_CHANNEL_ARM] > -0.7))
         {
-            rc_pitch   = rc_output.channels[RC_CHANNEL_PITCH];
-            rc_roll    = rc_output.channels[RC_CHANNEL_ROLL];
-            rc_yaw     = rc_output.channels[RC_CHANNEL_YAW];
+            rc_pitch   = rc_output.channels[RC_CHANNEL_PITCH] * fc_config.pitch_roll_gain;
+            rc_roll    = rc_output.channels[RC_CHANNEL_ROLL] * fc_config.pitch_roll_gain;
+            rc_yaw     = rc_output.channels[RC_CHANNEL_YAW] * fc_config.yaw_gain;
             // go from -1 - 1 to 0 - 1
-            rc_thrust  = ((rc_output.channels[RC_CHANNEL_THURST] * 0.5) + 0.5) * 5;
+            rc_thrust  = ((rc_output.channels[RC_CHANNEL_THURST] * 0.5) + 0.5) * fc_config.thurst_gain;
 
             ok = 1;
         }
@@ -87,7 +89,7 @@ void flight_ctrl(void *pvParameters)
             ok = 0;
         }
 
-        if (fc_state & 0x01) {
+        if (fc_config.state & 0x01) {
             pid_pitch.kp = pid_p;
             pid_roll .kp = pid_p;
             pid_yaw  .kp = pid_p;
@@ -101,7 +103,7 @@ void flight_ctrl(void *pvParameters)
             pid_yaw  .kd = pid_d;
         }
 
-        if (fc_state & 0x02 || (rc_output.channels[RC_CHANNEL_FUNCT0] > -0.7)) {
+        if (fc_config.state & 0x02 || (rc_output.channels[RC_CHANNEL_FUNCT0] > -0.7)) {
                 dcm_update(&sensor_data, 1e-3);
 
                 pid_update(&pid_pitch, (rc_pitch - dcm.euler.x), 0);
