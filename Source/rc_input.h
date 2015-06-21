@@ -16,23 +16,41 @@ enum {
     RC_MODE_MAX = RC_MODE_SBUS
 };
 
+enum {
+    RC_CHANNEL_THURST,
+    RC_CHANNEL_PITCH,
+    RC_CHANNEL_ROLL,
+    RC_CHANNEL_YAW,
+    RC_CHANNEL_ARM,
+    RC_CHANNEL_FUNCT0,
+    RC_CHANNEL_FUNCT1,
+    RC_CHANNEL_FUNCT2,
+
+    RC_CHANNEL_MAX,
+};
 
 struct rc_input {
     TickType_t  timestamp;              // Time of last update
     bool  valid;                        // 0, 1
-    int   rssi;                         // 0 .. 100
-    int   num_channels;                 // 0 .. RC_MAX_CHANNELS-1
-    int   channels[RC_MAX_CHANNELS];    // pulse width [us]
+    unsigned int   rssi;                         // 0 .. 100
+    unsigned int   num_channels;                 // 0 .. RC_MAX_CHANNELS-1
+    unsigned int   channels[RC_MAX_CHANNELS];    // pulse width [us]
 };
 
+struct rc_output {
+    float channels[RC_MAX_CHANNELS];
+    struct rc_input rc_input;
+};
 
 struct rc_config {
-    int     mode;
-    int     expected_channels;
+    unsigned int mode;
+    unsigned int expected_channels;
+    unsigned int channel_map[RC_MAX_CHANNELS];
+    unsigned int channel_inverted[RC_MAX_CHANNELS];
 };
 
 
 extern struct rc_config rc_config;
 
-void rc_update(struct rc_input *rc);
+void rc_update(struct rc_output *rc_out);
 void rc_init(void);

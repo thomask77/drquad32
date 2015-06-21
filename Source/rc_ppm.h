@@ -14,5 +14,5 @@ extern volatile uint32_t rc_ppm_irq_count;
 
 extern struct rc_ppm_config rc_ppm_config;
 
-void rc_ppm_update(struct rc_input *rc);
+void rc_ppm_update(struct rc_output *rc);
 void rc_ppm_init(void);

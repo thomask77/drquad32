@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "flight_ctrl.h"
 #include "sensors.h"
 #include "bldc_task.h"
@@ -10,7 +11,7 @@
 
 
 static struct sensor_data   sensor_data;
-static struct rc_input      rc_input;
+static struct rc_output     rc_output;
 
 struct pid_ctrl pid_pitch = { .min = -5, .max = 5, .dt = 1e-3 };
 struct pid_ctrl pid_roll  = { .min = -5, .max = 5, .dt = 1e-3 };
@@ -65,17 +66,15 @@ void flight_ctrl(void *pvParameters)
 
     for (;;) {
         sensor_read(&sensor_data);
-        rc_update(&rc_input);
+        rc_update(&rc_output);
 
-        if (rc_input.valid && rc_input.channels[5] < 1500)
+        if (rc_output.rc_input.valid && (rc_output.channels[RC_CHANNEL_ARM] > -0.7))
         {
-            rc_pitch  = -(rc_input.channels[1] - 1500) / 500.0;
-            rc_roll   =  (rc_input.channels[0] - 1500) / 500.0;
-            rc_yaw    = -(rc_input.channels[3] - 1500) / 500.0;
-
-            rc_thrust = -(rc_input.channels[2] - 1500) / 1000.0;
-            rc_thrust += 0.5;
-            rc_thrust *= 5;
+            rc_pitch   = rc_output.channels[RC_CHANNEL_PITCH];
+            rc_roll    = rc_output.channels[RC_CHANNEL_ROLL];
+            rc_yaw     = rc_output.channels[RC_CHANNEL_YAW];
+            // go from -1 - 1 to 0 - 1
+            rc_thrust  = ((rc_output.channels[RC_CHANNEL_THURST] * 0.5) + 0.5) * 5;
 
             ok = 1;
         }
@@ -88,7 +87,7 @@ void flight_ctrl(void *pvParameters)
             ok = 0;
         }
 
-        if (fc_state & 1) {
+        if (fc_state & 0x01) {
             pid_pitch.kp = pid_p;
             pid_roll .kp = pid_p;
             pid_yaw  .kp = pid_p;
@@ -102,7 +101,7 @@ void flight_ctrl(void *pvParameters)
             pid_yaw  .kd = pid_d;
         }
 
-        if (fc_state & 2 || !(rc_input.channels[5] < 1500)) {
+        if (fc_state & 0x02 || (rc_output.channels[RC_CHANNEL_FUNCT0] > -0.7)) {
                 dcm_update(&sensor_data, 1e-3);
 
                 pid_update(&pid_pitch, (rc_pitch - dcm.euler.x), 0);
