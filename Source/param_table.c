@@ -89,11 +89,77 @@ const struct param_info  param_table[] = {
     {  212, P_INT32(&rc_ppm_config.max_width, 2500, 0, 3000),
             .name = "rc_ppm.max_width", .unit = "us",
             .help = "PPM sum signal maximum pulse width"
-
     },
+
     {  213, P_INT32(&rc_ppm_config.sync_width, 3800, 3000, 50000),
             .name = "rc_ppm.sync_width", .unit = "us",
             .help = "PPM sum signal synchronization pulse width"
+    },
+
+    {  240, P_INT32((int *) &rc_config.channel_map[RC_CHANNEL_THURST], 2, 0, RC_MAX_CHANNELS),
+        .name = "rc_config.channel_map[THURST]",
+        .help = "Channel with thurst signal"
+    },
+    {  241, P_INT32((int *) &rc_config.channel_map[RC_CHANNEL_PITCH], 1, 0, RC_MAX_CHANNELS),
+        .name = "rc_config.channel_map[PITCH]",
+        .help = "Channel with pitch signal"
+    },
+    {  242, P_INT32((int *) &rc_config.channel_map[RC_CHANNEL_ROLL], 0, 0, RC_MAX_CHANNELS),
+        .name = "rc_config.channel_map[ROLL]",
+        .help = "Channel with roll signal"
+    },
+    {  243, P_INT32((int *) &rc_config.channel_map[RC_CHANNEL_YAW], 3, 0, RC_MAX_CHANNELS),
+        .name = "rc_config.channel_map[YAW]",
+        .help = "Channel with yaw signal"
+    },
+    {  244, P_INT32((int *) &rc_config.channel_map[RC_CHANNEL_ARM], 4, 0, RC_MAX_CHANNELS),
+        .name = "rc_config.channel_map[ARM]",
+        .help = "Channel with arm signal"
+    },
+    {  245, P_INT32((int *) &rc_config.channel_map[RC_CHANNEL_FUNCT0], 5, 0, RC_MAX_CHANNELS),
+        .name = "rc_config.channel_map[FUNCT0]",
+        .help = "Channel with function 0 signal"
+    },
+    {  246, P_INT32((int *) &rc_config.channel_map[RC_CHANNEL_FUNCT1], 6, 0, RC_MAX_CHANNELS),
+        .name = "rc_config.channel_map[FUNCT1]",
+        .help = "Channel with function 1 signal"
+    },
+    {  247, P_INT32((int *) &rc_config.channel_map[RC_CHANNEL_FUNCT2], 7, 0, RC_MAX_CHANNELS),
+        .name = "rc_config.channel_map[FUNCT1]",
+        .help = "Channel with function 2 signal"
+    },
+
+    {  250, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_THURST], 0, 0, 1),
+        .name = "rc_config.channel_inverted[THURST]",
+        .help = "invert channel thurst"
+    },
+    {  251, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_PITCH], 0, 0, 1),
+        .name = "rc_config.channel_inverted[PITCH]",
+        .help = "invert channel pitch"
+    },
+    {  252, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_ROLL], 0, 0, 1),
+        .name = "rc_config.channel_inverted[ROLL]",
+        .help = "invert channel roll"
+    },
+    {  253, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_YAW], 0, 0, 1),
+        .name = "rc_config.channel_inverted[YAW]",
+        .help = "invert channel yaw"
+    },
+    {  254, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_ARM], 0, 0, 1),
+        .name = "rc_config.channel_inverted[ARM]",
+        .help = "invert channel arm"
+    },
+    {  255, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_FUNCT0], 0, 0, 1),
+        .name = "rc_config.channel_inverted[FUNCT0]",
+        .help = "invert channel funct 0"
+    },
+    {  256, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_FUNCT1], 0, 0, 1),
+        .name = "rc_config.channel_inverted[FUNCT1]",
+        .help = "invert channel funct 1"
+    },
+    {  257, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_FUNCT2], 0, 0, 1),
+        .name = "rc_config.channel_inverted[FUNCT2]",
+        .help = "invert channel funct 2"
     },
 
     {  300, P_FLOAT(&pid_p, 1, 0 , 10),
