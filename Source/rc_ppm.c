@@ -16,7 +16,7 @@ volatile uint32_t  rc_ppm_irq_time;
 
 // Local copy of the last received frame
 //
-static struct rc_input  rc_ppm_input;
+static struct rc_input rc_ppm_input;
 
 
 void TIM8_BRK_TIM12_IRQHandler(void)
@@ -89,7 +89,7 @@ void TIM8_BRK_TIM12_IRQHandler(void)
 }
 
 
-void rc_ppm_update(struct rc_input *rc)
+void rc_ppm_update(struct rc_output *rc)
 {
     taskDISABLE_INTERRUPTS();
 
@@ -98,7 +98,10 @@ void rc_ppm_update(struct rc_input *rc)
     if (xTaskGetTickCount() - rc_ppm_input.timestamp > 100)
         rc_ppm_input.valid = false;
 
-    memcpy(rc, &rc_ppm_input, sizeof(*rc));
+    memcpy(&rc->rc_input, &rc_ppm_input, sizeof(struct rc_input));
+
+    for (uint8_t i = 0; i < rc_ppm_input.num_channels; i++)
+        rc->channels[rc_config.channel_map[i]] = (rc_ppm_input.channels[i] - 1500) / 500.0;
 
     taskENABLE_INTERRUPTS();
 

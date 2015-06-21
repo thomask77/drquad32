@@ -8,7 +8,7 @@
 #include "stm32f4xx.h"
 
 
-void rc_dsm2_update(struct rc_input *rc)
+void rc_dsm2_update(struct rc_output *rc)
 {
 
 }
