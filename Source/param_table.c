@@ -225,6 +225,21 @@ const struct param_info  param_table[] = {
        .help = "DCM acc I Part"
     },
 
+    {  380, P_FLOAT(&fc_config.thurst_gain, 5, 0.1, 10),
+       .name = "fc_config.thurst_gain",
+       .help = "gain for thurst"
+    },
+
+    {  381, P_FLOAT(&fc_config.pitch_roll_gain, 1, 0.1, 5),
+       .name = "fc_config.pitch_roll_gain",
+       .help = "gain for pitch and roll"
+    },
+    {  382, P_FLOAT(&fc_config.yaw_gain, 1, 0.1, 5),
+       .name = "fc_config.yaw_gain",
+       .help = "gain for yaw"
+    },
+
+
     // Debug DAC outputs
     //
     {  410, P_INT32(&dac_config.dac1_id, 1020),
