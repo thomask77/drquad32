@@ -60,6 +60,7 @@ void flight_ctrl(void *pvParameters)
 
     uint8_t ok = 0;
     uint8_t old_ok = 0;
+    uint8_t stop_once = 0;
 
     dcm_reset();
 
@@ -125,12 +126,14 @@ void flight_ctrl(void *pvParameters)
                 bldc_state.motors[ID_RL].state = STATE_START;
                 bldc_state.motors[ID_RR].state = STATE_START;
             }
+            stop_once = 0;
         }
-        else {
+        else if (!stop_once) {
             bldc_state.motors[ID_FL].state = STATE_STOP;
             bldc_state.motors[ID_FR].state = STATE_STOP;
             bldc_state.motors[ID_RL].state = STATE_STOP;
             bldc_state.motors[ID_RR].state = STATE_STOP;
+            stop_once = 1;
         }
 
         old_ok = ok;
