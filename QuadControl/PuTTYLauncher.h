@@ -14,12 +14,7 @@ public:
     explicit PuTTYLauncher(QWidget *parent = 0);
     ~PuTTYLauncher();
 
-#ifdef Q_OS_WIN
-    QString puttyFilename = "C:\\Program Files (x86)\\PuTTY\\putty.exe";
-#else
-    QString puttyFilename = "/usr/bin/putty";
-#endif
-
+    QString puttyFilename;
     QString sessionName = "QuadControl";
     QMap<QString, QVariant>  settings;
     QString errorString();

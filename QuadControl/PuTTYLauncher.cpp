@@ -30,6 +30,13 @@
 PuTTYLauncher::PuTTYLauncher(QWidget *parent)
     : QWidget(parent)
 {
+#ifdef Q_OS_WIN
+    QString programFilesPath(qgetenv("PROGRAMFILES"));
+    puttyFilename = programFilesPath + "\\PuTTY\\putty.exe";
+#else
+    puttyFilename = "/usr/bin/putty";
+#endif
+
     connect(&process, &QProcess::started, this, &PuTTYLauncher::started);
     connect(&process, (void (QProcess::*)(int))&QProcess::finished, this, &PuTTYLauncher::finished);
 }
@@ -107,12 +114,10 @@ bool PuTTYLauncher::openSession()
     }
 
     QTextStream out(&file);
-
     for (auto k: settings.keys())
         out << k << "=" << settings[k].toString() << "\n";
 
     file.close();
-
 #endif
 
     process.start(puttyFilename, QStringList({ "-load", sessionName }));
