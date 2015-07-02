@@ -50,6 +50,9 @@ void rc_update(struct rc_input *rc)
         memset(rc, 0, sizeof(*rc));
         break;
     }
+    for (uint8_t i = 0; i < rc->num_channels; i++)
+        if (rc_config.channel_inverted[i])
+            rc->channels[i] *= -1;
 }
 
 
