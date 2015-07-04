@@ -24,10 +24,9 @@ void USART3_IRQHandler(void)
 }
 
 
-void uart_putc(char c)
+static void uart_putc(char c)
 {
     int ret = 0;
-
     do {
         ret = rb_putchar(&tx_buf, c);
         USART3->CR1 |= USART_CR1_TXEIE;
@@ -35,27 +34,27 @@ void uart_putc(char c)
 }
 
 
-int uart_getc(void)
+static int uart_getc(void)
 {
     return rb_getchar(&rx_buf);
 }
 
 
-void printf_putchar(char c)
+ssize_t uart_read(void *buf, size_t len)
 {
-    // Convert c-newlines to terminal CRLF
-    //
-    if (c == '\n')
-        uart_putc('\r');
+    char *d = buf;
 
-    uart_putc(c);
-}
+    while (len) {
+        int c = uart_getc();
+        if (c >= 0) {
+            *d++ = c;
+            len--;
+        }
+        else if (d != buf)
+            break;
+    }
 
-
-void uart_flush(void)
-{
-    while (rb_bytes_used(&tx_buf) > 0);
-    while (!(USART3->SR & USART_SR_TC));
+    return d - (char*)buf;
 }
 
 
@@ -66,6 +65,19 @@ ssize_t uart_write(const void *buf, size_t len)
         uart_putc(*s++);
 
     return len;
+}
+
+
+size_t uart_bytes_avail(void)
+{
+    return rb_bytes_used(&rx_buf);
+}
+
+
+void uart_flush(void)
+{
+    while (rb_bytes_used(&tx_buf) > 0);
+    while (!(USART3->SR & USART_SR_TC));
 }
 
 
@@ -128,4 +140,3 @@ void uart_init(int baudrate)
 
     USART_Cmd(USART3, ENABLE);
 }
-

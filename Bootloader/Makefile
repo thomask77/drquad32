@@ -19,7 +19,7 @@ TARGET = $(OBJDIR)/f00b00t
 INCDIRS += .
 INCDIRS += Bootloader
 
-SOURCES += Bootloader/small_printf.c
+SOURCES += Bootloader/syscalls.c
 SOURCES += Bootloader/main.c
 SOURCES += Bootloader/board.c
 SOURCES += Bootloader/uart.c
@@ -28,8 +28,8 @@ SOURCES += Bootloader/version.c
 
 SOURCES += Shared/cobsr.c
 SOURCES += Shared/errors.c
-SOURCES += Shared/crc16_sm.c
-SOURCES += Shared/crc32_sm.c
+SOURCES += Shared/crc16.c
+SOURCES += Shared/crc32.c
 
 # Standard peripheral library
 #

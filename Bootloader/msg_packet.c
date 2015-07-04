@@ -2,7 +2,7 @@
 #include "uart.h"
 #include "board.h"
 
-#include "Shared/crc16_sm.h"
+#include "Shared/crc16.h"
 #include "Shared/cobsr.h"
 #include "Shared/errors.h"
 
@@ -34,25 +34,26 @@ static crc16_t msg_calc_crc(const struct msg_header *msg)
 int msg_recv(struct msg_header *msg)
 {
     uint32_t t0 = tickcount;
-
     int rx_len = 0;
+
     for (;;) {
-        int c = uart_getc();
+        if (uart_bytes_avail()) {
+            char c;
+            uart_read(&c, 1);
 
-        if (c == 0) {
-            // end-of packet marker
-            //
-            break;
-        }
-
-        if (c >= 0) {
-            rx_buf[rx_len++] = c;
-
-            if (rx_len == 1) {
-                // Restart packet timeout after first received byte.
-                // This way, we won't interrupt a late arriving packet.
+            if (c == 0) {
+                // end-of packet marker
                 //
-                t0 = tickcount;
+                break;
+            }
+            else {
+                rx_buf[rx_len++] = c;
+                if (rx_len == 1) {
+                    // Restart packet timeout after first received byte.
+                    // This way, we won't interrupt a late arriving packet.
+                    //
+                    t0 = tickcount;
+                }
             }
         }
 

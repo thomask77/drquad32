@@ -1,5 +1,8 @@
 #include "version.h"
 #include "Shared/ansi.h"
+#include <stdio.h>
+#include <string.h>
+
 
 const struct version_info version_info = {
     .vcs_info_start = VCS_INFO_START,

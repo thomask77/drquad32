@@ -3,9 +3,7 @@
 #include "msg_packet.h"
 #include "stm32f4xx.h"
 #include "version.h"
-#include "small_printf.h"
-
-#include "Shared/crc32_sm.h"
+#include "Shared/crc32.h"
 #include "Shared/msg_structs.h"
 #include "Shared/errors.h"
 
@@ -14,6 +12,7 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 // #define XBEE_BAUDRATE  115200
 // #define XBEE_BAUDRATE  230400
@@ -147,7 +146,7 @@ static bool set_option_bytes(void)
 }
 */
 
-static bool check_app(struct version_info *info)
+static bool check_app(const struct version_info *info)
 {
     if (!APP_RANGE_VALID(APP_START, info->image_size)) {
         errno = EBOOT_RANGE;
@@ -172,7 +171,7 @@ static bool start_app(void)
     msg_printf("Starting application..\n");
 
     const struct version_info
-        *info = find_version_info(APP_START, APP_END - APP_START);
+        *info = find_version_info((void*)APP_START, APP_END - APP_START);
 
     if (!check_app(info))
         return false;

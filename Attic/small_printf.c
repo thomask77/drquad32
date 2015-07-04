@@ -50,7 +50,7 @@ static void print_char(struct spec *spec, int c)
             *spec->out++ = c;
     }
     else {
-        printf_putchar(c);
+//        printf_putchar(c);
     }
 
     spec->length++;
@@ -237,30 +237,3 @@ int sprintf(char *str, const char *fmt, ...)
     return ret;
 }
 
-
-int printf(const char *fmt, ...)
-{
-    int ret;
-    va_list args;
-
-    va_start(args, fmt);
-    ret = vprintf(fmt, args);
-    va_end(args);
-    
-    return ret;
-}
-
-
-int puts(const char *str)
-{
-    int ret = 0;
-    while (*str) {
-        printf_putchar(*str++);
-        ret++;
-    }
-
-    printf_putchar('\n');
-    ret++;
-
-    return ret;
-}

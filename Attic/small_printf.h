@@ -13,13 +13,3 @@ int snprintf(char *str, size_t size, const char *fmt, ...);
 __attribute__ ((format(printf, 2, 3)))
 int sprintf(char *str, const char *fmt, ...);
 
-__attribute__ ((format(printf, 1, 2)))
-int printf(const char *fmt, ...);
-
-int puts(const char *str);
-
-
-// printf_putchar has to be provided by the user
-//
-extern void printf_putchar(char c);
-
