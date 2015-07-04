@@ -37,20 +37,21 @@ const struct version_info *find_version_info(const void *buf, size_t size)
 void print_version_info(const struct version_info *info, int verbose)
 {
     printf(
-        ANSI_FG_LTGREEN "%s" ANSI_NORMAL " v%d.%d.%d %s\n"
+        ANSI_FG_LTGREEN "%s" ANSI_NORMAL " v%d.%d.%d %s %s %s\n"
         "Copyright (c)2015 Thomas Kindler <mail@t-kindler.de>\n\n",
         version_info.product_name,
         version_info.major,
         version_info.minor,
         version_info.patch,
-        version_info.vcs_id
+        version_info.vcs_id,
+        version_info.build_date, version_info.build_time
     );
 
     if (verbose > 0) {
         printf(
             "  Compiled  %s %s\n"
             "            by %s on %s\n"
-            "  Image     %08lx, %lu bytes",
+            "  Image     %08lx, %lu bytes\n",
             version_info.build_date, version_info.build_time,
             version_info.build_user, version_info.build_host,
             version_info.image_start, version_info.image_size

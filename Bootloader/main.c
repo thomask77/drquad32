@@ -17,13 +17,13 @@
 
 // #define XBEE_BAUDRATE  115200
 // #define XBEE_BAUDRATE  230400
-#define XBEE_BAUDRATE  460800
+#define XBEE_BAUDRATE   460800
 // #define XBEE_BAUDRATE  921600
 
-#define BOOT_TIMEOUT        2000        // [ms]
+#define BOOT_TIMEOUT    2000        // [ms]
 
-#define APP_START           0x08010000
-#define APP_END             0x08100000
+#define APP_START       0x08010000
+#define APP_END         0x08100000
 
 #define APP_RANGE_VALID(a, s) (     \
     (a & 3) == 0 &&                 \
@@ -36,10 +36,6 @@
 
 #define ARRAY_SIZE(arr)     (sizeof(arr) / sizeof((arr)[0]))
 #define FIELD_SIZEOF(t, f)  (sizeof(((t*)0)->f))
-
-
-static volatile const struct version_info *app_info =  \
-    (void*)(APP_START + VERSION_INFO_OFFSET);
 
 
 #define DBG_PRINTF(...)
@@ -124,14 +120,9 @@ static bool check_empty(const void *mem, size_t size)
     return true;
 }
 
-
+/*
 static bool set_option_bytes(void)
 {
-    // Sigh.  Flash loader demonstrator 2.5.0
-    // and OpenOCD 0.6.1 can't unlock the flash m(
-    //
-
-    /*
     if (FLASH_OB_GetWRP() == 0xFFC  &&
         FLASH_OB_GetBOR() == OB_BOR_LEVEL3)
         return true;
@@ -151,21 +142,20 @@ static bool set_option_bytes(void)
         errno = FLASH_Status_TO_ERRNO(res);
         return false;
     }
-    */
 
     return true;
 }
+*/
 
-
-static bool check_app(void)
+static bool check_app(struct version_info *info)
 {
-    if (!APP_RANGE_VALID(APP_START, app_info->image_size)) {
+    if (!APP_RANGE_VALID(APP_START, info->image_size)) {
         errno = EBOOT_RANGE;
         return false;
     }
 
     uint32_t crc = crc32_init();
-    crc = crc32_update(crc, (void*)APP_START, app_info->image_size);
+    crc = crc32_update(crc, (void*)APP_START, info->image_size);
     crc = crc32_finalize(crc);
 
     if (crc != 0) {
@@ -181,18 +171,22 @@ static bool start_app(void)
 {
     msg_printf("Starting application..\n");
 
-    uint32_t  stack = ((const uint32_t *)APP_START)[0];
-    uint32_t  entry = ((const uint32_t *)APP_START)[1];
+    const struct version_info
+        *info = find_version_info(APP_START, APP_END - APP_START);
+
+    if (!check_app(info))
+        return false;
+
+    uint32_t  stack = ((const uint32_t *) (info->image_start) )[0];
+    uint32_t  entry = ((const uint32_t *) (info->image_start) )[1];
 
     msg_printf(
         "  Initial stack: 0x%08lx\n"
         "  Entry point  : 0x%08lx\n"
         "  Image size   : %lu\n",
-        stack, entry, app_info->image_size
+        stack, entry, info->image_size
     );
 
-    if (!check_app())
-        return false;
 
     // Point of no return
     //
@@ -424,12 +418,15 @@ int main(void)
         "Copyright (c)2015 Thomas Kindler <mail@t-kindler.de>\n"
         "\n",
         version_info.product_name, version_info.major,
-        version_info.minor, version_info.patch,
-        version_info.git_version,
+        version_info.minor, version_info.patch, version_info.vcs_id,
         version_info.build_date, version_info.build_time
     );
 
-    set_option_bytes();
+    // Sigh.  Flash loader demonstrator 2.5.0
+    // and OpenOCD 0.6.1 can't unlock the flash m(
+    //
+    // set_option_bytes();
+
     message_loop();
 
     if (!start_app())
