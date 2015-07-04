@@ -44,9 +44,10 @@ SOURCES += main.cpp \
     ../Shared/crc16.c \
     ../Shared/crc32.c \
     ../Shared/errors.c \
-    TangoColors.cpp
+    TangoColors.cpp \
+    VersionInfo.cpp
 
-HEADERS  += MainWindow.h \
+HEADERS += MainWindow.h \
     AnsiParser.h \
     GLTools.h \
     DockWindows/ConnectionWindow.h \
@@ -71,9 +72,10 @@ HEADERS  += MainWindow.h \
     ../Shared/crc32.h \
     ../Shared/errors.h \
     ../Shared/msg_structs.h \
-    TangoColors.h
+    TangoColors.h \
+    VersionInfo.h
 
-FORMS    += MainWindow.ui \
+FORMS += MainWindow.ui \
     DockWindows/ConnectionWindow.ui \
     DockWindows/ConsoleWindow.ui \
     DockWindows/GLWindow.ui \
@@ -85,3 +87,12 @@ RESOURCES += \
     resources.qrc
 
 unix:LIBS += -lGLU
+
+
+ADD_VERSION_INFO = \
+    ../Tools/add_version_info/add_version_info.py -rv
+
+# this is insane :/
+#
+linux:QMAKE_POST_LINK += $$ADD_VERSION_INFO $(OUT_PWD)$(TARGET);
+win32:QMAKE_POST_LINK += $$ADD_VERSION_INFO $(DESTDIR_TARGET);

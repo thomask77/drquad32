@@ -17,14 +17,20 @@
 
 #include <QApplication>
 #include "MainWindow.h"
-
+#include "VersionInfo.h"
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    a.setApplicationName("QuadControl");
-    a.setOrganizationName("t-kindler");
+    a.setApplicationName((char*)versionInfo.product_name);
+    a.setApplicationVersion(
+        QString("%1.%2.%3 %4")
+            .arg(versionInfo.major)
+            .arg(versionInfo.minor)
+            .arg(versionInfo.patch)
+            .arg((char*)versionInfo.vcs_id)
+    );
     a.setOrganizationDomain("t-kindler.de");
 
     mainWindow = new MainWindow();
