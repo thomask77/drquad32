@@ -1,16 +1,19 @@
-#!/usr/bin/env python2
+# Calculate and manipulate CRC32
 #
-# Copyright(c) 2013 StalkR <github-misc@stalkr.net>
-# Copyright(c) 2015 Thomas Kindler <mail_git@t-kindler.de> 
+#   http://en.wikipedia.org/wiki/Cyclic_redundancy_check
+#   http://blog.stalkr.net/2011/03/crc-32-forging.html
+#   http://www.woodmann.com/fravia/crctut1.htm
 #
-# 2015-01-29, tk:  
-#   Changed forge() semantics to /change/ the bytes at pos instead of
-#   inserting there. Also return the forged CRC instead of changed data.
+# Copyright (c)2013 StalkR <github-misc@stalkr.net>
+# Copyright (c)2015 Thomas Kindler <mail_git@t-kindler.de> 
 #
-# 2015-01-28, tk:  
+# 2015-01-29, tk:
+#   Changed forge() to skip the bytes at pos instead of inserting
+#   them there. Also return the forged CRC instead of changed data.
+#
+# 2015-01-28, tk:
 #   Taken from github, added copyright header. See
 #       https://github.com/StalkR/misc/blob/master/crypto/crc32.py
-#       http://blog.stalkr.net/2011/03/crc-32-forging.html
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,19 +28,15 @@
 # limitations under the License.
 #
 
-"""Calculate and manipulate CRC32.
-http://en.wikipedia.org/wiki/Cyclic_redundancy_check
--- StalkR
-"""
 import struct
 import sys
 
 # Polynoms in reversed notation
 POLYNOMS = {
-  'CRC-32-IEEE': 0xedb88320, # 802.3
-  'CRC-32C': 0x82F63B78, # Castagnoli
-  'CRC-32K': 0xEB31D82E, # Koopman
-  'CRC-32Q': 0xD5828281,
+  'CRC-32-IEEE':  0xedb88320, # 802.3
+  'CRC-32C':      0x82F63B78, # Castagnoli
+  'CRC-32K':      0xEB31D82E, # Koopman
+  'CRC-32Q':      0xD5828281,
 }
 
 class Error(Exception):
@@ -77,23 +76,21 @@ class CRC32(object):
         self.reverse[i] = rev
 
   def calc(self, s):
-    """Calculate crc32 of a string.
-    Same crc32 as in (binascii.crc32)&0xffffffff.
-    """
+    """Calculate crc32 of a string. Same crc32 as in (binascii.crc32)&0xffffffff."""
     crc = 0xffffffff
     for c in s:
       crc = (crc >> 8) ^ self.table[(crc ^ ord(c)) & 0xff]
     return crc^0xffffffff
 
   def forge(self, wanted_crc, s, pos):
-    """Forge crc32 of a string by changing 4 bytes at position pos."""
+    """Forge a checksum that can be written at pos, so that a CRC32 over s yields the wanted_crc."""
     
     # forward calculation of CRC up to pos, sets current forward CRC state
     fwd_crc = 0xffffffff
     for c in s[:pos]:
       fwd_crc = (fwd_crc >> 8) ^ self.table[(fwd_crc ^ ord(c)) & 0xff]
     
-    # backward calculation of CRC up to pos, sets wanted backward CRC state
+    # backward calculation of CRC down to pos+4, sets wanted backward CRC state
     bkd_crc = wanted_crc^0xffffffff
     for c in s[pos+4:][::-1]:
       bkd_crc = ((bkd_crc << 8)&0xffffffff) ^ self.reverse[bkd_crc >> 24] ^ ord(c)
