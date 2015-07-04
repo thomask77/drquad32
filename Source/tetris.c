@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include "tetris.h"
 #include "ustime.h"
-#include "ansi.h"
 #include "syscalls.h"
+#include "Shared/ansi.h"
 
 struct tetris_level {
     int score;

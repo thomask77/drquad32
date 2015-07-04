@@ -25,11 +25,6 @@
 
 #include "matrix3f.h"
 
-// see heap_4.c
-//
-uint8_t ucHeap[configTOTAL_HEAP_SIZE]
-    __attribute__ ((section(".ccmram")));
-
 static TaskHandle_t wdog_handle;
 static TaskHandle_t sensor_handle;
 static TaskHandle_t led_handle;
@@ -47,7 +42,8 @@ static void init_task(void *pvParameters)
     xbee_init();
 
     printf("\n");
-    print_version_info(0);
+    print_version_info(&version_info, 0);
+
     print_fault_info();
 
     param_set_defaults();

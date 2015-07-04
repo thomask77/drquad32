@@ -89,7 +89,7 @@ SOURCES += $(FREERTOS_DIR)/queue.c
 SOURCES += $(FREERTOS_DIR)/list.c
 SOURCES += $(FREERTOS_DIR)/croutine.c
 SOURCES += $(FREERTOS_DIR)/portable/GCC/ARM_CM4F/port.c
-SOURCES += $(FREERTOS_DIR)/portable/MemMang/heap_4.c
+SOURCES += $(FREERTOS_DIR)/portable/MemMang/heap_4_ccm.c
 
 # Tracealyzer
 #
@@ -259,7 +259,7 @@ NM       = $(TOOLCHAIN)nm
 MKDIR    = mkdir
 DOXYGEN  = doxygen
 STLINK   = Tools/st-link/ST-LINK_CLI.exe
-POSTLD   = Tools/add_version_info.py # -q
+POSTLD   = Tools/add_version_info/add_version_info.py -v
 
 # Compiler flags to generate dependency files
 #

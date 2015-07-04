@@ -1,8 +1,8 @@
 #include "shell_task.h"
 #include "command.h"
 #include "readline.h"
-#include "ansi.h"
 #include "board.h"
+#include "Shared/ansi.h"
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>

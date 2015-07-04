@@ -8,7 +8,6 @@ MEMORY
     PARAM0 (rx)  : ORIGIN = 0x08008000, LENGTH = 16K
     PARAM1 (rx)  : ORIGIN = 0x0800C000, LENGTH = 16K
     FLASH  (rx)  : ORIGIN = 0x08010000, LENGTH = 960K
-    CCMRAM (rxw) : ORIGIN = 0x10000000, LENGTH = 64K
     RAM    (rxw) : ORIGIN = 0x20000000, LENGTH = 128K
 }
 
@@ -26,13 +25,6 @@ SECTIONS
   {
     . = ALIGN(4);
     KEEP(*(.isr_vector)) /* Startup code */
-    . = ALIGN(4);
-  } >FLASH
-
-  .version_info :
-  {
-    . = ALIGN(4);
-    KEEP(*(.version_info)) 
     . = ALIGN(4);
   } >FLASH
 
@@ -109,26 +101,6 @@ SECTIONS
     _edata = .;        /* define a global symbol at data end */
   } >RAM AT> FLASH
 
-  _siccmram = LOADADDR(.ccmram);
-
-  /* CCM-RAM section 
-  * 
-  * IMPORTANT NOTE! 
-  * If initialized variables will be placed in this section, 
-  * the startup code needs to be modified to copy the init-values.  
-  */
-  .ccmram :
-  {
-    . = ALIGN(4);
-    _sccmram = .;       /* create a global symbol at ccmram start */
-    *(.ccmram)
-    *(.ccmram*)
-    
-    . = ALIGN(4);
-    _eccmram = .;       /* create a global symbol at ccmram end */
-  } >CCMRAM AT> FLASH
-
-  
   /* Uninitialized data section */
   . = ALIGN(4);
   .bss :
