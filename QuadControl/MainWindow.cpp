@@ -31,6 +31,7 @@
 #include "DockWindows/GLWindow.h"
 #include "DockWindows/PlotWindow.h"
 #include "DockWindows/UpdateWindow.h"
+#include "VersionInfo.h"
 
 
 MainWindow *mainWindow;
@@ -165,22 +166,32 @@ void MainWindow::actionFullscreen_triggered()
 void MainWindow::actionAbout_triggered()
 {
     QMessageBox::about(this,
-        "QuadControl",
-        "Copyright (c)2015 Thomas Kindler <a href=\"mailto:mail_drquad@t-kindler.de\">&lt;mail_drquad@t-kindler.de&gt;</a>"
-        "<p>"
-        "This program is free software: you can redistribute it and/or modify "
-        "it under the terms of the GNU General Public License as published by "
-        "the Free Software Foundation, either version 3 of the License, or "
-        "(at your option) any later version. "
-        "<p>"
-        "This program is distributed in the hope that it will be useful, "
-        "but WITHOUT ANY WARRANTY; without even the implied warranty of "
-        "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the "
-        "GNU General Public License for more details. "
-        "<p>"
-        "You should have received a copy of the GNU General Public License "
-        "along with this program.  If not, see "
-        "<a href=\"http://www.gnu.org/licenses/\">http://www.gnu.org/licenses/</a>."
+        QApplication::applicationName(),
+        QString("<b>%1</b> v%2<p>"
+            "Compiled %3 %4<br>"
+            "by %5 on %6<p>"
+            ""
+            "Copyright (c)2015 Thomas Kindler"
+            "<a href=\"mailto:mail_drquad@t-kindler.de\">&lt;mail_drquad@t-kindler.de&gt;</a>"
+            "<p>"
+            "This program is free software: you can redistribute it and/or modify "
+            "it under the terms of the GNU General Public License as published by "
+            "the Free Software Foundation, either version 3 of the License, or "
+            "(at your option) any later version. "
+            "<p>"
+            "This program is distributed in the hope that it will be useful, "
+            "but WITHOUT ANY WARRANTY; without even the implied warranty of "
+            "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the "
+            "GNU General Public License for more details. "
+            "<p>"
+            "You should have received a copy of the GNU General Public License "
+            "along with this program.  If not, see "
+            "<a href=\"http://www.gnu.org/licenses/\">http://www.gnu.org/licenses/</a>."
+        )
+        .arg(QApplication::applicationDisplayName())
+        .arg(QApplication::applicationVersion())
+        .arg((char*)versionInfo.build_date) .arg((char*)versionInfo.build_time)
+        .arg((char*)versionInfo.build_user) .arg((char*)versionInfo.build_host)
     );
 }
 
