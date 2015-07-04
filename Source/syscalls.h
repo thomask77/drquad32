@@ -3,8 +3,9 @@
 #include <reent.h>
 #include <sys/types.h>
 
-#define FD_DEV_XBEE     0x0000
-#define FD_DEV_USB      0x1000
+#define FD_DEV_FOO      0x0000
+#define FD_DEV_XBEE     0x1000
+#define FD_DEV_USB      0x2000
 
 struct file_ops {
     ssize_t (*read_r)       (struct _reent *r, int fd, void *ptr, size_t len);

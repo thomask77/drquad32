@@ -1,4 +1,5 @@
 #include "syscalls.h"
+#include "term_foo.h"
 #include "term_xbee.h"
 #include "term_usb.h"
 #include "board.h"
@@ -59,6 +60,7 @@ ssize_t _read_r(struct _reent *r, int fd, void *ptr, size_t len)
 {
     int device = fd & 0xF000;
     switch (device) {
+    case FD_DEV_FOO:    return term_foo_ops.read_r(r, fd, ptr, len);
     case FD_DEV_XBEE:   return term_xbee_ops.read_r(r, fd, ptr, len);
     case FD_DEV_USB:    return term_usb_ops.read_r(r, fd, ptr, len);
     default:  r->_errno = ENOSYS;  return -1;
@@ -70,6 +72,7 @@ ssize_t _write_r(struct _reent *r, int fd, const void *ptr, size_t len)
 {
     int device = fd & 0xF000;
     switch (device) {
+    case FD_DEV_FOO:    return term_foo_ops.write_r(r, fd, ptr, len);
     case FD_DEV_XBEE:   return term_xbee_ops.write_r(r, fd, ptr, len);
     case FD_DEV_USB:    return term_usb_ops.write_r(r, fd, ptr, len);
     default: r->_errno = ENOSYS;  return -1;
@@ -82,6 +85,7 @@ ssize_t stdin_chars_avail(void)
     int fd = stdin->_file;
     int device = fd & 0xF000;
     switch (device) {
+    case FD_DEV_FOO:   return term_foo_ops.chars_avail_r(_impure_ptr, fd);
     case FD_DEV_XBEE:  return term_xbee_ops.chars_avail_r(_impure_ptr, fd);
     case FD_DEV_USB:   return term_usb_ops.chars_avail_r(_impure_ptr, fd);
     default: errno = ENOSYS;  return -1;

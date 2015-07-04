@@ -20,6 +20,8 @@ TARGET = $(OBJDIR)/drquad
 INCDIRS += .
 INCDIRS += Source
 
+SOURCES += Source/term_foo.c
+
 SOURCES += Source/test.c
 SOURCES += Source/main.c
 SOURCES += Source/gpn_foo.c

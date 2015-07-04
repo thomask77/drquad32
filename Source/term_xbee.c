@@ -76,7 +76,6 @@ static ssize_t xbee_write_r(struct _reent *r, int fd, const void *ptr, size_t le
         xQueueSend(tx_queue, src++, portMAX_DELAY);
 
         USART3->CR1 |= USART_CR1_TXEIE;
-
         sent++;
     }
     return sent;

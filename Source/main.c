@@ -82,25 +82,25 @@ static void init_task(void *pvParameters)
 
 
     // passed by reference. must be static.
-    static struct shell_params shell_params = {
+    static struct shell_params usb_shell_params = {
         .fd_stdin  = FD_DEV_USB | STDIN_FILENO,
         .fd_stdout = FD_DEV_USB | STDOUT_FILENO,
         .fd_stderr = FD_DEV_USB | STDERR_FILENO
     };
 
-    xTaskCreate(shell_task, "usb_shell", 1024, &shell_params, 0, &usb_handle);
+    xTaskCreate(shell_task, "usb_shell", 1024, &usb_shell_params, 0, &usb_handle);
     vTaskDelay(100);
 
-    printf("Starting serial shell task..\n");
-    xTaskCreate(shell_task, "uart_shell", 1024, NULL, 0, &shell_handle);
+    printf("Starting foo shell task..\n");
+    xTaskCreate(shell_task, "foo_shell", 1024, NULL, 0, &shell_handle);
     vTaskDelay(100);
 
 //    printf("Starting GPN special blinky foo..\n");
 //    xTaskCreate(gpn_foo_task, "gpn_foo", 1024, NULL, 1, NULL);
 //    vTaskDelay(100);
 
-    while (!stdin_chars_avail())
-        send_imu_data();
+//    while (!stdin_chars_avail())
+//        send_imu_data();
 
     // We're not needed any more.
     //

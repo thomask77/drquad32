@@ -88,6 +88,3 @@ static void cmd_test(void)
 
 SHELL_CMD(test, (cmdfunc_t)cmd_test, "test")
 
-
-
-
