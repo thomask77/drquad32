@@ -7,7 +7,6 @@
 QT += core gui
 QT += serialport
 QT += widgets
-QT += opengl
 QT += network
 QT += concurrent
 QT += printsupport
@@ -27,16 +26,12 @@ SOURCES += main.cpp \
     AnsiParser.cpp \
     DockWindows/ConnectionWindow.cpp \
     DockWindows/ConsoleWindow.cpp \
-    DockWindows/GLWindow.cpp \
     DockWindows/UpdateWindow.cpp \
     DockWindows/PlotWindow.cpp \
     Connection.cpp \
     IntelHexFile.cpp \
-    DockWindows/MyGLWidget.cpp \
     BootProtocol.cpp \
-    glut_teapot.cpp \
     WiFlyListener.cpp \
-    GLTools.cpp \
     PuTTYLauncher.cpp \
     Widgets/qcustomplot-1.3.0/qcustomplot.cpp \
     DockWindows/AddConnectionDialog.cpp \
@@ -45,21 +40,20 @@ SOURCES += main.cpp \
     ../Shared/crc32.c \
     ../Shared/errors.c \
     TangoColors.cpp \
-    VersionInfo.cpp
+    VersionInfo.cpp \
+    DockWindows/GLWindow.cpp \
+    DockWindows/MyGLWidget.cpp \
+    GLTools.cpp
 
 HEADERS += MainWindow.h \
     AnsiParser.h \
-    GLTools.h \
     DockWindows/ConnectionWindow.h \
     DockWindows/ConsoleWindow.h \
-    DockWindows/GLWindow.h \
     DockWindows/UpdateWindow.h \
     DockWindows/PlotWindow.h \
     Connection.h \
     IntelHexFile.h \
-    DockWindows/MyGLWidget.h \
     BootProtocol.h \
-    glut_teapot.h \
     QProgressDialogEx.h \
     WiFlyListener.h \
     PuTTYLauncher.h \
@@ -73,21 +67,21 @@ HEADERS += MainWindow.h \
     ../Shared/errors.h \
     ../Shared/msg_structs.h \
     TangoColors.h \
-    VersionInfo.h
+    VersionInfo.h \
+    DockWindows/GLWindow.h \
+    DockWindows/MyGLWidget.h \
+    GLTools.h
 
 FORMS += MainWindow.ui \
     DockWindows/ConnectionWindow.ui \
     DockWindows/ConsoleWindow.ui \
-    DockWindows/GLWindow.ui \
     DockWindows/UpdateWindow.ui \
     DockWindows/PlotWindow.ui \
-    DockWindows/AddConnectionDialog.ui
+    DockWindows/AddConnectionDialog.ui \
+    DockWindows/GLWindow.ui
 
 RESOURCES += \
     resources.qrc
-
-unix:LIBS += -lGLU
-
 
 ADD_VERSION_INFO = \
     ../Tools/add_version_info/add_version_info.py -rv
