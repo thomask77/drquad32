@@ -49,6 +49,7 @@ ConsoleWindow::ConsoleWindow(QWidget *parent)
     , ui(new Ui::ConsoleWindow)
 {
     ui->setupUi(this);
+    this->setContextMenuPolicy(Qt::NoContextMenu);
 
     connect(ui->actionClear, &QAction::triggered, this, &ConsoleWindow::actionClear_triggered);
     connect(ui->actionSave, &QAction::triggered, this, &ConsoleWindow::actionSave_triggered);

@@ -22,6 +22,7 @@
 #include <QMessageBox>
 #include <QDebug>
 #include <QSettings>
+#include <QMenu>
 
 #include "PuTTYLauncher.h"
 #include "TryAction.h"
@@ -34,23 +35,29 @@ ConnectionWindow::ConnectionWindow(QWidget *parent)
     , ui(new Ui::ConnectionWindow)
 {
     ui->setupUi(this);
-    ui->treeWidget->sortByColumn(0, Qt::AscendingOrder);
-    ui->treeWidget->setColumnWidth(0, 120);
-    ui->treeWidget->setColumnWidth(1, 0);
+
+    this->setContextMenuPolicy(Qt::NoContextMenu);
 
     connect(ui->actionAdd, &QAction::triggered, this, &ConnectionWindow::actionAdd_triggered);
     connect(ui->actionRemove, &QAction::triggered, this, &ConnectionWindow::actionRemove_triggered);
     connect(ui->actionConnect, &QAction::triggered, this, &ConnectionWindow::actionConnect_triggered);
     connect(ui->actionDisconnect, &QAction::triggered, this, &ConnectionWindow::actionDisconnect_triggered);
-    connect(ui->actionTerminal, &QAction::triggered, this, &ConnectionWindow::actionTerminal_triggered);
+    connect(ui->actionTerminal, &QAction::triggered, this, &ConnectionWindow::actionTerminal_triggered);  
 
-    connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &ConnectionWindow::treewidget_currentItemChanged);
+    connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &ConnectionWindow::treeWidget_currentItemChanged);
     connect(ui->treeWidget, &QTreeWidget::itemActivated, this, &ConnectionWindow::actionConnect_triggered);
 
     connect(&mainWindow->connection, &Connection::connectionChanged, this, &ConnectionWindow::connectionChanged);
     connect(&timer, &QTimer::timeout, this, &ConnectionWindow::timer_timeout);
 
     boldFont.setBold(true);
+
+    ui->treeWidget->setContextMenuPolicy(Qt::ActionsContextMenu);
+    ui->treeWidget->addActions( ui->toolBar->actions() );
+
+    ui->treeWidget->sortByColumn(0, Qt::AscendingOrder);
+    ui->treeWidget->setColumnWidth(0, 120);
+    ui->treeWidget->setColumnWidth(1, 0);
 
     serialItems = new QTreeWidgetItem();
     ui->treeWidget->addTopLevelItem(serialItems);
@@ -278,9 +285,9 @@ void ConnectionWindow::actionTerminal_triggered()
     auto url = item->data(0, Qt::UserRole).toUrl();
     auto old_url = mainWindow->connection.getUrl();
 
-    // Disconnect if already connected
-    //
     if (url == old_url) {
+        // Disconnect if already connected ..
+        //
         actionDisconnect_triggered();
         QThread::msleep(1000);
     }
@@ -294,17 +301,17 @@ void ConnectionWindow::actionTerminal_triggered()
         }
     );
 
-    QMessageBox qmb(mainWindow);
-    qmb.setText("Waiting for PuTTY...");
-    qmb.setStandardButtons(QMessageBox::Cancel);
-    qmb.setIcon(QMessageBox::Information);
-
-    connect( putty, &PuTTYLauncher::finished, &qmb, &QMessageBox::accept );
-
-    if (!res || (qmb.exec() != QMessageBox::Cancel)) {
-        // Reconnect (only) if we have disconnected
+    if (url == old_url) {
+        // .. and reconnect if were connected
         //
-        if (url == old_url)
+        QMessageBox qmb(mainWindow);
+        qmb.setText("Waiting for PuTTY...");
+        qmb.setStandardButtons(QMessageBox::Cancel);
+        qmb.setIcon(QMessageBox::Information);
+
+        connect( putty, &PuTTYLauncher::finished, &qmb, &QMessageBox::accept );
+
+        if (!res || (qmb.exec() != QMessageBox::Cancel))
             tryConnect(item);
     }
 }
@@ -320,7 +327,7 @@ void ConnectionWindow::actionDisconnect_triggered()
 }
 
 
-void ConnectionWindow::treewidget_currentItemChanged()
+void ConnectionWindow::treeWidget_currentItemChanged()
 {
     auto item = getSelectedItem();
     ui->actionConnect->setEnabled(item);

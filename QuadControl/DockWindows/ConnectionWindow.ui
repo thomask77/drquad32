@@ -10,9 +10,6 @@
     <height>348</height>
    </rect>
   </property>
-  <property name="contextMenuPolicy">
-   <enum>Qt::NoContextMenu</enum>
-  </property>
   <property name="windowTitle">
    <string>Connection</string>
   </property>
@@ -82,11 +79,11 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionAdd"/>
-   <addaction name="actionRemove"/>
-   <addaction name="separator"/>
    <addaction name="actionConnect"/>
    <addaction name="actionDisconnect"/>
+   <addaction name="separator"/>
+   <addaction name="actionAdd"/>
+   <addaction name="actionRemove"/>
    <addaction name="separator"/>
    <addaction name="actionTerminal"/>
   </widget>
@@ -121,6 +118,10 @@
    <property name="enabled">
     <bool>true</bool>
    </property>
+   <property name="icon">
+    <iconset resource="../resources.qrc">
+     <normaloff>:/new/prefix1/Images/add.png</normaloff>:/new/prefix1/Images/add.png</iconset>
+   </property>
    <property name="text">
     <string>&amp;Add</string>
    </property>
@@ -131,6 +132,10 @@
   <action name="actionRemove">
    <property name="enabled">
     <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources.qrc">
+     <normaloff>:/new/prefix1/Images/delete.png</normaloff>:/new/prefix1/Images/delete.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Remove</string>

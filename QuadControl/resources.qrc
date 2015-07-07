@@ -15,5 +15,7 @@
         <file>Images/save.png</file>
         <file>Images/software-update-available.png</file>
         <file>Images/wordwrap.png</file>
+        <file>Images/add.png</file>
+        <file>Images/delete.png</file>
     </qresource>
 </RCC>

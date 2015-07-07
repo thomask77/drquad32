@@ -53,7 +53,7 @@ private:
     void actionDisconnect_triggered();
     void actionTerminal_triggered();
 
-    void treewidget_currentItemChanged();
+    void treeWidget_currentItemChanged();
     void connectionChanged();
 
     QTreeWidgetItem *getSelectedItem();
