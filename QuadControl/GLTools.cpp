@@ -15,7 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define _GNU_SOURCE
+
 #include "GLTools.h"
+#include <cmath>
 
 
 GLTools::GLTools()
@@ -41,6 +44,7 @@ void GLTools::drawXyPlane(float size)
     const int n = 10;
 
     glBegin(GL_LINES);
+    glNormal3d(0, 0, 1);
 
     for (int x = -n; x <= n; x++) {
         glVertex3f(x / float(n) * size, -size, 0);
@@ -61,7 +65,6 @@ void GLTools::drawCoordinateSystem(float size)
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
     glDisable(GL_LIGHTING);
-
     glBegin(GL_LINES);
 
     glColor3ub(237, 28, 36);
@@ -81,27 +84,123 @@ void GLTools::drawCoordinateSystem(float size)
 }
 
 
+#include <QDebug>
 
-void GLTools::drawCappedCylinder(
-        GLUquadric *quad, float base_radius, float top_radius,
-        float height, float slices, float stacks, float loops
-)
+
+void GLTools::drawCylinder2(double baseRadius, double topRadius, double height, int slices)
 {
-//    glPushMatrix();
-//    gluCylinder(quad, base_radius, top_radius, height, slices, stacks);
+    glBegin(GL_QUADS);
 
-//    glRotated(180, 1, 0, 0);
+    double a  = atan((topRadius - baseRadius) / height);
+    double cos_a = cos(a);
+    double sin_a = sin(a);
 
-//    if (base_radius > 0)
-//        gluDisk(quad, 0, base_radius, slices, loops);
+    double x1 = 1;
+    double y1 = 0;
 
-//    glRotated(180, 1, 0, 0);
-//    glTranslated(0, 0, height);
+    for (int s=0; s<slices; s++) {
+        double x2 = cos(((s+1) % slices) * 2*M_PI / slices);
+        double y2 = sin(((s+1) % slices) * 2*M_PI / slices);
 
-//    if (top_radius > 0)
-//        gluDisk(quad, 0, top_radius, slices, loops);
+        glNormal3d(cos_a * x1, cos_a * y1, -sin_a);
+        glVertex3d(x1 * topRadius,  y1 * topRadius,  height);
+        glVertex3d(x1 * baseRadius, y1 * baseRadius, 0);
 
-//    glPopMatrix();
+        glNormal3d(cos_a * x2, cos_a * y2, -sin_a);
+        glVertex3d(x2 * baseRadius, y2 * baseRadius, 0);
+        glVertex3d(x2 * topRadius,  y2 * topRadius,  height);
+
+        x1 = x2;
+        y1 = y2;
+    }
+
+    glEnd();
+
+
+    glBegin(GL_LINES);
+
+    /*double*/ a  = atan((topRadius - baseRadius) / height);
+    /*double*/ cos_a = cos(a);
+    /*double*/ sin_a = sin(a);
+
+    /*double*/ x1 = 1;
+    /*double*/ y1 = 0;
+
+    for (int s=0; s<slices; s++) {
+        double x2 = cos(((s+1) % slices) * 2*M_PI / slices);
+        double y2 = sin(((s+1) % slices) * 2*M_PI / slices);
+
+        glVertex3d(cos_a * x1 + x1 * topRadius, cos_a * y1+ y1 * topRadius, -sin_a + height);
+        glVertex3d(x1 * topRadius,  y1 * topRadius,  height);
+
+        glVertex3d(cos_a * x1 + x1 * baseRadius, cos_a * y1 + y1 * baseRadius, -sin_a);
+        glVertex3d(x1 * baseRadius, y1 * baseRadius, 0);
+
+        glVertex3d(cos_a * x2 + x2 * baseRadius, cos_a * y2 + y2 * baseRadius, -sin_a);
+        glVertex3d(x2 * baseRadius, y2 * baseRadius, 0);
+
+        glVertex3d(cos_a * x2 + x2 * topRadius, cos_a * y2 + y2 * topRadius, -sin_a + height);
+        glVertex3d(x2 * topRadius,  y2 * topRadius,  height);
+
+        x1 = x2;
+        y1 = y2;
+    }
+
+    glEnd();
+}
+
+
+void GLTools::drawCylinder(double baseRadius, double topRadius, double height, int slices)
+{
+    glBegin(GL_QUADS);
+
+    double x1 = 1;
+    double y1 = 0;
+
+    for (int s=0; s<slices; s++) {
+        double x2 = cos(((s+1) % slices) * 2*M_PI / slices);
+        double y2 = sin(((s+1) % slices) * 2*M_PI / slices);
+
+        glNormal3d(x1, y1, 0);
+        glVertex3d(x1 * topRadius,  y1 * topRadius,  height);
+        glVertex3d(x1 * baseRadius, y1 * baseRadius, 0);
+
+        glNormal3d(x2, y2, 0);
+        glVertex3d(x2 * baseRadius, y2 * baseRadius, 0);
+        glVertex3d(x2 * topRadius,  y2 * topRadius,  height);
+
+        x1 = x2;
+        y1 = y2;
+    }
+
+    glEnd();
+}
+
+
+void GLTools::drawDisk(double inner, double outer, int slices)
+{
+    drawCylinder(outer, inner, 0, slices);
+}
+
+
+
+void GLTools::drawCappedCylinder(float baseRadius, float topRadius, float height, float slices)
+{
+    glPushMatrix();
+    drawCylinder(baseRadius, topRadius, height, slices);
+
+    glRotated(180, 1, 0, 0);
+
+    if (baseRadius > 0)
+        drawDisk(0, baseRadius, slices);
+
+    glRotated(180, 1, 0, 0);
+    glTranslated(0, 0, height);
+
+    if (topRadius > 0)
+        drawDisk(0, topRadius, slices);
+
+    glPopMatrix();
 }
 
 
@@ -110,14 +209,14 @@ void GLTools::drawArrow(float height, float radius)
 //    auto quad = gluNewQuadric();
 //    gluQuadricNormals(quad, GLU_SMOOTH);
 
-//    glPushMatrix();
+    glPushMatrix();
 
-//    draw_capped_cylinder(quad, radius * 0.25, radius * 0.25, height-radius * 2, 16, 8, 2);
+    drawCappedCylinder(radius * 0.25, radius * 0.25, height-radius * 2, 16);
 
-//    glTranslated(0, 0, height - radius*2);
-//    draw_capped_cylinder(quad, radius, 0, radius * 2, 16, 4, 4);
+    glTranslated(0, 0, height - radius*2);
+    drawCappedCylinder(radius, 0, radius * 2, 16);
 
-//    glPopMatrix();
+    glPopMatrix();
 
 //    gluDeleteQuadric(quad);
 }
@@ -289,14 +388,13 @@ void GLTools::drawTeapot(int grid, double scale, int type)
 }
 
 
-void GLTools::drawSolidTeapot(double scale)
-{
-    drawTeapot(14, scale, GL_FILL);
-}
-
-
 void GLTools::drawWireTeapot(double scale)
 {
     drawTeapot(10, scale, GL_LINE);
 }
 
+
+void GLTools::drawSolidTeapot(double scale)
+{
+    drawTeapot(14, scale, GL_FILL);
+}
