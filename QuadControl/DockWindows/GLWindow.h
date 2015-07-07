@@ -17,12 +17,6 @@ public:
 
 private:
     Ui::GLWindow *ui;
-
-    void actionScan_triggered();
-    void actionConnect_triggered();
-    void actionDisconnect_triggered();
-    void treewidget_currentItemChanged();
-    void treewidget_itemActivated();
 };
 
 #endif // GLWINDOW_H

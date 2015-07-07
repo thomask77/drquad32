@@ -1,13 +1,17 @@
 #ifndef MYGLWIDGET_H
 #define MYGLWIDGET_H
 
-#include <QGLWidget>
+#include "GLTools.h"
+#include <QOpenGLWidget>
+#include <QOpenGLFunctions_2_1>
 #include <QMatrix4x4>
 #include <QTimer>
 #include <QTime>
 #include <QMouseEvent>
 
-class MyGLWidget : public QGLWidget
+
+class MyGLWidget : public QOpenGLWidget,
+        protected QOpenGLFunctions_2_1
 {
     Q_OBJECT
 
@@ -37,10 +41,11 @@ signals:
     void zRotationChanged(float z);
 
 private:
+    GLTools *glt;
     QTimer  timer;
     QPoint  lastPos;
-    float   xRot, yRot, zRot;
-    bool    ortho, auto_rotate;
+    float   xRot = 0, yRot = 0, zRot = 0;
+    bool    ortho = false, auto_rotate = false;
 
     QTime   t_last;
 
@@ -49,6 +54,11 @@ private:
     virtual void initializeGL() override;
     virtual void resizeGL(int w, int h) override;
     virtual void paintGL() override;
+
+
+    float normalizeAngle(float angle);
+    void  draw_xy_plane(float size);
+    void  draw_coordinate_system(float size);
 };
 
 #endif // MYGLWIDGET_H

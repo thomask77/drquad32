@@ -17,33 +17,33 @@
 
 #include "MyGLWidget.h"
 
-#include <QGLFormat>
-
-#include "glut_teapot.h"
-#include "GLTools.h"
-
 MyGLWidget::MyGLWidget(QWidget *parent)
-    : QGLWidget(parent)
-    , xRot(), yRot(), zRot()
-    , ortho(), auto_rotate()
+    : QOpenGLWidget(parent)
 {
+    QSurfaceFormat format;
+    format.setSamples(4);
+    setFormat(format);
+
     connect(&timer, &QTimer::timeout, this, &MyGLWidget::timer_timeout);
     timer.start(10);
-
-    setFormat(QGLFormat(QGL::SampleBuffers));
 }
+
 
 MyGLWidget::~MyGLWidget()
 {
+    delete glt;
 }
+
 
 void MyGLWidget::initializeGL()
 {
+    initializeOpenGLFunctions();
+    glt = new GLTools();
+
     // Set up the rendering context, load shaders and other resources, etc.
     //
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
-    glEnable(GL_MULTISAMPLE);
 
     glShadeModel(GL_SMOOTH);
 
@@ -118,23 +118,24 @@ void MyGLWidget::paintGL()
     // Draw fixed ground reference systems
     //
     glTranslatef(-32, -32, -32);
-    GLTools::draw_big_coordinate_system(32);
+    glt->drawBigCoordinateSystem(32);
 
     glTranslatef(32, 32, 32);
-    GLTools::draw_coordinate_system(48);
+    glt->drawCoordinateSystem(48);
 
     // Switch to air-frame
     //
     glPushMatrix();
     glRotatef(90, 1, 0, 0);
 
-    GLTools::draw_big_coordinate_system(32);
+    glt->drawBigCoordinateSystem(32);
 
     // Draw a flying teapot
     //
     glColor3ub(128, 128, 128);
     glDisable(GL_CULL_FACE);
-    glutSolidTeapot(16);
+
+    glt->drawSolidTeapot(16);
 
     glEnable(GL_CULL_FACE);
 
@@ -165,7 +166,7 @@ void MyGLWidget::mouseMoveEvent(QMouseEvent *event)
 
 void MyGLWidget::setXRotation(float x)
 {
-    x = GLTools::normalizeAngle(x);
+    x = glt->normalizeAngle(x);
     if (x != xRot) {
         xRot = x;
         xRotationChanged(x);
@@ -175,7 +176,7 @@ void MyGLWidget::setXRotation(float x)
 
 void MyGLWidget::setYRotation(float y)
 {
-    y = GLTools::normalizeAngle(y);
+    y = glt->normalizeAngle(y);
     if (y != yRot) {
         yRot = y;
         yRotationChanged(y);
@@ -185,7 +186,7 @@ void MyGLWidget::setYRotation(float y)
 
 void MyGLWidget::setZRotation(float z)
 {
-    z = GLTools::normalizeAngle(z);
+    z = glt->normalizeAngle(z);
     if (z != zRot) {
         zRot = z;
         zRotationChanged(z);
