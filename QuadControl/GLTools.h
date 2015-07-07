@@ -15,7 +15,6 @@ public:
 
     void drawDisk(double inner, double outer, int slices);
     void drawCylinder(double baseRadius, double topRadius, double height, int slices);
-
     void drawCappedCylinder(
         float baseRadius, float topRadius, float height, float slices
     );

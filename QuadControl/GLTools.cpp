@@ -84,93 +84,22 @@ void GLTools::drawCoordinateSystem(float size)
 }
 
 
-#include <QDebug>
-
-
-void GLTools::drawCylinder2(double baseRadius, double topRadius, double height, int slices)
-{
-    glBegin(GL_QUADS);
-
-    double a  = atan((topRadius - baseRadius) / height);
-    double cos_a = cos(a);
-    double sin_a = sin(a);
-
-    double x1 = 1;
-    double y1 = 0;
-
-    for (int s=0; s<slices; s++) {
-        double x2 = cos(((s+1) % slices) * 2*M_PI / slices);
-        double y2 = sin(((s+1) % slices) * 2*M_PI / slices);
-
-        glNormal3d(cos_a * x1, cos_a * y1, -sin_a);
-        glVertex3d(x1 * topRadius,  y1 * topRadius,  height);
-        glVertex3d(x1 * baseRadius, y1 * baseRadius, 0);
-
-        glNormal3d(cos_a * x2, cos_a * y2, -sin_a);
-        glVertex3d(x2 * baseRadius, y2 * baseRadius, 0);
-        glVertex3d(x2 * topRadius,  y2 * topRadius,  height);
-
-        x1 = x2;
-        y1 = y2;
-    }
-
-    glEnd();
-
-
-    glBegin(GL_LINES);
-
-    /*double*/ a  = atan((topRadius - baseRadius) / height);
-    /*double*/ cos_a = cos(a);
-    /*double*/ sin_a = sin(a);
-
-    /*double*/ x1 = 1;
-    /*double*/ y1 = 0;
-
-    for (int s=0; s<slices; s++) {
-        double x2 = cos(((s+1) % slices) * 2*M_PI / slices);
-        double y2 = sin(((s+1) % slices) * 2*M_PI / slices);
-
-        glVertex3d(cos_a * x1 + x1 * topRadius, cos_a * y1+ y1 * topRadius, -sin_a + height);
-        glVertex3d(x1 * topRadius,  y1 * topRadius,  height);
-
-        glVertex3d(cos_a * x1 + x1 * baseRadius, cos_a * y1 + y1 * baseRadius, -sin_a);
-        glVertex3d(x1 * baseRadius, y1 * baseRadius, 0);
-
-        glVertex3d(cos_a * x2 + x2 * baseRadius, cos_a * y2 + y2 * baseRadius, -sin_a);
-        glVertex3d(x2 * baseRadius, y2 * baseRadius, 0);
-
-        glVertex3d(cos_a * x2 + x2 * topRadius, cos_a * y2 + y2 * topRadius, -sin_a + height);
-        glVertex3d(x2 * topRadius,  y2 * topRadius,  height);
-
-        x1 = x2;
-        y1 = y2;
-    }
-
-    glEnd();
-}
-
-
 void GLTools::drawCylinder(double baseRadius, double topRadius, double height, int slices)
 {
-    glBegin(GL_QUADS);
+    double alpha  = atan((topRadius - baseRadius) / height);
+    double cos_alpha = cos(alpha);
+    double sin_alpha = sin(alpha);
 
-    double x1 = 1;
-    double y1 = 0;
+    glBegin(GL_TRIANGLE_STRIP);
 
-    for (int s=0; s<slices; s++) {
-        double x2 = cos(((s+1) % slices) * 2*M_PI / slices);
-        double y2 = sin(((s+1) % slices) * 2*M_PI / slices);
+    for (int s=0; s<slices + 1; s++) {
+        double beta = (s % slices) * 2*M_PI / slices;
+        double x1 = cos(beta);
+        double y1 = sin(beta);
 
-        glNormal3d(x1, y1, 0);
+        glNormal3d(cos_alpha * x1, cos_alpha * y1, -sin_alpha);
         glVertex3d(x1 * topRadius,  y1 * topRadius,  height);
         glVertex3d(x1 * baseRadius, y1 * baseRadius, 0);
-
-        glNormal3d(x2, y2, 0);
-        glVertex3d(x2 * baseRadius, y2 * baseRadius, 0);
-        glVertex3d(x2 * topRadius,  y2 * topRadius,  height);
-
-        x1 = x2;
-        y1 = y2;
     }
 
     glEnd();
@@ -181,7 +110,6 @@ void GLTools::drawDisk(double inner, double outer, int slices)
 {
     drawCylinder(outer, inner, 0, slices);
 }
-
 
 
 void GLTools::drawCappedCylinder(float baseRadius, float topRadius, float height, float slices)

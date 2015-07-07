@@ -118,28 +118,10 @@ void MyGLWidget::paintGL()
     glt->drawXyPlane(32);
     glt->drawCoordinateSystem(32);
 
-    glPushMatrix();
-    glTranslatef(-16, -16, 0);
-    glt->drawCylinder(10, 5, 20, 10);
-    glTranslatef(32, 0, 0);
-    glt->drawCylinder2(10, 5, 20, 10);
-
-    glTranslatef(-32, 32, 0);
-    glt->drawCylinder(10, 5, 0, 10);
-    glTranslatef(32, 0, 0);
-    glt->drawCylinder2(10, 5, 0, 10);
-
-
-
-    glPopMatrix();
-
     // Draw fixed ground reference systems
     //
     glTranslatef(-32, -32, -32);
     glt->drawBigCoordinateSystem(32);
-
-
-/*
 
     glTranslatef(32, 32, 32);
     glt->drawCoordinateSystem(48);
@@ -159,7 +141,7 @@ void MyGLWidget::paintGL()
     glt->drawSolidTeapot(16);
 
     glEnable(GL_CULL_FACE);
-    glPopMatrix(); */
+    glPopMatrix();
 }
 
 void MyGLWidget::mousePressEvent(QMouseEvent *event)
