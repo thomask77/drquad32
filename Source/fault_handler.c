@@ -1,5 +1,4 @@
 #include "fault_handler.h"
-#include "term_xbee.h"
 #include "board.h"
 #include "stm32f4xx.h"
 #include <stdio.h>
@@ -14,6 +13,9 @@
  * \todo Safe info until next reboot
  */
 
+
+// TODO: noinit doesn't work if there's a firmware upgrade
+//
 struct fault_info  fault_info  __attribute__ ((section (".noinit")));
 
 /**

@@ -18,7 +18,7 @@
 //
 #define DMA_IO_TX_SIZE  (3 * DMA_IO_FREQ / 1000)
 
-extern uint8_t  dma_tx_buf[DMA_IO_TX_SIZE];
+extern uint8_t  dma_io_tx_buf[DMA_IO_TX_SIZE];
 
 extern int ws2812_brightness;
 

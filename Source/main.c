@@ -1,5 +1,5 @@
 #include "stm32f4xx.h"
-#include "term_xbee.h"
+#include "term_cobs.h"
 #include "term_usb.h"
 #include "fault_handler.h"
 #include "watchdog.h"
@@ -39,7 +39,10 @@ static void init_task(void *pvParameters)
     board_init();
     board_set_leds(LED_RED);
 
-    xbee_init();
+    // xbee_init();
+
+    term_cobs_init();
+
 
     printf("\n");
     print_version_info(&version_info, 0);
@@ -80,7 +83,6 @@ static void init_task(void *pvParameters)
     printf("Starting USB shell task..\n");
     term_usb_init();
 
-
     // passed by reference. must be static.
     static struct shell_params shell_params = {
         .fd_stdin  = FD_DEV_USB | STDIN_FILENO,
@@ -99,8 +101,8 @@ static void init_task(void *pvParameters)
 //    xTaskCreate(gpn_foo_task, "gpn_foo", 1024, NULL, 1, NULL);
 //    vTaskDelay(100);
 
-    while (!stdin_chars_avail())
-        send_imu_data();
+//    while (!stdin_chars_avail())
+//        send_imu_data();
 
     // We're not needed any more.
     //

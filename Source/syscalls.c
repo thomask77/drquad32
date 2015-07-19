@@ -1,5 +1,5 @@
 #include "syscalls.h"
-#include "term_xbee.h"
+#include "term_cobs.h"
 #include "term_usb.h"
 #include "board.h"
 #include "util.h"
@@ -23,6 +23,7 @@ struct device_info {
     const char *name;
     const struct file_ops *ops;
 };
+
 
 struct device_info  device_table[16];
 
@@ -59,7 +60,7 @@ ssize_t _read_r(struct _reent *r, int fd, void *ptr, size_t len)
 {
     int device = fd & 0xF000;
     switch (device) {
-    case FD_DEV_XBEE:   return term_xbee_ops.read_r(r, fd, ptr, len);
+    case FD_DEV_XBEE:   return term_cobs_ops.read_r(r, fd, ptr, len);
     case FD_DEV_USB:    return term_usb_ops.read_r(r, fd, ptr, len);
     default:  r->_errno = ENOSYS;  return -1;
     }
@@ -70,7 +71,7 @@ ssize_t _write_r(struct _reent *r, int fd, const void *ptr, size_t len)
 {
     int device = fd & 0xF000;
     switch (device) {
-    case FD_DEV_XBEE:   return term_xbee_ops.write_r(r, fd, ptr, len);
+    case FD_DEV_XBEE:   return term_cobs_ops.write_r(r, fd, ptr, len);
     case FD_DEV_USB:    return term_usb_ops.write_r(r, fd, ptr, len);
     default: r->_errno = ENOSYS;  return -1;
     }
@@ -82,7 +83,7 @@ ssize_t stdin_chars_avail(void)
     int fd = stdin->_file;
     int device = fd & 0xF000;
     switch (device) {
-    case FD_DEV_XBEE:  return term_xbee_ops.chars_avail_r(_impure_ptr, fd);
+    case FD_DEV_XBEE:  return term_cobs_ops.chars_avail_r(_impure_ptr, fd);
     case FD_DEV_USB:   return term_usb_ops.chars_avail_r(_impure_ptr, fd);
     default: errno = ENOSYS;  return -1;
     }
@@ -173,6 +174,8 @@ void __assert_func(const char *file, int line, const char *func, const char *fai
     taskDISABLE_INTERRUPTS();
     board_set_leds(LED_RED);
 
+    // TODO: print to post-mortem area
+/*
     xbee_poll_send("assertion \"");
     xbee_poll_send(failedexpr);
     xbee_poll_send("\" failed: file \"");
@@ -187,7 +190,7 @@ void __assert_func(const char *file, int line, const char *func, const char *fai
         xbee_poll_send(", function ");
         xbee_poll_send(func);
     }
-
+*/
     __BKPT(1);
     for(;;);
 }
@@ -198,10 +201,12 @@ void vApplicationStackOverflowHook(TaskHandle_t *pxTask, char *pcTaskName)
     taskDISABLE_INTERRUPTS();
     board_set_leds(LED_RED);
 
+    // TODO: print to post-mortem area
+/**
     xbee_poll_send("Stack overflow in ");
     xbee_poll_send(pcTaskName);
     xbee_poll_send("\n");
-
+*/
     __BKPT(2);
     for(;;);
 }

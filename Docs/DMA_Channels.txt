@@ -1,6 +1,6 @@
 DMA1_Stream0    I2C1_RX
-DMA1_Stream1    TODO: USART3_RX
-DMA1_Stream3    TODO: USART3_TX
+DMA1_Stream1    USART3_RX
+DMA1_Stream3    USART3_TX
 DMA1_Stream7    I2C1_TX
 
 DMA2_Stream0    BLDC ADCs

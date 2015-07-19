@@ -48,8 +48,9 @@ SOURCES += Source/tetris.c
 SOURCES += Source/board.c
 SOURCES += Source/syscalls.c
 SOURCES += Source/ustime.c
-SOURCES += Source/term_xbee.c
+# SOURCES += Source/term_xbee.c
 SOURCES += Source/term_usb.c
+SOURCES += Source/term_cobs.c
 
 SOURCES += Source/attitude.c
 SOURCES += Source/command.c

@@ -227,7 +227,7 @@ void gpn_foo_task(void *pvParameters)
             gpn_blink_batt_low();
 
         dma_io_clear();
-        dma_io_set_ws2812(dma_tx_buf, DMA_IO_TX_SIZE, 0x80, (uint32_t*)bitmap, ARRAY_SIZE(bitmap));
+        dma_io_set_ws2812(dma_io_tx_buf, DMA_IO_TX_SIZE, 0x80, (uint32_t*)bitmap, ARRAY_SIZE(bitmap));
         dma_io_send();
 
         //vTaskDelayUntil(&prev_time, 5);

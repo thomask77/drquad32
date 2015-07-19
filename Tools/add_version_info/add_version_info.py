@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/python2
 #
 # Add CRC checksum and version information to ELF and binary files
 #

@@ -28,8 +28,8 @@
 STATIC_ASSERT(DMA_IO_RX_SIZE % 16 == 0);
 STATIC_ASSERT(DMA_IO_TX_SIZE % 16 == 0);
 
-static uint8_t  dma_rx_buf[DMA_IO_RX_SIZE] __attribute__ ((aligned(16)));
-uint8_t  dma_tx_buf[DMA_IO_TX_SIZE] __attribute__ ((aligned(16)));
+static uint8_t  dma_io_rx_buf[DMA_IO_RX_SIZE] __attribute__ ((aligned(16)));
+uint8_t         dma_io_tx_buf[DMA_IO_TX_SIZE] __attribute__ ((aligned(16)));
 
 static uint8_t  dma_tx_ws2812_bits = 0x80;
 
@@ -46,14 +46,14 @@ void DMA2_Stream7_IRQHandler(void)
     const uint8_t mask = ~dma_tx_ws2812_bits;
 
     if (hisr & DMA_HISR_HTIF7) {
-        dma_io_decode_servo(&dma_rx_buf[0], len_2, mask);
+        dma_io_decode_servo(&dma_io_rx_buf[0], len_2, mask);
 
         DMA2->HIFCR = DMA_HIFCR_CHTIF7;
         DMA2->HIFCR; // dummy read to prevent IRQ glitches
     }
 
     if (hisr & DMA_HISR_TCIF7) {
-        dma_io_decode_servo(&dma_rx_buf[len_2], len_2, mask);
+        dma_io_decode_servo(&dma_io_rx_buf[len_2], len_2, mask);
 
         DMA2->HIFCR = DMA_HIFCR_CTCIF7;
         DMA2->HIFCR; // dummy read to prevent IRQ glitches
@@ -66,7 +66,7 @@ void DMA2_Stream7_IRQHandler(void)
 
 void dma_io_clear(void)
 {
-    memset(dma_tx_buf, 0, sizeof(dma_tx_buf));
+    memset(dma_io_tx_buf, 0, sizeof(dma_io_tx_buf));
 }
 
 
@@ -95,8 +95,8 @@ void dma_io_send(void)
     // * Set/Clear bits to match the first tx_buf entry
     // * Pins in WS2812 mode must start with a low level
     //
-    GPIOE->BSRRH =  dma_tx_buf[0] |  dma_tx_ws2812_bits;
-    GPIOE->BSRRL = ~dma_tx_buf[0] & ~dma_tx_ws2812_bits;
+    GPIOE->BSRRH =  dma_io_tx_buf[0] |  dma_tx_ws2812_bits;
+    GPIOE->BSRRL = ~dma_io_tx_buf[0] & ~dma_tx_ws2812_bits;
 
     // Enable DMA requests
     //
@@ -142,7 +142,7 @@ void dma_io_init(void)
         .DMA_PeripheralBaseAddr = (uint32_t)&GPIOE->BSRRL,
         .DMA_Memory0BaseAddr    = (uint32_t)&dma_tx_ws2812_bits,
         .DMA_DIR                = DMA_DIR_MemoryToPeripheral,
-        .DMA_BufferSize         = ARRAY_SIZE(dma_tx_buf),
+        .DMA_BufferSize         = ARRAY_SIZE(dma_io_tx_buf),
         .DMA_PeripheralInc      = DMA_PeripheralInc_Disable,
         .DMA_MemoryInc          = DMA_MemoryInc_Disable,
         .DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte,
@@ -161,9 +161,9 @@ void dma_io_init(void)
     DMA_Init(DMA2_Stream3, &(DMA_InitTypeDef) {
         .DMA_Channel            = DMA_Channel_7,
         .DMA_PeripheralBaseAddr = (uint32_t)&GPIOE->BSRRH,
-        .DMA_Memory0BaseAddr    = (uint32_t)&dma_tx_buf,
+        .DMA_Memory0BaseAddr    = (uint32_t)&dma_io_tx_buf,
         .DMA_DIR                = DMA_DIR_MemoryToPeripheral,
-        .DMA_BufferSize         = ARRAY_SIZE(dma_tx_buf),
+        .DMA_BufferSize         = ARRAY_SIZE(dma_io_tx_buf),
         .DMA_PeripheralInc      = DMA_PeripheralInc_Disable,
         .DMA_MemoryInc          = DMA_MemoryInc_Enable,
         .DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte,
@@ -182,7 +182,7 @@ void dma_io_init(void)
         .DMA_PeripheralBaseAddr = (uint32_t)&GPIOE->BSRRH,
         .DMA_Memory0BaseAddr    = (uint32_t)&dma_tx_ws2812_bits,
         .DMA_DIR                = DMA_DIR_MemoryToPeripheral,
-        .DMA_BufferSize         = ARRAY_SIZE(dma_tx_buf),
+        .DMA_BufferSize         = ARRAY_SIZE(dma_io_tx_buf),
         .DMA_PeripheralInc      = DMA_PeripheralInc_Disable,
         .DMA_MemoryInc          = DMA_MemoryInc_Disable,
         .DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte,
@@ -198,9 +198,9 @@ void dma_io_init(void)
     DMA_Init(DMA2_Stream7, &(DMA_InitTypeDef) {
         .DMA_Channel            = DMA_Channel_7,
         .DMA_PeripheralBaseAddr = (uint32_t)&GPIOE->IDR,
-        .DMA_Memory0BaseAddr    = (uint32_t)&dma_rx_buf,
+        .DMA_Memory0BaseAddr    = (uint32_t)&dma_io_rx_buf,
         .DMA_DIR                = DMA_DIR_PeripheralToMemory,
-        .DMA_BufferSize         = ARRAY_SIZE(dma_rx_buf),
+        .DMA_BufferSize         = ARRAY_SIZE(dma_io_rx_buf),
         .DMA_PeripheralInc      = DMA_PeripheralInc_Disable,
         .DMA_MemoryInc          = DMA_MemoryInc_Enable,
         .DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte,
@@ -293,14 +293,14 @@ static void cmd_dma_io_test(void)
             bitmap[i] = (ri << 16) | (gi << 8) | bi;
         }
 
-        memset(dma_tx_buf, 0, sizeof(dma_tx_buf));
+        memset(dma_io_tx_buf, 0, sizeof(dma_io_tx_buf));
 
-        dma_io_set_ws2812(dma_tx_buf, DMA_IO_TX_SIZE, 0x80, bitmap, ARRAY_SIZE(bitmap));
+        dma_io_set_ws2812(dma_io_tx_buf, DMA_IO_TX_SIZE, 0x80, bitmap, ARRAY_SIZE(bitmap));
 
         // 500 .. 2000 us pulse
         //
-        dma_io_set_servo(dma_tx_buf, DMA_IO_TX_SIZE, 0x01, 1500e-6 );
-        dma_io_set_servo(dma_tx_buf, DMA_IO_TX_SIZE, 0x02, sinf(t/10) * 750e-6 + 1500e-6 );
+        dma_io_set_servo(dma_io_tx_buf, DMA_IO_TX_SIZE, 0x01, 1500e-6 );
+        dma_io_set_servo(dma_io_tx_buf, DMA_IO_TX_SIZE, 0x02, sinf(t/10) * 750e-6 + 1500e-6 );
 
         send_buffer();
 
