@@ -98,6 +98,14 @@ void WiFlyListener::socket_readyRead()
         packet.resize(socket.pendingDatagramSize());
         socket.readDatagram(packet.data(), packet.size(), &addr);
 
+        // Convert from RFC4291 IPv4 mapped address
+        //
+        auto ok = false;
+        QHostAddress    addr_v4(addr.toIPv4Address(&ok));
+
+        if (ok)
+            addr = addr_v4;
+
         // qDebug(
         //     "WiFly message from %s: %s",
         //     qPrintable(addr.toString()),
