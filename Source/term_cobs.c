@@ -1,11 +1,16 @@
 #include "term_cobs.h"
+
 #include "Shared/ringbuf.h"
 #include "Shared/cobsr.h"
 #include "Shared/crc16.h"
 #include "Shared/msg_structs.h"
+
 #include "stm32f4xx.h"
+
 #include "FreeRTOS.h"
 #include "semphr.h"
+#include "task.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -20,8 +25,8 @@ struct cobs_stats {
     uint32_t    tx_packets;
 };
 
-static uint8_t tx_dma_buf[1024];    // muss nur für ein paket reichen
-static uint8_t rx_dma_buf[1024];    // mindestens newlib-BUFSIZ
+static uint8_t tx_dma_buf[256];    // muss nur für ein paket reichen
+static uint8_t rx_dma_buf[256];    // mindestens newlib-BUFSIZ
 
 static size_t  tx_dma_len;
 
@@ -29,20 +34,6 @@ static SemaphoreHandle_t  rx_sem;
 static SemaphoreHandle_t  tx_sem;
 
 static volatile struct cobs_stats cobs_stats;
-
-
-/**
- * TODO
- *
- * void USART3_IRQHandler(void)
- * {
- *   // Dummy reads to clear ORE flag in case of an overrun
- *   // (see STM32 UART register documentation)
- *   //
- *   if (USART3->SR & USART_SR_ORE)
- *       cobs_stats.rx_overrun++;
- * }
- */
 
 
 // DMA TX Interrupt (transfer complete)
@@ -141,6 +132,52 @@ static ssize_t term_cobs_chars_avail_r(struct _reent *r, int fd)
 }
 
 
+static rx_packet_buf[1024];
+
+
+void cobs_task(void)
+{
+    int read_pos  = 0;
+    int pkt_start = 0;
+
+    for(;;) {
+        int write_pos = sizeof(rx_dma_buf) - DMA1_Stream1->NDTR;
+
+        while (read_pos != write_pos) {
+
+            if (rx_dma_buf[read_pos] == 0) {
+                // end of packet found!
+                //
+                int n = read_pos - pkt_start - 1;
+                if (n < 0)
+                    n += sizeof(rx_dma_buf);
+
+                printf("packet received: pkt_start = %d, read_pos = %d\n", pkt_start, read_pos);
+
+                int n1 = n;
+
+                if (pkt_start + n1 > sizeof(rx_dma_buf)) {
+                    n1 = sizeof(rx_dma_buf) - pkt_start;
+                    int n2 = n - n1;
+
+                    memcpy(&rx_packet_buf[n1], &rx_dma_buf[0], n2);
+                }
+
+                memcpy(rx_packet_buf, &rx_dma_buf[pkt_start], n1);
+
+                hexdump(rx_packet_buf, n);
+
+                pkt_start = (read_pos + 1)  % sizeof(rx_dma_buf);
+            }
+
+            read_pos = (read_pos + 1) % sizeof(rx_dma_buf);
+        }
+
+        vTaskDelay(1);
+    }
+}
+
+
 void term_cobs_init(void)
 {
     if (!rx_sem)  rx_sem = xSemaphoreCreateBinary();
@@ -233,14 +270,6 @@ void term_cobs_init(void)
 
     // Initialize IRQs
     //
-//    NVIC_Init(&(NVIC_InitTypeDef) {
-//        .NVIC_IRQChannel = USART3_IRQn,
-//        .NVIC_IRQChannelPreemptionPriority =
-//                configLIBRARY_LOWEST_INTERRUPT_PRIORITY,
-//        .NVIC_IRQChannelSubPriority = 0,
-//        .NVIC_IRQChannelCmd = ENABLE
-//    });
-
     NVIC_Init(&(NVIC_InitTypeDef) {
         .NVIC_IRQChannel = DMA1_Stream3_IRQn,
         .NVIC_IRQChannelPreemptionPriority =
@@ -259,6 +288,11 @@ void term_cobs_init(void)
     DMA_ITConfig(DMA1_Stream3, DMA_IT_TC, ENABLE);
 
     USART_Cmd(USART3, ENABLE);
+
+
+    printf("Starting COBS task..\n");
+    xTaskCreate(cobs_task, "cobs_task", 256, NULL, 0, NULL);
+    vTaskDelay(100);
 }
 
 
