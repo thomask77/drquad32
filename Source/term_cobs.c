@@ -1,5 +1,6 @@
 #include "term_cobs.h"
-
+#include "util.h"
+#include "Shared/errors.h"
 #include "Shared/ringbuf.h"
 #include "Shared/cobsr.h"
 #include "Shared/crc16.h"
@@ -14,21 +15,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
 #define XBEE_BAUDRATE  460800
+
 
 struct cobs_stats {
     uint32_t    rx_bytes;
     uint32_t    rx_packets;
     uint32_t    rx_crc_errors;
+    uint32_t    rx_overrun;
 
     uint32_t    tx_bytes;
     uint32_t    tx_packets;
 };
 
-static uint8_t tx_dma_buf[256];    // muss nur für ein paket reichen
-static uint8_t rx_dma_buf[256];    // mindestens newlib-BUFSIZ
-
+static uint8_t tx_dma_buf[1024];
 static size_t  tx_dma_len;
+
+static uint8_t rx_dma_buf[1024];
 
 static SemaphoreHandle_t  rx_sem;
 static SemaphoreHandle_t  tx_sem;
@@ -105,72 +109,118 @@ static ssize_t term_cobs_write_r(struct _reent *r, int fd, const void *ptr, size
 
 static ssize_t term_cobs_read_r(struct _reent *r, int fd, void *ptr, size_t len)
 {
-    // TODO
-    // - Semantik wie bei UDP-recv():
-    //   Nicht abgeholte Bytes in einem Paket sind verloren
-    //
-    // for(;;) {
-    //   Read DMA1_Stream3->NDTR;
-    //   if (buf[i] == 0)
-    //       break;
-    //   vTaskDelay(1);
-    // }
-    //
-    // Bytes in temp-buffer kopieren
-    // COBS nach ptr decoden
-    //
-    // später: temp-buffer wegmachen (knifflig wegen wrap-around)
-    //
+
     return 0;
 }
 
 
 static ssize_t term_cobs_chars_avail_r(struct _reent *r, int fd)
 {
-//    return uxQueueMessagesWaiting(rx_queue);
+
     return 0;
 }
 
 
-static rx_packet_buf[1024];
+int       read_pos;
+uint8_t   len,  last_len;
+
+uint8_t   rx_packet_buf[1024];
+ssize_t   rx_packet_len;
+
+struct    msg_generic   rx_packet;
+
+
+static void emit(uint8_t c)
+{
+    if (rx_packet_len >= sizeof(rx_packet_buf))
+        rx_packet_len = -1;
+
+    if (rx_packet_len == -1)
+        cobs_stats.rx_overrun++;
+    else
+        rx_packet_buf[rx_packet_len++] = c;
+}
+
+
+static int decode_char(uint8_t c)
+{
+    if (c == 0) {
+        if (len > 1)
+            emit(last_len);
+        len = 0;
+        return 1;
+    }
+
+    if (len == 0) {
+        last_len = c;
+        len = c;
+        return 0;
+    }
+
+    if (--len) {
+        emit(c);
+        return 0;
+    }
+    else {
+        emit(0);
+        return decode_char(c);
+    }
+}
+
+
+int cobs_recv(void)
+{
+    int write_pos = sizeof(rx_dma_buf) - DMA1_Stream1->NDTR;
+
+    while (read_pos != write_pos) {
+        uint8_t c = rx_dma_buf[read_pos++];
+        if (read_pos >= sizeof(rx_dma_buf))
+            read_pos = 0;
+
+        if (decode_char(c)) {
+            int ret = rx_packet_len;
+            rx_packet_len = 0;
+
+            if (ret < 0)
+                errno = ECOBSR_DECODE_OUT_BUFFER_OVERFLOW;
+
+            rx_packet.h.data_len = ret - 2 - 2;
+            memcpy(&rx_packet.h.crc, rx_packet_buf, ret);
+
+            if (msg_calc_crc(&rx_packet.h) != rx_packet.h.crc) {
+                errno = EMSG_CRC;
+                return -1;
+            }
+
+            return ret;
+        }
+    }
+
+    return 0;
+}
+
+
+void handle_packet(void)
+{
+    hexdump(&rx_packet.h.crc, 2 + 2 + rx_packet.h.data_len);
+}
 
 
 void cobs_task(void)
 {
-    int read_pos  = 0;
-    int pkt_start = 0;
-
     for(;;) {
-        int write_pos = sizeof(rx_dma_buf) - DMA1_Stream1->NDTR;
+        for(;;) {
+            ssize_t len = cobs_recv();
 
-        while (read_pos != write_pos) {
-
-            if (rx_dma_buf[read_pos] == 0) {
-                // end of packet found!
-                //
-                int n = read_pos - pkt_start - 1;
-                if (n < 0)
-                    n += sizeof(rx_dma_buf);
-
-                printf("packet received: pkt_start = %d, read_pos = %d\n", pkt_start, read_pos);
-
-                int n1 = n;
-
-                if (pkt_start + n1 > sizeof(rx_dma_buf)) {
-                    n1 = sizeof(rx_dma_buf) - pkt_start;
-                    int n2 = n - n1;
-
-                    memcpy(&rx_packet_buf[n1], &rx_dma_buf[0], n2);
-                }
-
-                memcpy(rx_packet_buf, &rx_dma_buf[pkt_start], n1);
-
-                hexdump(rx_packet_buf, n);
-
-                pkt_start = (read_pos + 1)  % sizeof(rx_dma_buf);
+            if (len == 0) {
+                break;
             }
-
-            read_pos = (read_pos + 1) % sizeof(rx_dma_buf);
+            else if (len < 0) {
+                printf("recv failed: %s\n", strerror(errno));
+            }
+            else {
+                handle_packet();
+            }
         }
 
         vTaskDelay(1);
