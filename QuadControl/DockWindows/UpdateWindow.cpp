@@ -123,10 +123,10 @@ void UpdateWindow::updateButton_clicked()
     bp.ack_window = ui->sbAckWindow->value();
 
     tryAction(
-        [&]() { return bp.sendHexFile(ui->lineEdit->text()); },
-        [&]() { return QString("Firmware update failed\n%1\n%2")
-                    .arg(ui->lineEdit->text())
-                    .arg(bp.errorString());
+        [&] { return bp.sendHexFile(ui->lineEdit->text()); },
+        [&] { return QString("Firmware update failed\n%1\n%2")
+                        .arg(ui->lineEdit->text())
+                        .arg(bp.errorString());
         }, Qt::ArrowCursor
     );
 }

@@ -78,6 +78,11 @@ ConsoleWindow::ConsoleWindow(QWidget *parent)
 
     ui->plainTextEdit->setFont(font);
 
+    // Intercept key-down events
+    //
+    ui->plainTextEdit->installEventFilter(this);
+
+
     actionClear_triggered();
     timer.start(100);
 }
@@ -86,6 +91,29 @@ ConsoleWindow::ConsoleWindow(QWidget *parent)
 ConsoleWindow::~ConsoleWindow()
 {
     delete ui;
+}
+
+
+bool ConsoleWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == ui->plainTextEdit) {
+        if (event->type() == QEvent::KeyPress) {
+            auto keyEvent = (QKeyEvent *)event;
+
+            if (keyEvent->text() != "") {
+                msg_shell_from_pc msg;
+
+                msg.h.id = MSG_ID_SHELL_FROM_PC;
+                msg.h.data_len = 1;
+                msg.h.data[0] = keyEvent->text()[0].toLatin1();
+                mainWindow->connection.sendMessage(&msg.h);
+            }
+
+            return true;
+        }
+    }
+
+    return QMainWindow::eventFilter(obj, event);
 }
 
 
@@ -121,8 +149,8 @@ void ConsoleWindow::actionSave_triggered()
     QFile f(fn);
 
     tryAction(
-        [&]() { return f.open(QIODevice::WriteOnly); },
-        [&]() { return QString("Can't save\n%1\n%2")
+        [&] { return f.open(QIODevice::WriteOnly); },
+        [&] { return QString("Can't save\n%1\n%2")
                         .arg(fn) .arg(f.errorString());
         }
     );

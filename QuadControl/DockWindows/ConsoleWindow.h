@@ -26,6 +26,17 @@ public:
 private:
     Ui::ConsoleWindow *ui;
 
+    AnsiParser ansiParser;
+
+    QTextCharFormat ansiFormat;
+    QTextCursor cursor;
+
+    QTimer timer;
+    QString rx_buf;
+    QString tx_buf;
+
+    bool eventFilter(QObject *obj, QEvent *event) override;
+
     void actionClear_triggered();
     void actionSave_triggered();
     void actionWrap_triggered();
@@ -34,14 +45,6 @@ private:
 
     void ansi_attributesChanged(const AnsiParser::Attributes &attr);
     void ansi_print_text(const QString &text);
-
-    AnsiParser ansiParser;
-
-    QTextCharFormat ansiFormat;
-    QTextCursor cursor;
-
-    QTimer timer;
-    QString rx_buf;
 };
 
 #endif // CONSOLEWINDOW_H

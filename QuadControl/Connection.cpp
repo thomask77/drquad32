@@ -147,6 +147,17 @@ QString Connection::errorString()
 }
 
 
+QString hexdump(QByteArray a)
+{
+    QString s;
+
+    for (uint8_t c: a)
+        s += QString().sprintf("%02x ", c);
+
+    return s;
+}
+
+
 bool Connection::sendMessage(msg_header *msg)
 {
     if (!isOpen())
@@ -156,6 +167,9 @@ bool Connection::sendMessage(msg_header *msg)
 
     encodeMessage(msg, &packet);
     packet += '\0';
+
+    qDebug() << "raw:  " << hexdump(QByteArray((char*)&msg->crc, 2 + 2 + msg->data_len));
+    qDebug() << "cobs: " << hexdump(packet);
 
     int res = ioDevice->write(packet);
     if (res < 0) {

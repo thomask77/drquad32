@@ -256,10 +256,10 @@ bool ConnectionWindow::tryConnect(QTreeWidgetItem *item)
 
     auto url = item->data(0, Qt::UserRole).toUrl();
     auto ret = tryAction(
-        [&]() { return mainWindow->connection.openUrl(url); },
-        [&]() { return QString("Can't open\n%1\n%2")
-                    .arg(url.toString())
-                    .arg(mainWindow->connection.errorString());
+        [&] { return mainWindow->connection.openUrl(url); },
+        [&] { return QString("Can't open\n%1\n%2")
+                        .arg(url.toString())
+                        .arg(mainWindow->connection.errorString());
         }
     );
 
@@ -294,10 +294,10 @@ void ConnectionWindow::actionTerminal_triggered()
 
     auto putty = new PuTTYLauncher(mainWindow);
     auto res = tryAction(
-        [&]() { return putty->openUrl(url); },
-        [&]() { return QString("Can't launch\n%1\n%2")
-                    .arg(putty->puttyFilename)
-                    .arg(putty->errorString());
+        [&] { return putty->openUrl(url); },
+        [&] { return QString("Can't launch\n%1\n%2")
+                        .arg(putty->puttyFilename)
+                        .arg(putty->errorString());
         }
     );
 
