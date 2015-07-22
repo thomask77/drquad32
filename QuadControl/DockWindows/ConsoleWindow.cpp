@@ -24,6 +24,7 @@
 #include <QFileDialog>
 #include <QDebug>
 #include <QTime>
+#include <QMap>
 #include <QString>
 #include <QTextStream>
 #include <QMessageBox>
@@ -94,29 +95,6 @@ ConsoleWindow::~ConsoleWindow()
 }
 
 
-bool ConsoleWindow::eventFilter(QObject *obj, QEvent *event)
-{
-    if (obj == ui->plainTextEdit) {
-        if (event->type() == QEvent::KeyPress) {
-            auto keyEvent = (QKeyEvent *)event;
-
-            if (keyEvent->text() != "") {
-                msg_shell_from_pc msg;
-
-                msg.h.id = MSG_ID_SHELL_FROM_PC;
-                msg.h.data_len = 1;
-                msg.h.data[0] = keyEvent->text()[0].toLatin1();
-                mainWindow->connection.sendMessage(&msg.h);
-            }
-
-            return true;
-        }
-    }
-
-    return QMainWindow::eventFilter(obj, event);
-}
-
-
 void ConsoleWindow::actionClear_triggered()
 {
     ui->plainTextEdit->clear();
@@ -176,30 +154,6 @@ void ConsoleWindow::connection_messageReceived(const msg_generic &msg)
 }
 
 
-void ConsoleWindow::timer_timeout()
-{
-    if (ui->actionPause->isChecked())
-        return;
-
-    if (rx_buf.isEmpty())
-        return;
-
-    auto pte = ui->plainTextEdit;
-    auto vsb = pte->verticalScrollBar();
-    bool at_bottom = vsb->value() == vsb->maximum();
-
-    pte->setUpdatesEnabled(false);
-
-    ansiParser.parse(rx_buf);
-    if (at_bottom)
-        vsb->setValue(vsb->maximum());
-
-    pte->setUpdatesEnabled(true);
-
-    rx_buf.clear();
-}
-
-
 void ConsoleWindow::ansi_attributesChanged(const AnsiParser::Attributes &attr)
 {
     unsigned fg = attr.foreground + (attr.bold ? 8 : 0);
@@ -219,3 +173,82 @@ void ConsoleWindow::ansi_print_text(const QString &text)
 {
     cursor.insertText(text);
 }
+
+
+bool ConsoleWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    static const QMap<int, QString> keymap {
+        { Qt::Key_Up      , "\x1B[A"  },
+        { Qt::Key_Down    , "\x1B[B"  },
+        { Qt::Key_Right   , "\x1B[C"  },
+        { Qt::Key_Left    , "\x1B[D"  },
+        { Qt::Key_Home    , "\x1B[1~" },
+        { Qt::Key_Insert  , "\x1B[2~" },
+        { Qt::Key_Delete  , "\x1B[3~" },
+        { Qt::Key_End     , "\x1B[4~" },
+        { Qt::Key_PageUp  , "\x1B[5~" },
+        { Qt::Key_PageDown, "\x1B[6~" }
+    };
+
+    if (obj == ui->plainTextEdit) {
+        if (event->type() == QEvent::KeyPress) {
+            auto k = (QKeyEvent *)event;
+            if (k->text() != "")
+                tx_buf += k->text();
+            else
+                tx_buf += keymap[k->key()];
+
+            return true;
+        }
+    }
+
+    return QMainWindow::eventFilter(obj, event);
+}
+
+
+void ConsoleWindow::timer_timeout()
+{
+    while (!tx_buf.isEmpty()) {
+        msg_shell_from_pc msg;
+
+        msg.h.id = MSG_ID_SHELL_FROM_PC;
+        msg.h.data_len = std::min( tx_buf.length(), (int)sizeof(msg.data) );
+
+        memcpy(msg.h.data, tx_buf.toLatin1(), msg.h.data_len);
+
+        mainWindow->connection.sendMessage(&msg.h);
+
+        tx_buf = tx_buf.mid(msg.h.data_len);
+    }
+
+
+    if (!rx_buf.isEmpty() && !ui->actionPause->isChecked())  {
+        auto pte = ui->plainTextEdit;
+        auto vsb = pte->verticalScrollBar();
+        bool at_bottom = vsb->value() == vsb->maximum();
+
+        pte->setUpdatesEnabled(false);
+
+        ansiParser.parse(rx_buf);
+        if (at_bottom)
+            vsb->setValue(vsb->maximum());
+
+        pte->setUpdatesEnabled(true);
+
+        rx_buf.clear();
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
