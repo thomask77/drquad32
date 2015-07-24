@@ -83,7 +83,6 @@ ConsoleWindow::ConsoleWindow(QWidget *parent)
     //
     ui->plainTextEdit->installEventFilter(this);
 
-
     actionClear_triggered();
     timer.start(100);
 }

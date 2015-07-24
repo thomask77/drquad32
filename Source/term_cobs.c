@@ -17,6 +17,7 @@
 
 
 #define XBEE_BAUDRATE  460800
+#define RX_QUEUE_SIZE  1024
 
 
 struct cobs_stats {
@@ -36,6 +37,9 @@ static uint8_t rx_dma_buf[1024];
 
 static SemaphoreHandle_t  rx_sem;
 static SemaphoreHandle_t  tx_sem;
+
+static QueueHandle_t rx_queue;
+
 
 static volatile struct cobs_stats cobs_stats;
 
@@ -109,15 +113,42 @@ static ssize_t term_cobs_write_r(struct _reent *r, int fd, const void *ptr, size
 
 static ssize_t term_cobs_read_r(struct _reent *r, int fd, void *ptr, size_t len)
 {
+    // Blocking wait for the first char
+    //
+    unsigned timeout = portMAX_DELAY;
 
-    return 0;
+    char *dest = ptr;
+    int  received = 0;
+    static char last_c;
+
+    while (len--) {
+        char c;
+        if (!xQueueReceive(rx_queue, &c, timeout))
+            break;
+
+        // Convert terminal CRLF to c-newline
+        //
+        if (c == '\n' && last_c == '\r')
+            if (!xQueueReceive(rx_queue, &c, timeout))
+                break;
+
+        if (c == '\r')
+            *dest++ = '\n';
+        else
+            *dest++ = c;
+
+        last_c  = c;
+        timeout = 0;
+        received++;
+    }
+
+    return received;
 }
 
 
 static ssize_t term_cobs_chars_avail_r(struct _reent *r, int fd)
 {
-
-    return 0;
+    return uxQueueMessagesWaiting(rx_queue);
 }
 
 
@@ -200,13 +231,31 @@ int cobs_recv(void)
 }
 
 
-void handle_packet(void)
+
+void handle_shell_from_pc(const struct msg_shell_from_pc *msg)
 {
-    hexdump(&rx_packet.h.crc, 2 + 2 + rx_packet.h.data_len);
+    for (int i=0; i<msg->h.data_len; i++)
+        xQueueSend(rx_queue, &msg->data[i], 0);
 }
 
 
-void cobs_task(void)
+void handle_unknown_message(const struct msg_generic *msg)
+{
+    printf("unknown message(0x%04x, %d)\n", msg->h.id, msg->h.data_len);
+    hexdump(&msg->h.data, msg->h.data_len);
+}
+
+
+void handle_messsage(struct msg_generic *msg)
+{
+    switch (msg->h.id) {
+    case MSG_ID_SHELL_FROM_PC:  handle_shell_from_pc((void*)msg);      break;
+    default:                    handle_unknown_message((void*)msg);    break;
+    }
+}
+
+
+void cobs_task(void *pv)
 {
     for(;;) {
         for(;;) {
@@ -219,7 +268,7 @@ void cobs_task(void)
                 printf("recv failed: %s\n", strerror(errno));
             }
             else {
-                handle_packet();
+                handle_messsage(&rx_packet);
             }
         }
 
@@ -230,8 +279,9 @@ void cobs_task(void)
 
 void term_cobs_init(void)
 {
-    if (!rx_sem)  rx_sem = xSemaphoreCreateBinary();
-    if (!tx_sem)  tx_sem = xSemaphoreCreateBinary();
+    if (!rx_sem)    rx_sem = xSemaphoreCreateBinary();
+    if (!tx_sem)    tx_sem = xSemaphoreCreateBinary();
+    if (!rx_queue)  rx_queue = xQueueCreate(RX_QUEUE_SIZE, 1);
 
     xSemaphoreGive(tx_sem);
 
