@@ -56,7 +56,7 @@ ConsoleWindow::ConsoleWindow(QWidget *parent)
     connect(ui->actionSave, &QAction::triggered, this, &ConsoleWindow::actionSave_triggered);
     connect(ui->actionWrap, &QAction::triggered, this, &ConsoleWindow::actionWrap_triggered);
 
-    connect(&ansiParser, &AnsiParser::changeAttributes, this, &ConsoleWindow::ansi_attributesChanged);
+    connect(&ansiParser, &AnsiParser::changeAttributes, this, &ConsoleWindow::ansi_changeAttributes);
     connect(&ansiParser, &AnsiParser::printText, this, &ConsoleWindow::ansi_printText);
     connect(&ansiParser, &AnsiParser::moveCursor, this, &ConsoleWindow::ansi_moveCursor);
 
@@ -98,7 +98,7 @@ ConsoleWindow::~ConsoleWindow()
 void ConsoleWindow::actionClear_triggered()
 {
     ui->plainTextEdit->clear();
-    ansi_attributesChanged(ansiParser.attributes);
+    ansi_changeAttributes(ansiParser.attributes);
 }
 
 
@@ -154,7 +154,7 @@ void ConsoleWindow::connection_messageReceived(const msg_generic &msg)
 }
 
 
-void ConsoleWindow::ansi_attributesChanged(const AnsiParser::Attributes &attr)
+void ConsoleWindow::ansi_changeAttributes(const AnsiParser::Attributes &attr)
 {
     unsigned fg = attr.foreground + (attr.bold ? 8 : 0);
     unsigned bg = attr.background;
@@ -177,9 +177,17 @@ void ConsoleWindow::ansi_printText(const QString &text)
 
 void ConsoleWindow::ansi_moveCursor(int x, int y)
 {
+    if (x < 0)
+        cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor, -x);
+    if (x > 0)
+        cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, x);
+    if (y < 0)
+        cursor.movePosition(QTextCursor::Up, QTextCursor::MoveAnchor, -y);
+    if (y > 0)
+        cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, y);
 
+    // ui->plainTextEdit->setTextCursor(cursor);
 }
-
 
 bool ConsoleWindow::eventFilter(QObject *obj, QEvent *event)
 {

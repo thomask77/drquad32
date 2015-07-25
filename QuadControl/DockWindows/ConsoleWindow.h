@@ -43,7 +43,7 @@ private:
     void connection_messageReceived(const msg_generic &msg);
     void timer_timeout();
 
-    void ansi_attributesChanged(const AnsiParser::Attributes &attr);
+    void ansi_changeAttributes(const AnsiParser::Attributes &attr);
     void ansi_printText(const QString &text);
     void ansi_moveCursor(int x, int y);
 };
