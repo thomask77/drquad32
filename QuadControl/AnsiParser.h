@@ -25,8 +25,12 @@ public:
     void parse(const QString &text);
 
 signals:
-    void attributesChanged(const Attributes &attributes);
+    void changeAttributes(const Attributes &attributes);
+    void changeInsertMode(int enable);
     void printText(const QString &text);
+    void moveCursor(int x, int y);
+    void deleteChar();
+    void eraseEOL();
 
 private:
     int         state = 0;

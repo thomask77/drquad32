@@ -56,8 +56,9 @@ ConsoleWindow::ConsoleWindow(QWidget *parent)
     connect(ui->actionSave, &QAction::triggered, this, &ConsoleWindow::actionSave_triggered);
     connect(ui->actionWrap, &QAction::triggered, this, &ConsoleWindow::actionWrap_triggered);
 
-    connect(&ansiParser, &AnsiParser::attributesChanged, this, &ConsoleWindow::ansi_attributesChanged);
-    connect(&ansiParser, &AnsiParser::printText, this, &ConsoleWindow::ansi_print_text);
+    connect(&ansiParser, &AnsiParser::changeAttributes, this, &ConsoleWindow::ansi_attributesChanged);
+    connect(&ansiParser, &AnsiParser::printText, this, &ConsoleWindow::ansi_printText);
+    connect(&ansiParser, &AnsiParser::moveCursor, this, &ConsoleWindow::ansi_moveCursor);
 
     connect(&mainWindow->connection, &Connection::messageReceived, this, &ConsoleWindow::connection_messageReceived);
     connect(&timer, &QTimer::timeout, this, &ConsoleWindow::timer_timeout);
@@ -84,7 +85,7 @@ ConsoleWindow::ConsoleWindow(QWidget *parent)
     ui->plainTextEdit->installEventFilter(this);
 
     actionClear_triggered();
-    timer.start(100);
+    timer.start(33);
 }
 
 
@@ -168,9 +169,15 @@ void ConsoleWindow::ansi_attributesChanged(const AnsiParser::Attributes &attr)
 }
 
 
-void ConsoleWindow::ansi_print_text(const QString &text)
+void ConsoleWindow::ansi_printText(const QString &text)
 {
     cursor.insertText(text);
+}
+
+
+void ConsoleWindow::ansi_moveCursor(int x, int y)
+{
+
 }
 
 

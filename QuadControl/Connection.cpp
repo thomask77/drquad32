@@ -168,8 +168,10 @@ bool Connection::sendMessage(msg_header *msg)
     encodeMessage(msg, &packet);
     packet += '\0';
 
+    /*
     qDebug() << "raw:  " << hexdump(QByteArray((char*)&msg->crc, 2 + 2 + msg->data_len));
     qDebug() << "cobs: " << hexdump(packet);
+    */
 
     int res = ioDevice->write(packet);
     if (res < 0) {

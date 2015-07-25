@@ -56,7 +56,7 @@ void AnsiParser::parseSgr(const QString &seq)
         }
     }
 
-    emit attributesChanged(attributes);
+    emit changeAttributes(attributes);
 }
 
 
@@ -67,7 +67,27 @@ void AnsiParser::parseMulti(const QString &seq)
         //
         parseSgr( seq.mid(1, seq.length()-2) );
     }
+
+    if (seq.endsWith("4h"))
+        emit changeInsertMode(true);
+
+    if (seq.endsWith("4l"))
+        emit changeInsertMode(false);
+
+    if (seq.endsWith("K"))
+        emit eraseEOL();
+
+    if (seq.endsWith("P"))
+        emit deleteChar();
+
+    if (seq.endsWith("C"))
+        emit moveCursor(1, 0);
+
+    if (seq.endsWith("D"))
+        emit moveCursor(-1, 0);
+
 }
+
 
 void AnsiParser::parseSingle(const QString &)
 {
