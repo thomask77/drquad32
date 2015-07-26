@@ -21,6 +21,7 @@
 #include "AnsiParser.h"
 
 #include <QStringList>
+#include <QDebug>
 
 
 AnsiParser::AnsiParser(QObject *parent)
@@ -34,24 +35,18 @@ AnsiParser::~AnsiParser()
 }
 
 
-void AnsiParser::parseSgr(const QString &seq)
+void AnsiParser::parseSgr(const QList<int> &params)
 {
-    for (auto &v: seq.split(";")) {
-        bool ok;
-        int n = v.toInt(&ok);
-
-        if (!ok)
-            continue;
-
-        switch(n) {
+    for (auto p: params) {
+        switch(p) {
         case 0:         attributes = Attributes();      break;
         case 1:         attributes.bold = true;         break;
         case 4:         attributes.underline = true;    break;
         case 5:         attributes.blink = true;        break;
         case 7:         attributes.reverse = true;      break;
-        case 30 ... 37: attributes.foreground = n - 30; break;
+        case 30 ... 37: attributes.foreground = p - 30; break;
         case 39:        attributes.foreground = 7;      break;
-        case 40 ... 47: attributes.background = n - 40; break;
+        case 40 ... 47: attributes.background = p - 40; break;
         case 49:        attributes.background = 0;      break;
         }
     }
@@ -60,46 +55,67 @@ void AnsiParser::parseSgr(const QString &seq)
 }
 
 
-void AnsiParser::parseMulti(const QString &seq)
+void AnsiParser::parseModes(const QList<int> &params, bool set)
 {
-    if (seq.endsWith("m")) {
-        // select graphic rendition
-        //
-        parseSgr( seq.mid(1, seq.length()-2) );
+    for (auto p: params) {
+        switch(p) {
+        case 4:  modes.overwrite = set; break;
+        case 12: modes.echo = set;      break;
+        }
     }
 
-    if (seq.endsWith("4h"))
-        emit changeInsertMode(true);
-
-    if (seq.endsWith("4l"))
-        emit changeInsertMode(false);
-
-    if (seq.endsWith("K"))
-        emit eraseEOL();
-
-    if (seq.endsWith("P"))
-        emit deleteChar();
-
-    if (seq.endsWith("C"))
-        emit moveCursor(1, 0);
-
-    if (seq.endsWith("D"))
-        emit moveCursor(-1, 0);
-
+    emit changeModes(modes);
 }
 
 
-void AnsiParser::parseSingle(const QString &)
+void AnsiParser::parseCursor(const QList<int> &params, char command)
+{
+    int n = params.count() ? params[0] : 1;
+    switch (command) {
+    case 'A': emit moveCursor(0, -n); break;
+    case 'B': emit moveCursor(0,  n); break;
+    case 'C': emit moveCursor( n, 0); break;
+    case 'D': emit moveCursor(-n, 0); break;
+    }
+}
+
+
+void AnsiParser::parseMulti(const QString &seq)
+{
+    char command = seq.right(1)[0].toLatin1();
+
+    QList<int> params;
+    for (auto p: seq.left(seq.length()-1).split(';')) {
+        bool ok;
+        params.append( p.toInt(&ok) );
+        if (!ok)
+            return;
+    }
+
+    switch (command) {
+    case 'm':           parseSgr(params);               break;
+    case 'h':           parseModes(params, true);       break;
+    case 'l':           parseModes(params, false);      break;
+    case 'A' ... 'D':   parseCursor(params, command);   break;
+    case 'K':           emit eraseEOL();                break;
+    case 'P':           emit deleteChar();              break;
+    default:            qDebug() << "unknown sequence: " << seq;    break;
+    }
+}
+
+
+void AnsiParser::parseSingle(const QChar)
 {
     // TODO
 }
+
 
 void AnsiParser::parseChar(char c)
 {
     switch (state) {
     case 0:
         if (c == 27) {
-            // start of escape sequence
+            // start of control sequence
             //
             if (buffer != "") {
                 emit printText(buffer);
@@ -113,8 +129,6 @@ void AnsiParser::parseChar(char c)
         break;
 
     case 1:
-        buffer += c;
-
         if (c == '[') {
             // start of multi character sequence
             //
@@ -123,15 +137,13 @@ void AnsiParser::parseChar(char c)
         else if (c >= 64 && c <= 95) {
             // single character sequence
             //
-            parseSingle(buffer);
-            buffer = "";
+            parseSingle(c);
             state = 0;
         }
         else {
-            // invalid sequence
+            // invalid sequence, treat as text
             //
-            emit printText(buffer);
-            buffer = "";
+            buffer += c;
             state = 0;
         }
         break;
@@ -140,7 +152,6 @@ void AnsiParser::parseChar(char c)
         // multi character sequence
         //
         buffer += c;
-
         if (c >= 64 && c <= 126) {
             parseMulti(buffer);
             buffer = "";

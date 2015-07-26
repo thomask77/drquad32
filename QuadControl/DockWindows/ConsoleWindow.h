@@ -44,8 +44,9 @@ private:
     void timer_timeout();
 
     void ansi_changeAttributes(const AnsiParser::Attributes &attr);
-    void ansi_printText(const QString &text);
+    void ansi_changeModes(const AnsiParser::Modes &modes);
     void ansi_moveCursor(int x, int y);
+    void ansi_printText(const QString &text);
 };
 
 #endif // CONSOLEWINDOW_H
