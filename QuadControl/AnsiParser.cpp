@@ -58,7 +58,7 @@ void AnsiParser::parseSgr(const QList<int> &params)
 void AnsiParser::parseModes(const QList<int> &params, bool set)
 {
     for (auto p: params) {
-        switch(p) {
+        switch (p) {
         case 4:  modes.overwrite = set; break;
         case 12: modes.echo = set;      break;
         }
@@ -84,22 +84,23 @@ void AnsiParser::parseMulti(const QString &seq)
 {
     char command = seq.right(1)[0].toLatin1();
 
-    QList<int> params;
-    for (auto p: seq.left(seq.length()-1).split(';')) {
+    QList<int> pn;
+    for (auto s: seq.left(seq.length()-1).split(';')) {
         bool ok;
-        params.append( p.toInt(&ok) );
-        if (!ok)
-            return;
+        int  v = s.toInt(&ok);
+        if (ok) pn.append(v);
     }
 
     switch (command) {
-    case 'm':           parseSgr(params);               break;
-    case 'h':           parseModes(params, true);       break;
-    case 'l':           parseModes(params, false);      break;
-    case 'A' ... 'D':   parseCursor(params, command);   break;
-    case 'K':           emit eraseEOL();                break;
-    case 'P':           emit deleteChar();              break;
-    default:            qDebug() << "unknown sequence: " << seq;    break;
+    case 'm':           parseSgr(pn);               break;
+    case 'h':           parseModes(pn, false);      break;
+    case 'l':           parseModes(pn, true);       break;
+    case 'A' ... 'D':   parseCursor(pn, command);   break;
+    case 'H':           emit home();                break;
+    case 'J':           emit clear();               break;
+    case 'K':           emit eraseEOL();            break;
+    case 'P':           emit deleteChar(pn.count() > 0 ? pn[0] : 1);    break;
+    default:            qDebug() << "unknown sequence: " << seq;        break;
     }
 }
 

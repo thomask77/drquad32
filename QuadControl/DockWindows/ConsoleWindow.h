@@ -46,7 +46,12 @@ private:
     void ansi_changeAttributes(const AnsiParser::Attributes &attr);
     void ansi_changeModes(const AnsiParser::Modes &modes);
     void ansi_moveCursor(int x, int y);
+    void ansi_home();
+    void ansi_clear();
+    void ansi_deleteChar(uint n);
+    void ansi_eraseEOL();
     void ansi_printText(const QString &text);
+    void printText(const QString &text);
 };
 
 #endif // CONSOLEWINDOW_H

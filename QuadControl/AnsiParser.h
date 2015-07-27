@@ -34,8 +34,10 @@ signals:
     void changeAttributes(const Attributes &attributes);
     void changeModes(const Modes &modes);
     void moveCursor(int x, int y);
+    void home();
+    void clear();
+    void deleteChar(uint n);
     void printText(const QString &text);
-    void deleteChar();
     void eraseEOL();
 
 private:

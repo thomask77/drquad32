@@ -29,6 +29,7 @@
 #include <QTextStream>
 #include <QMessageBox>
 #include <QScrollBar>
+#include <QStringBuilder>
 
 #include "MainWindow.h"
 #include "TryAction.h"
@@ -57,14 +58,17 @@ ConsoleWindow::ConsoleWindow(QWidget *parent)
     connect(ui->actionWrap, &QAction::triggered, this, &ConsoleWindow::actionWrap_triggered);
 
     connect(&ansiParser, &AnsiParser::changeAttributes, this, &ConsoleWindow::ansi_changeAttributes);
-    connect(&ansiParser, &AnsiParser::changeModes, this, &ConsoleWindow::ansi_changeModes);
     connect(&ansiParser, &AnsiParser::printText, this, &ConsoleWindow::ansi_printText);
     connect(&ansiParser, &AnsiParser::moveCursor, this, &ConsoleWindow::ansi_moveCursor);
+    connect(&ansiParser, &AnsiParser::clear, this, &ConsoleWindow::ansi_clear);
+    connect(&ansiParser, &AnsiParser::home, this, &ConsoleWindow::ansi_home);
+    connect(&ansiParser, &AnsiParser::deleteChar, this, &ConsoleWindow::ansi_deleteChar);
+    connect(&ansiParser, &AnsiParser::eraseEOL, this, &ConsoleWindow::ansi_eraseEOL);
 
     connect(&mainWindow->connection, &Connection::messageReceived, this, &ConsoleWindow::connection_messageReceived);
     connect(&timer, &QTimer::timeout, this, &ConsoleWindow::timer_timeout);
 
-    cursor = QTextCursor(ui->plainTextEdit->document());
+    cursor = ui->plainTextEdit->textCursor();
 
     auto p = ui->plainTextEdit->palette();
     p.setColor(QPalette::All, QPalette::Base, ansiPalette[0].color());
@@ -160,40 +164,93 @@ void ConsoleWindow::ansi_changeAttributes(const AnsiParser::Attributes &attr)
     unsigned fg = attr.foreground + (attr.bold ? 8 : 0);
     unsigned bg = attr.background;
 
-    Q_ASSERT(fg < 16);
-    Q_ASSERT(bg < 16);
-
-    ansiFormat.setForeground(ansiPalette[fg]);
-    ansiFormat.setBackground(ansiPalette[bg]);
+    ansiFormat.setForeground(ansiPalette[fg & 15]);
+    ansiFormat.setBackground(ansiPalette[bg & 15]);
 
     cursor.setCharFormat(ansiFormat);
 }
 
 
-void ConsoleWindow::ansi_changeModes(const AnsiParser::Modes &modes)
-{
-    qDebug() << modes.overwrite;
-}
-
-
 void ConsoleWindow::ansi_moveCursor(int x, int y)
 {
-    if (x < 0)
-        cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor, -x);
-    if (x > 0)
-        cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, x);
-    if (y < 0)
-        cursor.movePosition(QTextCursor::Up, QTextCursor::MoveAnchor, -y);
-    if (y > 0)
-        cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, y);
+    if (x < 0)  cursor.movePosition(QTextCursor::Left,  QTextCursor::MoveAnchor, -x);
+    if (x > 0)  cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor,  x);
+    if (y < 0)  cursor.movePosition(QTextCursor::Up,    QTextCursor::MoveAnchor, -y);
+    if (y > 0)  cursor.movePosition(QTextCursor::Down,  QTextCursor::MoveAnchor,  y);
 
     ui->plainTextEdit->setTextCursor(cursor);
 }
 
 
+void ConsoleWindow::ansi_home()
+{
+    cursor.movePosition(QTextCursor::Start);
+    ui->plainTextEdit->setTextCursor(cursor);
+}
+
+
+void ConsoleWindow::ansi_clear()
+{
+    cursor.select(QTextCursor::Document);
+    cursor.removeSelectedText();
+}
+
+
+void ConsoleWindow::ansi_deleteChar(uint n)
+{
+    cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, n);
+    cursor.removeSelectedText();
+}
+
+
+void ConsoleWindow::ansi_eraseEOL()
+{
+    cursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
+    cursor.removeSelectedText();
+}
+
+
+void ConsoleWindow::printText(const QString &text)
+{
+    if (ansiParser.modes.overwrite) {
+        int pos = cursor.position();
+
+        cursor.movePosition(QTextCursor::EndOfLine);
+        int eol = cursor.position();
+
+        cursor.setPosition(pos);
+        cursor.movePosition(
+            QTextCursor::Right, QTextCursor::KeepAnchor,
+            std::max(text.length(), eol - pos)
+        );
+
+        cursor.removeSelectedText();
+    }
+
+    cursor.insertText(text);
+}
+
+
 void ConsoleWindow::ansi_printText(const QString &text)
 {
-    cursor.insertText(text);
+    QString buf;
+    for (auto c: text) {
+        if (c == '\r') {
+            printText(buf); buf = "";
+            cursor.movePosition(QTextCursor::StartOfLine);
+        }
+        else if (c == '\n') {
+            printText(buf); buf = "";
+            cursor.movePosition(QTextCursor::EndOfLine);
+            printText("\n");
+        }
+        else {
+            buf += c;
+        }
+    }
+    printText(buf);
+
+    ui->plainTextEdit->setTextCursor(cursor);
 }
 
 
@@ -215,10 +272,11 @@ bool ConsoleWindow::eventFilter(QObject *obj, QEvent *event)
     if (obj == ui->plainTextEdit) {
         if (event->type() == QEvent::KeyPress) {
             auto k = (QKeyEvent *)event;
-            if (k->text() != "")
-                tx_buf += k->text();
-            else
+
+            if (keymap[k->key()] != "")
                 tx_buf += keymap[k->key()];
+            else
+                tx_buf += k->text();
 
             return true;
         }
@@ -242,7 +300,6 @@ void ConsoleWindow::timer_timeout()
 
         tx_buf = tx_buf.mid(msg.h.data_len);
     }
-
 
     if (!rx_buf.isEmpty() && !ui->actionPause->isChecked())  {
         auto pte = ui->plainTextEdit;
