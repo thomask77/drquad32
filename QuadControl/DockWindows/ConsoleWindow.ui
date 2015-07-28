@@ -14,7 +14,7 @@
    <string>Console</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout">
+   <layout class="QHBoxLayout" name="horizontalLayout">
     <property name="spacing">
      <number>0</number>
     </property>
@@ -31,26 +31,7 @@
      <number>0</number>
     </property>
     <item>
-     <widget class="QPlainTextEdit" name="plainTextEdit">
-      <property name="styleSheet">
-       <string notr="true"/>
-      </property>
-      <property name="verticalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOn</enum>
-      </property>
-      <property name="undoRedoEnabled">
-       <bool>false</bool>
-      </property>
-      <property name="lineWrapMode">
-       <enum>QPlainTextEdit::NoWrap</enum>
-      </property>
-      <property name="textInteractionFlags">
-       <set>Qt::TextEditable|Qt::TextSelectableByMouse</set>
-      </property>
-      <property name="backgroundVisible">
-       <bool>false</bool>
-      </property>
-     </widget>
+     <widget class="TerminalWidget" name="terminal" native="true"/>
     </item>
    </layout>
   </widget>
@@ -68,8 +49,6 @@
    <addaction name="actionClear"/>
    <addaction name="actionPause"/>
    <addaction name="actionWrap"/>
-   <addaction name="separator"/>
-   <addaction name="actionTerminal"/>
   </widget>
   <action name="actionSave">
    <property name="icon">
@@ -116,19 +95,15 @@
     <string>Pause</string>
    </property>
   </action>
-  <action name="actionTerminal">
-   <property name="icon">
-    <iconset resource="../resources.qrc">
-     <normaloff>:/new/prefix1/Images/application_xp_terminal.png</normaloff>:/new/prefix1/Images/application_xp_terminal.png</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Terminal</string>
-   </property>
-   <property name="toolTip">
-    <string>Start Terminal Program</string>
-   </property>
-  </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>TerminalWidget</class>
+   <extends>QWidget</extends>
+   <header>TerminalWidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="../resources.qrc"/>
  </resources>

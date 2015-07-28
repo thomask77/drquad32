@@ -164,7 +164,7 @@ struct msg_boot_exit
 struct msg_shell_to_pc
 {
     struct msg_header h;
-    uint8_t data[MSG_MAX_DATA_SIZE];
+    char data[MSG_MAX_DATA_SIZE];
 };
 
 
@@ -174,7 +174,7 @@ struct msg_shell_to_pc
 struct msg_shell_from_pc
 {
     struct msg_header h;
-    uint8_t data[MSG_MAX_DATA_SIZE];
+    char data[MSG_MAX_DATA_SIZE];
 };
 
 

@@ -16,35 +16,11 @@
  */
 
 #include "ConsoleWindow.h"
-
 #include "ui_ConsoleWindow.h"
-
-#include <QSerialPort>
-#include <QSerialPortInfo>
-#include <QFileDialog>
-#include <QDebug>
-#include <QTime>
-#include <QMap>
-#include <QString>
-#include <QTextStream>
-#include <QMessageBox>
-#include <QScrollBar>
-#include <QStringBuilder>
-
 #include "MainWindow.h"
 #include "TryAction.h"
 
-static const QBrush ansiPalette[] = {
-    QBrush(QColor("#222")), QBrush(QColor("#C00")),
-    QBrush(QColor("#2C0")), QBrush(QColor("#CC0")),
-    QBrush(QColor("#00C")), QBrush(QColor("#C0C")),
-    QBrush(QColor("#0CC")), QBrush(QColor("#CCC")),
-    QBrush(QColor("#444")), QBrush(QColor("#F44")),
-    QBrush(QColor("#4F4")), QBrush(QColor("#FF4")),
-    QBrush(QColor("#44F")), QBrush(QColor("#F4F")),
-    QBrush(QColor("#4FF")), QBrush(QColor("#FFF"))
-};
-
+#include <QFileDialog>
 
 ConsoleWindow::ConsoleWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -57,40 +33,10 @@ ConsoleWindow::ConsoleWindow(QWidget *parent)
     connect(ui->actionSave, &QAction::triggered, this, &ConsoleWindow::actionSave_triggered);
     connect(ui->actionWrap, &QAction::triggered, this, &ConsoleWindow::actionWrap_triggered);
 
-    connect(&ansiParser, &AnsiParser::changeAttributes, this, &ConsoleWindow::ansi_changeAttributes);
-    connect(&ansiParser, &AnsiParser::printText, this, &ConsoleWindow::ansi_printText);
-    connect(&ansiParser, &AnsiParser::moveCursor, this, &ConsoleWindow::ansi_moveCursor);
-    connect(&ansiParser, &AnsiParser::clear, this, &ConsoleWindow::ansi_clear);
-    connect(&ansiParser, &AnsiParser::home, this, &ConsoleWindow::ansi_home);
-    connect(&ansiParser, &AnsiParser::deleteChar, this, &ConsoleWindow::ansi_deleteChar);
-    connect(&ansiParser, &AnsiParser::eraseEOL, this, &ConsoleWindow::ansi_eraseEOL);
-
     connect(&mainWindow->connection, &Connection::messageReceived, this, &ConsoleWindow::connection_messageReceived);
     connect(&timer, &QTimer::timeout, this, &ConsoleWindow::timer_timeout);
 
-    cursor = ui->plainTextEdit->textCursor();
-
-    auto p = ui->plainTextEdit->palette();
-    p.setColor(QPalette::All, QPalette::Base, ansiPalette[0].color());
-    p.setColor(QPalette::All, QPalette::Text, ansiPalette[7].color());
-    ui->plainTextEdit->setPalette(p);
-
-    auto font = ui->plainTextEdit->font();
-
-#ifdef Q_OS_WIN
-    font.setFamily("Lucida Console");
-#else
-    font.setFamily("Liberation Mono");
-#endif
-
-    ui->plainTextEdit->setFont(font);
-
-    // Intercept key-down events
-    //
-    ui->plainTextEdit->installEventFilter(this);
-
-    actionClear_triggered();
-    timer.start(33);
+    timer.start(30);
 }
 
 
@@ -102,8 +48,7 @@ ConsoleWindow::~ConsoleWindow()
 
 void ConsoleWindow::actionClear_triggered()
 {
-    ui->plainTextEdit->clear();
-    ansi_changeAttributes(ansiParser.attributes);
+    ui->terminal->clear();
 }
 
 
@@ -138,7 +83,7 @@ void ConsoleWindow::actionSave_triggered()
         }
     );
 
-    f.write(ui->plainTextEdit->toPlainText().toLatin1());
+    f.write(ui->terminal->toPlainText().toLatin1());
     f.close();
 }
 
@@ -146,188 +91,40 @@ void ConsoleWindow::actionSave_triggered()
 void ConsoleWindow::actionWrap_triggered()
 {
     if (ui->actionWrap->isChecked())
-        ui->plainTextEdit->setLineWrapMode(QPlainTextEdit::WidgetWidth);
+        ui->terminal->setLineWrapMode(QPlainTextEdit::WidgetWidth);
     else
-        ui->plainTextEdit->setLineWrapMode(QPlainTextEdit::NoWrap);
+        ui->terminal->setLineWrapMode(QPlainTextEdit::NoWrap);
 }
 
 
 void ConsoleWindow::connection_messageReceived(const msg_generic &msg)
 {
-    if (msg.h.id == MSG_ID_SHELL_TO_PC)
-        rx_buf.append( QByteArray((char*)msg.data, msg.h.data_len) );
-}
-
-
-void ConsoleWindow::ansi_changeAttributes(const AnsiParser::Attributes &attr)
-{
-    unsigned fg = attr.foreground + (attr.bold ? 8 : 0);
-    unsigned bg = attr.background;
-
-    ansiFormat.setForeground(ansiPalette[fg & 15]);
-    ansiFormat.setBackground(ansiPalette[bg & 15]);
-
-    cursor.setCharFormat(ansiFormat);
-}
-
-
-void ConsoleWindow::ansi_moveCursor(int x, int y)
-{
-    if (x < 0)  cursor.movePosition(QTextCursor::Left,  QTextCursor::MoveAnchor, -x);
-    if (x > 0)  cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor,  x);
-    if (y < 0)  cursor.movePosition(QTextCursor::Up,    QTextCursor::MoveAnchor, -y);
-    if (y > 0)  cursor.movePosition(QTextCursor::Down,  QTextCursor::MoveAnchor,  y);
-
-    ui->plainTextEdit->setTextCursor(cursor);
-}
-
-
-void ConsoleWindow::ansi_home()
-{
-    cursor.movePosition(QTextCursor::Start);
-    ui->plainTextEdit->setTextCursor(cursor);
-}
-
-
-void ConsoleWindow::ansi_clear()
-{
-    cursor.select(QTextCursor::Document);
-    cursor.removeSelectedText();
-}
-
-
-void ConsoleWindow::ansi_deleteChar(uint n)
-{
-    cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, n);
-    cursor.removeSelectedText();
-}
-
-
-void ConsoleWindow::ansi_eraseEOL()
-{
-    cursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
-    cursor.removeSelectedText();
-}
-
-
-void ConsoleWindow::printText(const QString &text)
-{
-    if (ansiParser.modes.overwrite) {
-        int pos = cursor.position();
-
-        cursor.movePosition(QTextCursor::EndOfLine);
-        int eol = cursor.position();
-
-        cursor.setPosition(pos);
-        cursor.movePosition(
-            QTextCursor::Right, QTextCursor::KeepAnchor,
-            std::max(text.length(), eol - pos)
-        );
-
-        cursor.removeSelectedText();
+    if (msg.h.id == MSG_ID_SHELL_TO_PC) {
+        auto m = (const msg_shell_to_pc&)msg;
+        rxBuf += QLatin1String(m.data, m.h.data_len);
     }
-
-    cursor.insertText(text);
-}
-
-
-void ConsoleWindow::ansi_printText(const QString &text)
-{
-    QString buf;
-    for (auto c: text) {
-        if (c == '\r') {
-            printText(buf); buf = "";
-            cursor.movePosition(QTextCursor::StartOfLine);
-        }
-        else if (c == '\n') {
-            printText(buf); buf = "";
-            cursor.movePosition(QTextCursor::EndOfLine);
-            printText("\n");
-        }
-        else {
-            buf += c;
-        }
-    }
-    printText(buf);
-
-    ui->plainTextEdit->setTextCursor(cursor);
-}
-
-
-bool ConsoleWindow::eventFilter(QObject *obj, QEvent *event)
-{
-    static const QMap<int, QString> keymap {
-        { Qt::Key_Up      , "\x1B[A"  },
-        { Qt::Key_Down    , "\x1B[B"  },
-        { Qt::Key_Right   , "\x1B[C"  },
-        { Qt::Key_Left    , "\x1B[D"  },
-        { Qt::Key_Home    , "\x1B[1~" },
-        { Qt::Key_Insert  , "\x1B[2~" },
-        { Qt::Key_Delete  , "\x1B[3~" },
-        { Qt::Key_End     , "\x1B[4~" },
-        { Qt::Key_PageUp  , "\x1B[5~" },
-        { Qt::Key_PageDown, "\x1B[6~" }
-    };
-
-    if (obj == ui->plainTextEdit) {
-        if (event->type() == QEvent::KeyPress) {
-            auto k = (QKeyEvent *)event;
-
-            if (keymap[k->key()] != "")
-                tx_buf += keymap[k->key()];
-            else
-                tx_buf += k->text();
-
-            return true;
-        }
-    }
-
-    return QMainWindow::eventFilter(obj, event);
 }
 
 
 void ConsoleWindow::timer_timeout()
 {
-    while (!tx_buf.isEmpty()) {
+    for (;;) {
         msg_shell_from_pc msg;
 
-        msg.h.id = MSG_ID_SHELL_FROM_PC;
-        msg.h.data_len = std::min( tx_buf.length(), (int)sizeof(msg.data) );
+        auto buf = ui->terminal->read( sizeof(msg.data) );
+        if (buf.isEmpty())
+            break;
 
-        memcpy(msg.h.data, tx_buf.toLatin1(), msg.h.data_len);
+        msg.h.id = MSG_ID_SHELL_FROM_PC;
+        msg.h.data_len = buf.length();
+        memcpy(msg.h.data, buf.toLatin1(), msg.h.data_len);
 
         mainWindow->connection.sendMessage(&msg.h);
-
-        tx_buf = tx_buf.mid(msg.h.data_len);
     }
 
-    if (!rx_buf.isEmpty() && !ui->actionPause->isChecked())  {
-        auto pte = ui->plainTextEdit;
-        auto vsb = pte->verticalScrollBar();
-        bool at_bottom = vsb->value() == vsb->maximum();
-
-        pte->setUpdatesEnabled(false);
-
-        ansiParser.parse(rx_buf);
-        if (at_bottom)
-            vsb->setValue(vsb->maximum());
-
-        pte->setUpdatesEnabled(true);
-
-        rx_buf.clear();
+    if (!rxBuf.isEmpty() && !ui->actionPause->isChecked())  {
+        ui->terminal->write(rxBuf);
+        rxBuf.clear();
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 

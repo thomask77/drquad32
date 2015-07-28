@@ -7,7 +7,6 @@
 #include <QTextCursor>
 #include <QTextCharFormat>
 #include <QMainWindow>
-#include "../AnsiParser.h"
 
 namespace Ui {
 class ConsoleWindow;
@@ -26,32 +25,15 @@ public:
 private:
     Ui::ConsoleWindow *ui;
 
-    AnsiParser ansiParser;
-
-    QTextCharFormat ansiFormat;
-    QTextCursor cursor;
-
-    QTimer timer;
-    QString rx_buf;
-    QString tx_buf;
-
-    bool eventFilter(QObject *obj, QEvent *event) override;
+    QTimer  timer;
+    QString rxBuf;
 
     void actionClear_triggered();
     void actionSave_triggered();
     void actionWrap_triggered();
+
     void connection_messageReceived(const msg_generic &msg);
     void timer_timeout();
-
-    void ansi_changeAttributes(const AnsiParser::Attributes &attr);
-    void ansi_changeModes(const AnsiParser::Modes &modes);
-    void ansi_moveCursor(int x, int y);
-    void ansi_home();
-    void ansi_clear();
-    void ansi_deleteChar(uint n);
-    void ansi_eraseEOL();
-    void ansi_printText(const QString &text);
-    void printText(const QString &text);
 };
 
 #endif // CONSOLEWINDOW_H

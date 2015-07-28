@@ -23,7 +23,6 @@ INCLUDEPATH += .. \
 
 SOURCES += main.cpp \
     MainWindow.cpp \
-    AnsiParser.cpp \
     DockWindows/ConnectionWindow.cpp \
     DockWindows/ConsoleWindow.cpp \
     DockWindows/UpdateWindow.cpp \
@@ -43,10 +42,10 @@ SOURCES += main.cpp \
     VersionInfo.cpp \
     DockWindows/GLWindow.cpp \
     DockWindows/MyGLWidget.cpp \
-    GLTools.cpp
+    GLTools.cpp \
+    TerminalWidget.cpp
 
 HEADERS += MainWindow.h \
-    AnsiParser.h \
     DockWindows/ConnectionWindow.h \
     DockWindows/ConsoleWindow.h \
     DockWindows/UpdateWindow.h \
@@ -70,7 +69,8 @@ HEADERS += MainWindow.h \
     VersionInfo.h \
     DockWindows/GLWindow.h \
     DockWindows/MyGLWidget.h \
-    GLTools.h
+    GLTools.h \
+    TerminalWidget.h
 
 FORMS += MainWindow.ui \
     DockWindows/ConnectionWindow.ui \
