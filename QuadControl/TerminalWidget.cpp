@@ -2,7 +2,7 @@
 #include "ui_TerminalWidget.h"
 #include <QDebug>
 #include <QScrollBar>
-
+#include <QPainter>
 
 static const QBrush ansiPalette[] = {
     QBrush(QColor("#222")), QBrush(QColor("#C00")),
@@ -30,15 +30,33 @@ static const QMap<int, QString> keymap {
 };
 
 
+class MyPlainTextEdit : public QPlainTextEdit
+{
+    using QPlainTextEdit::QPlainTextEdit;   // inherit constructors
+
+    virtual void paintEvent(QPaintEvent *e) override
+    {
+        QPlainTextEdit::paintEvent(e);
+
+        QPainter painter(viewport());
+        painter.fillRect(cursorRect(), ansiPalette[7]);
+    }
+};
+
+
 TerminalWidget::TerminalWidget(QWidget *parent) :
     QWidget(parent)
 {
-    plainTextEdit = new QPlainTextEdit();
+    plainTextEdit = new MyPlainTextEdit();
 
-    plainTextEdit->setContextMenuPolicy(Qt::NoContextMenu);
+    // plainTextEdit->setContextMenuPolicy(Qt::NoContextMenu);
     plainTextEdit->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     plainTextEdit->setFrameShape(QFrame::NoFrame);
     plainTextEdit->setUndoRedoEnabled(false);
+
+    plainTextEdit->setReadOnly(true);
+    plainTextEdit->setMaximumBlockCount(2000);
+    // plainTextEdit->setCenterOnScroll(true);
 
     plainTextEdit->installEventFilter(this);
 
@@ -88,6 +106,8 @@ void TerminalWidget::setLineWrapMode(QPlainTextEdit::LineWrapMode mode)
 
 bool TerminalWidget::eventFilter(QObject *obj, QEvent *event)
 {
+    // qDebug() << obj << event;
+
     if (obj == plainTextEdit) {
         if (event->type() == QEvent::KeyPress) {
             auto k = (QKeyEvent *)event;
@@ -115,9 +135,6 @@ QString TerminalWidget::read(size_t maxSize)
 
 void TerminalWidget::write(const QString &text)
 {
-    auto vsb = plainTextEdit->verticalScrollBar();
-    auto atBottom = vsb->value() == vsb->maximum();
-
     plainTextEdit->setUpdatesEnabled(false);
 
     for (char c: text.toLatin1())
@@ -127,9 +144,6 @@ void TerminalWidget::write(const QString &text)
         printText(rxBuffer);
         rxBuffer.clear();
     }
-
-    if (atBottom)
-        vsb->setValue(vsb->maximum());
 
     plainTextEdit->setUpdatesEnabled(true);
 }
