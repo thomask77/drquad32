@@ -37,9 +37,14 @@ TerminalWidget::TerminalWidget(QWidget *parent) :
     QPlainTextEdit(parent)
 {
     setReadOnly(true);
+    setContextMenuPolicy(Qt::NoContextMenu);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     setFrameShape(QFrame::NoFrame);
     setMaximumBlockCount(2000);
+
+    // Copy text on selection change
+    //
+    connect(this, &TerminalWidget::selectionChanged, this, &copy);
 
     auto p = palette();
     p.setColor(QPalette::All, QPalette::Base, ansiPalette[0].color());
@@ -98,6 +103,8 @@ bool TerminalWidget::event(QEvent *e)
         auto ke = reinterpret_cast<QKeyEvent*>(e);
 
         if (ke->modifiers() == Qt::ShiftModifier && ke->key() == Qt::Key_Insert) {
+            // Paste on SHIFT+Insert
+            //
             txBuffer += QApplication::clipboard()->text();
         }
         else if (keymap[ke->key()] != "") {
@@ -106,12 +113,21 @@ bool TerminalWidget::event(QEvent *e)
         else if (ke->text() != "") {
             txBuffer += ke->text();
         }
-
         return true;
     }
-    else
-        return QPlainTextEdit::event(e);
+    else if (e->type() == QEvent::MouseButtonPress ||
+             e->type() == QEvent::MouseButtonDblClick )
+    {
+        auto me = reinterpret_cast<QMouseEvent*>(e);
+        if (me->button() == Qt::RightButton) {
+            // Paste on right mouse button
+            //
+            txBuffer += QApplication::clipboard()->text();
+            return true;
+        }
+    }
 
+    return QPlainTextEdit::event(e);
 }
 
 
