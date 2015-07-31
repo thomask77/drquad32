@@ -7,11 +7,8 @@
 #include <QTextCharFormat>
 #include <QTextCursor>
 
-namespace Ui {
-class TerminalWidget;
-}
 
-class TerminalWidget : public QWidget
+class TerminalWidget : public QPlainTextEdit
 {
     Q_OBJECT
 
@@ -19,18 +16,14 @@ public:
     explicit TerminalWidget(QWidget *parent = 0);
     ~TerminalWidget();
 
-    void clear();
-    QString toPlainText();
-
-    void setLineWrapMode(QPlainTextEdit::LineWrapMode mode);
-
     QString read(size_t maxSize = SIZE_MAX);
     void write(const QString &text);
 
-private:
-    QPlainTextEdit  *plainTextEdit;
-    QTextCharFormat format;
-    QTextCursor     cursor;
+protected:
+    virtual bool event(QEvent *e) override;
+    virtual void paintEvent(QPaintEvent *e) override;
+
+    QTextCursor  cursor;
 
     struct Attributes {
         int foreground = 7;
@@ -49,8 +42,6 @@ private:
     int         rxState = 0;
     QString     rxBuffer;
     QString     txBuffer;
-
-    bool eventFilter(QObject *obj, QEvent *event) override;
 
     void printText(const QString &text);
     void parseSgr(const QList<int> &params);

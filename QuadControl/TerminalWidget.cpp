@@ -3,6 +3,9 @@
 #include <QDebug>
 #include <QScrollBar>
 #include <QPainter>
+#include <QApplication>
+#include <QClipboard>
+
 
 static const QBrush ansiPalette[] = {
     QBrush(QColor("#222")), QBrush(QColor("#C00")),
@@ -30,98 +33,33 @@ static const QMap<int, QString> keymap {
 };
 
 
-class MyPlainTextEdit : public QPlainTextEdit
-{
-    using QPlainTextEdit::QPlainTextEdit;   // inherit constructors
-
-    virtual void paintEvent(QPaintEvent *e) override
-    {
-        QPlainTextEdit::paintEvent(e);
-
-        QPainter painter(viewport());
-        painter.fillRect(cursorRect(), ansiPalette[7]);
-    }
-};
-
-
 TerminalWidget::TerminalWidget(QWidget *parent) :
-    QWidget(parent)
+    QPlainTextEdit(parent)
 {
-    plainTextEdit = new MyPlainTextEdit();
+    setReadOnly(true);
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    setFrameShape(QFrame::NoFrame);
+    setMaximumBlockCount(2000);
 
-    // plainTextEdit->setContextMenuPolicy(Qt::NoContextMenu);
-    plainTextEdit->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-    plainTextEdit->setFrameShape(QFrame::NoFrame);
-    plainTextEdit->setUndoRedoEnabled(false);
-
-    plainTextEdit->setReadOnly(true);
-    plainTextEdit->setMaximumBlockCount(2000);
-    // plainTextEdit->setCenterOnScroll(true);
-
-    plainTextEdit->installEventFilter(this);
-
-    auto p = plainTextEdit->palette();
+    auto p = palette();
     p.setColor(QPalette::All, QPalette::Base, ansiPalette[0].color());
     p.setColor(QPalette::All, QPalette::Text, ansiPalette[7].color());
-    plainTextEdit->setPalette(p);
+    setPalette(p);
 
-    auto font = plainTextEdit->font();
+    auto f = font();
 #ifdef Q_OS_WIN
-    font.setFamily("Lucida Console");
+    f.setFamily("Lucida Console");
 #else
-    font.setFamily("Liberation Mono");
+    f.setFamily("Liberation Mono");
 #endif
-    plainTextEdit->setFont(font);
+    setFont(f);
 
-    cursor = plainTextEdit->textCursor();
-
-    auto layout = new QHBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(plainTextEdit);
+    cursor = textCursor();
 }
 
 
 TerminalWidget::~TerminalWidget()
 {
-}
-
-
-void TerminalWidget::clear()
-{
-    plainTextEdit->clear();
-}
-
-
-QString TerminalWidget::toPlainText()
-{
-    return plainTextEdit->toPlainText();
-}
-
-
-void TerminalWidget::setLineWrapMode(QPlainTextEdit::LineWrapMode mode)
-{
-    plainTextEdit->setLineWrapMode(mode);
-}
-
-
-bool TerminalWidget::eventFilter(QObject *obj, QEvent *event)
-{
-    // qDebug() << obj << event;
-
-    if (obj == plainTextEdit) {
-        if (event->type() == QEvent::KeyPress) {
-            auto k = (QKeyEvent *)event;
-
-            if (keymap[k->key()] != "")
-                txBuffer += keymap[k->key()];
-            else
-                txBuffer += k->text();
-
-            return true;
-        }
-    }
-
-    return QWidget::eventFilter(obj, event);
 }
 
 
@@ -135,7 +73,7 @@ QString TerminalWidget::read(size_t maxSize)
 
 void TerminalWidget::write(const QString &text)
 {
-    plainTextEdit->setUpdatesEnabled(false);
+    setUpdatesEnabled(false);
 
     for (char c: text.toLatin1())
         parseChar(c);
@@ -145,7 +83,44 @@ void TerminalWidget::write(const QString &text)
         rxBuffer.clear();
     }
 
-    plainTextEdit->setUpdatesEnabled(true);
+    setTextCursor(cursor);
+    setUpdatesEnabled(true);
+}
+
+
+/**
+ * keypressEvent() does not receive TAB, so we override event() directly.
+ *
+ */
+bool TerminalWidget::event(QEvent *e)
+{
+    if (e->type() == QEvent::KeyPress) {
+        auto ke = reinterpret_cast<QKeyEvent*>(e);
+
+        if (ke->modifiers() == Qt::ShiftModifier && ke->key() == Qt::Key_Insert) {
+            txBuffer += QApplication::clipboard()->text();
+        }
+        else if (keymap[ke->key()] != "") {
+            txBuffer += keymap[ke->key()];
+        }
+        else if (ke->text() != "") {
+            txBuffer += ke->text();
+        }
+
+        return true;
+    }
+    else
+        return QPlainTextEdit::event(e);
+
+}
+
+
+void TerminalWidget::paintEvent(QPaintEvent *e)
+{
+    QPlainTextEdit::paintEvent(e);
+
+    QPainter painter(viewport());
+    painter.fillRect(cursorRect(cursor), ansiPalette[7]);
 }
 
 
@@ -155,19 +130,19 @@ void TerminalWidget::printText(const QString &text)
         int pos = cursor.position();
 
         cursor.movePosition(QTextCursor::EndOfLine);
+        if (text.endsWith('\n'))
+            cursor.movePosition(QTextCursor::Right);
+
         int eol = cursor.position();
 
         cursor.setPosition(pos);
         cursor.movePosition(
             QTextCursor::Right, QTextCursor::KeepAnchor,
-            std::max(text.length(), eol - pos)
+            std::min(eol - pos, text.length())
         );
-
-        cursor.removeSelectedText();
     }
 
     cursor.insertText(text);
-    plainTextEdit->setTextCursor(cursor);
 }
 
 
@@ -187,13 +162,14 @@ void TerminalWidget::parseSgr(const QList<int> &params)
         }
     }
 
-    unsigned fg = attributes.foreground + (attributes.bold ? 8 : 0);
-    unsigned bg = attributes.background;
+    int fg = (attributes.foreground + (attributes.bold ? 8 : 0)) & 15;
+    int bg = attributes.background & 15;
 
-    format.setForeground(ansiPalette[fg & 15]);
-    format.setBackground(ansiPalette[bg & 15]);
+    QTextCharFormat f;
+    f.setForeground(ansiPalette[fg]);
+    f.setBackground(ansiPalette[bg]);
 
-    cursor.setCharFormat(format);
+    cursor.setCharFormat(f);
 }
 
 
@@ -218,8 +194,6 @@ void TerminalWidget::parseCursor(const QList<int> &params, char command)
     case 'C': cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, n); break;
     case 'D': cursor.movePosition(QTextCursor::Left,  QTextCursor::MoveAnchor, n); break;
     }
-
-    plainTextEdit->setTextCursor(cursor);
 }
 
 
@@ -247,13 +221,12 @@ void TerminalWidget::parseMulti(const QString &seq)
         parseModes(pn, true);
         break;
 
-    case 'C' ... 'D':
+    case 'A' ... 'D':
         parseCursor(pn, command);
         break;
 
     case 'H':
         cursor.movePosition(QTextCursor::Start);
-        plainTextEdit->setTextCursor(cursor);
         break;
 
     case 'J':
@@ -308,6 +281,9 @@ void TerminalWidget::parseChar(char c)
             cursor.movePosition(QTextCursor::EndOfLine);
             printText("\n");
         }
+        else if (c == '\a') {
+            QApplication::beep();
+        }
         else {
             rxBuffer += c;
         }
@@ -345,6 +321,4 @@ void TerminalWidget::parseChar(char c)
         break;
     }
 }
-
-
 
