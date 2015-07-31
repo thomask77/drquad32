@@ -126,6 +126,12 @@ bool TerminalWidget::event(QEvent *e)
             return true;
         }
     }
+    else if (e->type() == QEvent::FocusIn || e->type() == QEvent::FocusOut) {
+        viewport()->repaint();
+    }
+    else if (e->type() == QEvent::FontChange) {
+        setCursorWidth(fontMetrics().width(' '));
+    }
 
     return QPlainTextEdit::event(e);
 }
@@ -135,8 +141,19 @@ void TerminalWidget::paintEvent(QPaintEvent *e)
 {
     QPlainTextEdit::paintEvent(e);
 
+    QRect rect(cursorRect(cursor));
     QPainter painter(viewport());
-    painter.fillRect(cursorRect(cursor), ansiPalette[7]);
+
+    painter.setCompositionMode(QPainter::RasterOp_SourceXorDestination);
+
+    if (hasFocus()) {
+        rect.adjust(0, 0, 1, 1);
+        painter.fillRect(rect, Qt::white);
+    }
+    else {
+        painter.setPen(Qt::white);
+        painter.drawRect(rect);
+    }
 }
 
 

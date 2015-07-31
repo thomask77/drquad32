@@ -20,11 +20,6 @@ public:
     void write(const QString &text);
 
 protected:
-    virtual bool event(QEvent *e) override;
-    virtual void paintEvent(QPaintEvent *e) override;
-
-    QTextCursor  cursor;
-
     struct Attributes {
         int foreground = 7;
         int background = 0;
@@ -32,16 +27,23 @@ protected:
         bool underline = false;
         bool blink = false;
         bool reverse = false;
-    } attributes;
+    };
 
     struct Modes {
         bool overwrite = false;
         bool echo = false;
-    } modes;
+    };
+
+    Attributes  attributes;
+    Modes       modes;
+    QTextCursor cursor;
 
     int         rxState = 0;
     QString     rxBuffer;
     QString     txBuffer;
+
+    virtual bool event(QEvent *e) override;
+    virtual void paintEvent(QPaintEvent *e) override;
 
     void printText(const QString &text);
     void parseSgr(const QList<int> &params);
