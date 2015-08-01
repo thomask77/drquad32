@@ -18,6 +18,7 @@ public:
 
     QString read(size_t maxSize = SIZE_MAX);
     void write(const QString &text);
+    void reset();
 
 protected:
     struct Attributes {
@@ -32,6 +33,7 @@ protected:
     struct Modes {
         bool overwrite = false;
         bool echo = false;
+        bool hideCursor = false;
     };
 
     Attributes  attributes;
@@ -46,11 +48,11 @@ protected:
     virtual void paintEvent(QPaintEvent *e) override;
 
     void printText(const QString &text);
-    void parseSgr(const QList<int> &params);
-    void parseModes(const QList<int> &params, bool set);
-    void parseCursor(const QList<int> &params, char command);
+    void parseSgr(const QList<QString> &params);
+    void parseModes(char command, const QList<QString> &params);
+    void parseCursor(char command, const QList<QString> &params);
     void parseMulti(const QString &seq);
-    void parseSingle(const QChar seq);
+    void parseSingle(const QChar &seq);
     void parseChar(char c);
 };
 

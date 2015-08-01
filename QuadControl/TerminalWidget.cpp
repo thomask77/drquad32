@@ -93,10 +93,13 @@ void TerminalWidget::write(const QString &text)
 }
 
 
-/**
- * keypressEvent() does not receive TAB, so we override event() directly.
- *
- */
+void TerminalWidget::reset()
+{
+    modes = Modes();
+    attributes = Attributes();
+}
+
+
 bool TerminalWidget::event(QEvent *e)
 {
     if (e->type() == QEvent::KeyPress) {
@@ -106,14 +109,30 @@ bool TerminalWidget::event(QEvent *e)
             // Paste on SHIFT+Insert
             //
             txBuffer += QApplication::clipboard()->text();
+            return true;
+        }
+        else if (ke->modifiers() == Qt::ShiftModifier && (
+                        ke->key() == Qt::Key_Home   || ke->key() == Qt::Key_End  ||
+                        ke->key() == Qt::Key_PageUp || ke->key() == Qt::Key_PageDown)
+                    )
+        {
+            // Let QPlainTextEdit handle scroll commands
+            //
+            ke->setModifiers(0);
+            return QPlainTextEdit::event(e);
         }
         else if (keymap[ke->key()] != "") {
+            // Special ANSI key
+            //
             txBuffer += keymap[ke->key()];
+            return true;
         }
         else if (ke->text() != "") {
+            // Normal text
+            //
             txBuffer += ke->text();
+            return true;
         }
-        return true;
     }
     else if (e->type() == QEvent::MouseButtonPress ||
              e->type() == QEvent::MouseButtonDblClick )
@@ -127,9 +146,13 @@ bool TerminalWidget::event(QEvent *e)
         }
     }
     else if (e->type() == QEvent::FocusIn || e->type() == QEvent::FocusOut) {
+        // Repaint on focus change
+        //
         viewport()->repaint();
     }
     else if (e->type() == QEvent::FontChange) {
+        // Recalc cursor size on CTRL+Wheel font change
+        //
         setCursorWidth(fontMetrics().width(' '));
     }
 
@@ -141,18 +164,20 @@ void TerminalWidget::paintEvent(QPaintEvent *e)
 {
     QPlainTextEdit::paintEvent(e);
 
-    QRect rect(cursorRect(cursor));
-    QPainter painter(viewport());
+    if (!modes.hideCursor) {
+        QRect rect(cursorRect(cursor));
+        QPainter painter(viewport());
 
-    painter.setCompositionMode(QPainter::RasterOp_SourceXorDestination);
+        painter.setCompositionMode(QPainter::RasterOp_SourceXorDestination);
 
-    if (hasFocus()) {
-        rect.adjust(0, 0, 1, 1);
-        painter.fillRect(rect, Qt::white);
-    }
-    else {
-        painter.setPen(Qt::white);
-        painter.drawRect(rect);
+        if (hasFocus()) {
+            rect.adjust(0, 0, 1, 1);
+            painter.fillRect(rect, Qt::white);
+        }
+        else {
+            painter.setPen(Qt::white);
+            painter.drawRect(rect);
+        }
     }
 }
 
@@ -179,19 +204,23 @@ void TerminalWidget::printText(const QString &text)
 }
 
 
-void TerminalWidget::parseSgr(const QList<int> &params)
+void TerminalWidget::parseSgr(const QList<QString> &params)
 {
     for (auto p: params) {
-        switch(p) {
-        case 0:         attributes = Attributes();      break;
-        case 1:         attributes.bold = true;         break;
-        case 4:         attributes.underline = true;    break;
-        case 5:         attributes.blink = true;        break;
-        case 7:         attributes.reverse = true;      break;
-        case 30 ... 37: attributes.foreground = p - 30; break;
-        case 39:        attributes.foreground = 7;      break;
-        case 40 ... 47: attributes.background = p - 40; break;
-        case 49:        attributes.background = 0;      break;
+        bool ok;
+        int n = p.toInt(&ok);
+        if (!ok) continue;
+
+        switch(n) {
+        case 0:         attributes = Attributes();          break;
+        case 1:         attributes.bold = true;             break;
+        case 4:         attributes.underline = true;        break;
+        case 5:         attributes.blink = true;            break;
+        case 7:         attributes.reverse = true;          break;
+        case 30 ... 37: attributes.foreground = n - 30;     break;
+        case 39:        attributes.foreground = 7;          break;
+        case 40 ... 47: attributes.background = n - 40;     break;
+        case 49:        attributes.background = 0;          break;
         }
     }
 
@@ -206,20 +235,21 @@ void TerminalWidget::parseSgr(const QList<int> &params)
 }
 
 
-void TerminalWidget::parseModes(const QList<int> &params, bool set)
+void TerminalWidget::parseModes(char command, const QList<QString> &params)
 {
+    bool set = command == 'l';
+
     for (auto p: params) {
-        switch (p) {
-        case 4:  modes.overwrite = set; break;
-        case 12: modes.echo = set;      break;
-        }
+        if      (p == "4")      modes.overwrite = set;
+        else if (p == "12")     modes.echo = set;
+        else if (p == "?25")    modes.hideCursor = set;
     }
 }
 
 
-void TerminalWidget::parseCursor(const QList<int> &params, char command)
+void TerminalWidget::parseCursor(char command, const QList<QString> &params)
 {
-    int n = params.count() ? params[0] : 1;
+    int n = params.count() ? params[0].toInt() : 1;
 
     switch (command) {
     case 'A': cursor.movePosition(QTextCursor::Up,    QTextCursor::MoveAnchor, n); break;
@@ -233,29 +263,20 @@ void TerminalWidget::parseCursor(const QList<int> &params, char command)
 void TerminalWidget::parseMulti(const QString &seq)
 {
     char command = seq.right(1)[0].toLatin1();
-
-    QList<int> pn;
-    for (auto s: seq.left(seq.length()-1).split(';')) {
-        bool ok;
-        int  v = s.toInt(&ok);
-        if (ok) pn.append(v);
-    }
+    auto params  = seq.left(seq.length()-1).split(';', QString::SkipEmptyParts);
 
     switch (command) {
     case 'm':
-        parseSgr(pn);
+        parseSgr(params);
         break;
 
     case 'h':
-        parseModes(pn, false);
-        break;
-
     case 'l':
-        parseModes(pn, true);
+        parseModes(command, params);
         break;
 
     case 'A' ... 'D':
-        parseCursor(pn, command);
+        parseCursor(command, params);
         break;
 
     case 'H':
@@ -273,7 +294,7 @@ void TerminalWidget::parseMulti(const QString &seq)
         break;
 
     case 'P': {
-        int n = pn.count() > 0 ? pn[0] : 1;
+        int n = params.count() ? params[0].toInt() : 1;
         cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, n);
         cursor.removeSelectedText();
         }
@@ -286,7 +307,7 @@ void TerminalWidget::parseMulti(const QString &seq)
 }
 
 
-void TerminalWidget::parseSingle(const QChar)
+void TerminalWidget::parseSingle(const QChar &seq)
 {
     // TODO
 }

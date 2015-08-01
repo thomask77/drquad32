@@ -49,6 +49,7 @@ ConsoleWindow::~ConsoleWindow()
 void ConsoleWindow::actionClear_triggered()
 {
     ui->terminal->clear();
+    ui->terminal->reset();
 }
 
 
