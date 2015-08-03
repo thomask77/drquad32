@@ -170,10 +170,10 @@ void TerminalWidget::paintEvent(QPaintEvent *e)
         painter.setCompositionMode(QPainter::RasterOp_SourceXorDestination);
 
         if (hasFocus()) {
-            rect.adjust(0, 0, 1, 1);
             painter.fillRect(rect, Qt::white);
         }
         else {
+            rect.adjust(0, 0, -1, -1);
             painter.setPen(Qt::white);
             painter.drawRect(rect);
         }
