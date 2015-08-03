@@ -1,5 +1,4 @@
 #include "TerminalWidget.h"
-#include "ui_TerminalWidget.h"
 #include <QDebug>
 #include <QScrollBar>
 #include <QPainter>

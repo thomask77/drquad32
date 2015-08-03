@@ -171,7 +171,7 @@ void MainWindow::actionAbout_triggered()
             "Compiled %3 %4<br>"
             "by %5 on %6<p>"
             ""
-            "Copyright (c)2015 Thomas Kindler"
+            "Copyright (c)2015 Thomas Kindler "
             "<a href=\"mailto:mail_drquad@t-kindler.de\">&lt;mail_drquad@t-kindler.de&gt;</a>"
             "<p>"
             "This program is free software: you can redistribute it and/or modify "
