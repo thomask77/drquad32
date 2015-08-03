@@ -33,9 +33,7 @@ struct cobs_stats {
 static uint8_t tx_dma_buf[1024];
 static size_t  tx_dma_len;
 
-
-static struct ringbuf rx_dma_buf = RINGBUF(1024);
-
+static uint8_t rx_dma_buf[1024];
 
 static SemaphoreHandle_t  rx_sem;
 static SemaphoreHandle_t  tx_sem;
@@ -154,6 +152,7 @@ static ssize_t term_cobs_chars_avail_r(struct _reent *r, int fd)
 }
 
 
+int       read_pos;
 uint8_t   len,  last_len;
 
 uint8_t   rx_packet_buf[1024];
@@ -202,50 +201,32 @@ static int decode_char(uint8_t c)
 
 int cobs_recv(void)
 {
-    // Update write position from DMA hardware
-    //
-    rx_dma_buf.write_pos = rx_dma_buf.buf_size - DMA1_Stream1->NDTR;
+    int write_pos = sizeof(rx_dma_buf) - DMA1_Stream1->NDTR;
 
-    void    *ptr;
-    size_t  len;
+    while (read_pos != write_pos) {
+        uint8_t c = rx_dma_buf[read_pos++];
+        if (read_pos >= sizeof(rx_dma_buf))
+            read_pos = 0;
 
-    rb_get_pointers(
-        &rx_dma_buf, RB_READ,
-        rx_dma_buf.buf_size,
-        &ptr, &len, NULL, NULL
-    );
-
-
-    // TODO: Wenn der Buffer schon eine len2 hat, direkt bearbeiten!!
-    //
-
-    for (int i=0; i<len; i++) {
-
-        if (decode_char(  ((char*)ptr)[i]  )) {
+        if (decode_char(c)) {
             int ret = rx_packet_len;
             rx_packet_len = 0;
 
-            if (ret < 0) {
+            if (ret < 0)
                 errno = ECOBSR_DECODE_OUT_BUFFER_OVERFLOW;
-            }
-            else {
-                rx_packet.h.data_len = ret - 2 - 2;
-                memcpy(&rx_packet.h.crc, rx_packet_buf, ret);
 
-                if (msg_calc_crc(&rx_packet.h) != rx_packet.h.crc) {
-                    errno = EMSG_CRC;
-                    rb_commit(&rx_dma_buf, RB_READ, i+1);
-                    return -1;
-                }
+            rx_packet.h.data_len = ret - 2 - 2;
+            memcpy(&rx_packet.h.crc, rx_packet_buf, ret);
 
-                rb_commit(&rx_dma_buf, RB_READ, i+1);
-                return ret;
+            if (msg_calc_crc(&rx_packet.h) != rx_packet.h.crc) {
+                errno = EMSG_CRC;
+                return -1;
             }
+
+            return ret;
         }
-
     }
 
-    rb_commit(&rx_dma_buf, RB_READ, len);
     return 0;
 }
 
@@ -264,7 +245,7 @@ void handle_unknown_message(const struct msg_generic *msg)
 }
 
 
-void handle_messsage(struct msg_generic *msg)
+void handle_messsage(const struct msg_generic *msg)
 {
     switch (msg->h.id) {
     case MSG_ID_SHELL_FROM_PC:  handle_shell_from_pc((void*)msg);      break;
@@ -276,7 +257,6 @@ void handle_messsage(struct msg_generic *msg)
 void cobs_task(void *pv)
 {
     for(;;) {
-
         for(;;) {
             ssize_t len = cobs_recv();
 
@@ -362,9 +342,9 @@ void term_cobs_init(void)
     DMA_Init(DMA1_Stream1, &(DMA_InitTypeDef) {
         .DMA_Channel            = DMA_Channel_4,
         .DMA_PeripheralBaseAddr = (uint32_t)&USART3->DR,
-        .DMA_Memory0BaseAddr    = (uint32_t)rx_dma_buf.buf,
+        .DMA_Memory0BaseAddr    = (uint32_t)&rx_dma_buf,
         .DMA_DIR                = DMA_DIR_PeripheralToMemory,
-        .DMA_BufferSize         = rx_dma_buf.buf_size,
+        .DMA_BufferSize         = sizeof(rx_dma_buf),
         .DMA_PeripheralInc      = DMA_PeripheralInc_Disable,
         .DMA_MemoryInc          = DMA_MemoryInc_Enable,
         .DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte,
