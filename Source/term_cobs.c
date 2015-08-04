@@ -88,6 +88,11 @@ void DMA1_Stream3_IRQHandler(void)
 
 void dma_send(void *data, int len)
 {
+    // TODO: This must be atomic.
+    // Messages may not be split if
+    // several tasks call dma_send.
+    // Also combine with cobs_encode.
+    //
     while (len > 0) {
         int chunk = rb_write(&tx_dma_buf, data, len);
 
