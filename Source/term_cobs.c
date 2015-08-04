@@ -30,11 +30,12 @@ struct cobs_stats {
     uint32_t    tx_packets;
 };
 
-static uint8_t tx_dma_buf[1024];
-static size_t  tx_dma_len;
-
+static struct cobs_stats cobs_stats;
 
 static struct ringbuf rx_dma_buf = RINGBUF(1024);
+static struct ringbuf tx_dma_buf = RINGBUF(1024);
+
+size_t tx_dma_len;
 
 
 static SemaphoreHandle_t  rx_sem;
@@ -43,7 +44,20 @@ static SemaphoreHandle_t  tx_sem;
 static QueueHandle_t rx_queue;
 
 
-static volatile struct cobs_stats cobs_stats;
+void start_next_tx(void)
+{
+    void    *ptr1;
+    size_t  len1;
+
+    rb_get_pointers(&tx_dma_buf, RB_READ, SIZE_MAX, &ptr1, &len1, NULL, NULL);
+
+    if (len1 > 0) {
+        tx_dma_len = len1;
+        DMA1_Stream3->M0AR = (uint32_t)ptr1;
+        DMA1_Stream3->NDTR = tx_dma_len;
+        DMA1_Stream3->CR |= DMA_SxCR_EN;
+    }
+}
 
 
 // DMA TX Interrupt (transfer complete)
@@ -53,17 +67,43 @@ void DMA1_Stream3_IRQHandler(void)
     cobs_stats.tx_bytes += tx_dma_len;
     cobs_stats.tx_packets++;
 
+    rb_commit(&tx_dma_buf, RB_READ, tx_dma_len);
+
     // Clear all flags
     //
     DMA1->LIFCR = DMA_LIFCR_CTCIF3 | DMA_LIFCR_CHTIF3  |
                   DMA_LIFCR_CTEIF3 | DMA_LIFCR_CDMEIF3 |
                   DMA_LIFCR_CFEIF3;
 
+    // Start next transfer (if any)
+    //
+    start_next_tx();
+
     portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
     xSemaphoreGiveFromISR(tx_sem, &xHigherPriorityTaskWoken);
 
     portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 }
+
+
+void dma_send(void *data, int len)
+{
+    while (len > 0) {
+        int chunk = rb_write(&tx_dma_buf, data, len);
+
+        if (chunk != 0) {
+            data += chunk;
+            len  -= chunk;
+
+            if (!(DMA1_Stream3->CR & DMA_SxCR_EN))
+                start_next_tx();
+        }
+        else {
+            xSemaphoreTake(tx_sem, portMAX_DELAY);
+        }
+    }
+}
+
 
 
 static crc16_t msg_calc_crc(const struct msg_header *msg)
@@ -84,6 +124,7 @@ static ssize_t term_cobs_write_r(struct _reent *r, int fd, const void *ptr, size
     // Encode message
     //
     static struct msg_shell_to_pc msg;
+    static uint8_t tx_packet_buf[1024];
 
     msg.h.id = MSG_ID_SHELL_TO_PC;
 
@@ -95,19 +136,15 @@ static ssize_t term_cobs_write_r(struct _reent *r, int fd, const void *ptr, size
 
     msg.h.crc = msg_calc_crc(&msg.h);
 
-    // Encode to txbuf and  add end-of-packet marker
+    // Encode and write to ringbuf
     //
-    tx_dma_len = cobsr_encode(
-        tx_dma_buf, sizeof(tx_dma_buf) - 1,   // 1 byte for end-of-packet
-        &msg.h.crc, 2 + 2 + msg.h.data_len    // +CRC +ID
+    int encoded_len = cobsr_encode(
+        tx_packet_buf, sizeof(tx_packet_buf) - 1,   // 1 byte for end-of-packet
+        &msg.h.crc, 2 + 2 + msg.h.data_len          // +CRC +ID
     );
+    tx_packet_buf[encoded_len++] = 0;
 
-    tx_dma_buf[tx_dma_len++] = 0;
-
-    // Start transfer
-    //
-    DMA1_Stream3->NDTR = tx_dma_len;
-    DMA1_Stream3->CR |= DMA_SxCR_EN;
+    dma_send(tx_packet_buf, encoded_len);
 
     return len;
 }
@@ -154,12 +191,12 @@ static ssize_t term_cobs_chars_avail_r(struct _reent *r, int fd)
 }
 
 
-uint8_t   len,  last_len;
+static uint8_t   len,  last_len;
 
-uint8_t   rx_packet_buf[1024];
-ssize_t   rx_packet_len;
+static uint8_t   rx_packet_buf[1024];
+static ssize_t   rx_packet_len;
 
-struct    msg_generic   rx_packet;
+struct  msg_generic   rx_packet;
 
 
 static void emit(uint8_t c)
@@ -210,39 +247,35 @@ int cobs_recv(void)
     size_t  len;
 
     rb_get_pointers(
-        &rx_dma_buf, RB_READ,
-        rx_dma_buf.buf_size,
-        &ptr, &len, NULL, NULL
+        &rx_dma_buf, RB_READ, SIZE_MAX, &ptr, &len, NULL, NULL
     );
-
 
     // TODO: Wenn der Buffer schon eine len2 hat, direkt bearbeiten!!
     //
-
     for (int i=0; i<len; i++) {
-
-        if (decode_char(  ((char*)ptr)[i]  )) {
+        if (decode_char( ((char*)ptr)[i] )) {
             int ret = rx_packet_len;
             rx_packet_len = 0;
 
             if (ret < 0) {
                 errno = ECOBSR_DECODE_OUT_BUFFER_OVERFLOW;
             }
+            else if (ret < 4) {
+                errno = EMSG_TOO_SHORT;
+            }
             else {
                 rx_packet.h.data_len = ret - 2 - 2;
                 memcpy(&rx_packet.h.crc, rx_packet_buf, ret);
 
                 if (msg_calc_crc(&rx_packet.h) != rx_packet.h.crc) {
+                    ret = -1;
                     errno = EMSG_CRC;
-                    rb_commit(&rx_dma_buf, RB_READ, i+1);
-                    return -1;
                 }
-
-                rb_commit(&rx_dma_buf, RB_READ, i+1);
-                return ret;
             }
-        }
 
+            rb_commit(&rx_dma_buf, RB_READ, i+1);
+            return ret;
+        }
     }
 
     rb_commit(&rx_dma_buf, RB_READ, len);
@@ -376,9 +409,9 @@ void term_cobs_init(void)
     DMA_Init(DMA1_Stream3, &(DMA_InitTypeDef) {
         .DMA_Channel            = DMA_Channel_4,
         .DMA_PeripheralBaseAddr = (uint32_t)&USART3->DR,
-        .DMA_Memory0BaseAddr    = (uint32_t)&tx_dma_buf,
+        .DMA_Memory0BaseAddr    = (uint32_t)tx_dma_buf.buf,
         .DMA_DIR                = DMA_DIR_MemoryToPeripheral,
-        .DMA_BufferSize         = sizeof(tx_dma_buf),
+        .DMA_BufferSize         = tx_dma_buf.buf_size,
         .DMA_PeripheralInc      = DMA_PeripheralInc_Disable,
         .DMA_MemoryInc          = DMA_MemoryInc_Enable,
         .DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte,
@@ -407,7 +440,6 @@ void term_cobs_init(void)
     DMA_ITConfig(DMA1_Stream3, DMA_IT_TC, ENABLE);
 
     USART_Cmd(USART3, ENABLE);
-
 
     printf("Starting COBS task..\n");
     xTaskCreate(cobs_task, "cobs_task", 256, NULL, 0, NULL);
