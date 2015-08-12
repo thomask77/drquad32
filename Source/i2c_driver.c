@@ -168,6 +168,31 @@ void I2C1_EV_IRQHandler(void)
 
 static int i2c_transfer(uint8_t addr, void *buf, size_t len)
 {
+    static uint8_t hack_buf[256];
+    static void   *hack_old;
+    static int dma_hack;
+
+
+    // assert(addr >= SRAM_BASE || addr+len < SRAM_BASE + 0x20000);
+
+
+    if ((uint32_t)buf < SRAM_BASE || (uint32_t)buf + len >= SRAM_BASE + 0x20000) {
+        dma_hack = 1;
+        if (addr & 1) {
+            hack_old = buf;
+            buf = hack_buf;
+        }
+        else {
+            memcpy(hack_buf, buf, len);
+            buf = hack_buf;
+        }
+    }
+    else {
+        dma_hack = 0;
+    }
+
+
+
     if (addr & 0x01) {
         // Set up master-receiver DMA
         //
@@ -226,6 +251,15 @@ static int i2c_transfer(uint8_t addr, void *buf, size_t len)
             break;
         }
     }
+
+
+
+    if (dma_hack) {
+        if (addr & 1)
+            memcpy(hack_old, hack_buf, len);
+    }
+
+
 
     uint16_t sr1 = I2C1->SR1;
 
