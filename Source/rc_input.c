@@ -13,7 +13,7 @@ struct rc_config rc_config = {
 
 static const char *rc_strmode(int mode)
 {
-    switch (rc_config.mode) {
+    switch (mode) {
     case RC_MODE_NONE:  return "NONE";
     case RC_MODE_PPM:   return "PPM";
     case RC_MODE_SERVO: return "SERVO";
@@ -23,6 +23,20 @@ static const char *rc_strmode(int mode)
     }
 }
 
+static const char *rc_strchan_name(uint8_t chan_name)
+{
+    switch (chan_name) {
+    case RC_CHANNEL_THURST:  return "thurst";
+    case RC_CHANNEL_PITCH:   return "pitch ";
+    case RC_CHANNEL_ROLL:    return "roll  ";
+    case RC_CHANNEL_YAW:     return "yaw   ";
+    case RC_CHANNEL_ARM:     return "arm   ";
+    case RC_CHANNEL_FUNCT0:  return "funct0";
+    case RC_CHANNEL_FUNCT1:  return "funct1";
+    case RC_CHANNEL_FUNCT2:  return "funct2";
+    default:            return "Unknown";
+    }
+}
 
 void rc_update(struct rc_input *rc)
 {
@@ -36,6 +50,9 @@ void rc_update(struct rc_input *rc)
         memset(rc, 0, sizeof(*rc));
         break;
     }
+    for (uint8_t i = 0; i < rc->num_channels; i++)
+        if (rc_config.channel_inverted[i])
+            rc->channels[i] *= -1;
 }
 
 
@@ -61,9 +78,7 @@ void rc_init(void)
 #include "command.h"
 #include "util.h"
 #include <stdlib.h>
-#include <stdio.h>
 
-#include "bldc_task.h"
 
 static void cmd_rc_show(void)
 {
@@ -72,15 +87,15 @@ static void cmd_rc_show(void)
     rc_update(&rc);
 
     printf(
-        "mode=%s, valid=%d, rssi=%3d, num_channels=%d\n",
-        rc_strmode(rc_config.mode), rc.valid, rc.rssi, rc.num_channels
+        "mode=%s, valid=%d, rssi=%3d\n",
+        rc_strmode(rc_config.mode), rc.valid, rc.rssi
     );
 
-    for (int i=0; i<RC_MAX_CHANNELS; i++) {
+    for (uint8_t i = 0; i < rc.num_channels; i++) {
         char bar[31];
-        strnbar(bar, sizeof(bar), rc.channels[i], 1000, 2000);
+        strnbar(bar, sizeof(bar), rc.channels[i], -1, 1);
 
-        printf("%4d: [%s] %4d us\n", i, bar, rc.channels[i]);
+        printf("ch: %i %s: [%s] %0.3f\n", i, rc_strchan_name(i), bar, rc.channels[i]);
     }
 }
 
