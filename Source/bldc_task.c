@@ -265,12 +265,12 @@ static void rpm_update(void)
     for (int id=0; id<4; id++) {
         struct motor_state *m = &bldc_state.motors[id];
 
-        float f_el = configTICK_RATE_HZ * (m->pos - m->rpm_old_pos) / 6.0;
+        float f_el = (m->pos - m->rpm_old_pos) * (configTICK_RATE_HZ / 6.0);
         float rpm  = f_el * 60 / bldc_params.polepairs;
 
-        m->rpm_old_pos = m->pos;
-
         lp2_filter(&m->rpm_filter, rpm);
+
+        m->rpm_old_pos = m->pos;
     }
 }
 
