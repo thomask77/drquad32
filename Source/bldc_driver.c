@@ -606,23 +606,24 @@ static void cmd_bldc_show(int argc, char *argv[])
 
 static void cmd_set_pwm(int argc, char *argv[])
 {
-    if (argc != 3)
+    if (argc != 4)
         goto usage;
 
     int id = atoi(argv[1]);
     if (id < 0 || id > 3)
         goto usage;
 
-    int step = atoi(argv[2]);
-	if (id < 0 || id > 7)
-	    goto usage;
+    int state = atoi(argv[2]);
+    if (state < 0 || state > 2)
+        goto usage;
 
-	bldc_state.motors[id].step = step;
-    bldc_state.motors[id].u_pwm = atof(argv[2]);
+    bldc_state.motors[id].state = state;
+    bldc_state.motors[id].u_d = atof(argv[3]) < 5 ? atof(argv[3]) : 5;
+    printf("set: motor: %i state: %i, u_d: %f\n", id, state, bldc_state.motors[id].u_d);
     return;
 
 usage:
-    printf("usage: %s <id> <step> <u_pwm>\n", argv[0]);
+    printf("usage: %s <id> <state> <u_d>\n", argv[0]);
 }
 
 
