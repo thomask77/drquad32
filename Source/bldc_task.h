@@ -16,7 +16,7 @@ struct motor_state {
     // Setpoints
     //
     float   u_d;
-    int32_t reverse;
+    int     reverse;
 
     // Values from bldc_get_measurements
     //

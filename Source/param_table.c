@@ -7,10 +7,10 @@
 #include "rc_ppm.h"
 #include "dma_io_driver.h"
 #include "sensors.h"
+#include "flight_ctrl.h"
+#include "attitude.h"
 
 static int board_address;
-
-extern float foo, bar, baz;
 
 const struct param_info  param_table[] = {
     {    1, P_INT32(&board_address    ), READONLY, .name = "board_address" },
@@ -89,16 +89,156 @@ const struct param_info  param_table[] = {
     {  212, P_INT32(&rc_ppm_config.max_width, 2500, 0, 3000),
             .name = "rc_ppm.max_width", .unit = "us",
             .help = "PPM sum signal maximum pulse width"
-
     },
+
     {  213, P_INT32(&rc_ppm_config.sync_width, 3800, 3000, 50000),
             .name = "rc_ppm.sync_width", .unit = "us",
             .help = "PPM sum signal synchronization pulse width"
     },
 
-    { 300, P_FLOAT(&foo) },
-    { 301, P_FLOAT(&bar) },
-    { 302, P_FLOAT(&baz) },
+    {  240, P_INT32(&rc_config.channel_map[RC_CHANNEL_THURST], 2, 0, RC_MAX_CHANNELS),
+        .name = "rc_config.channel_map[THURST]",
+        .help = "Channel with thurst signal"
+    },
+    {  241, P_INT32(&rc_config.channel_map[RC_CHANNEL_PITCH], 1, 0, RC_MAX_CHANNELS),
+        .name = "rc_config.channel_map[PITCH]",
+        .help = "Channel with pitch signal"
+    },
+    {  242, P_INT32(&rc_config.channel_map[RC_CHANNEL_ROLL], 0, 0, RC_MAX_CHANNELS),
+        .name = "rc_config.channel_map[ROLL]",
+        .help = "Channel with roll signal"
+    },
+    {  243, P_INT32(&rc_config.channel_map[RC_CHANNEL_YAW], 3, 0, RC_MAX_CHANNELS),
+        .name = "rc_config.channel_map[YAW]",
+        .help = "Channel with yaw signal"
+    },
+    {  244, P_INT32(&rc_config.channel_map[RC_CHANNEL_ARM], 4, 0, RC_MAX_CHANNELS),
+        .name = "rc_config.channel_map[ARM]",
+        .help = "Channel with arm signal"
+    },
+    {  245, P_INT32(&rc_config.channel_map[RC_CHANNEL_FUNCT0], 5, 0, RC_MAX_CHANNELS),
+        .name = "rc_config.channel_map[FUNCT0]",
+        .help = "Channel with function 0 signal"
+    },
+    {  246, P_INT32(&rc_config.channel_map[RC_CHANNEL_FUNCT1], 6, 0, RC_MAX_CHANNELS),
+        .name = "rc_config.channel_map[FUNCT1]",
+        .help = "Channel with function 1 signal"
+    },
+    {  247, P_INT32(&rc_config.channel_map[RC_CHANNEL_FUNCT2], 7, 0, RC_MAX_CHANNELS),
+        .name = "rc_config.channel_map[FUNCT1]",
+        .help = "Channel with function 2 signal"
+    },
+
+    {  250, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_THURST], 0, 0, 1),
+        .name = "rc_config.channel_inverted[THURST]",
+        .help = "invert channel thurst"
+    },
+    {  251, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_PITCH], 0, 0, 1),
+        .name = "rc_config.channel_inverted[PITCH]",
+        .help = "invert channel pitch"
+    },
+    {  252, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_ROLL], 0, 0, 1),
+        .name = "rc_config.channel_inverted[ROLL]",
+        .help = "invert channel roll"
+    },
+    {  253, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_YAW], 0, 0, 1),
+        .name = "rc_config.channel_inverted[YAW]",
+        .help = "invert channel yaw"
+    },
+    {  254, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_ARM], 0, 0, 1),
+        .name = "rc_config.channel_inverted[ARM]",
+        .help = "invert channel arm"
+    },
+    {  255, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_FUNCT0], 0, 0, 1),
+        .name = "rc_config.channel_inverted[FUNCT0]",
+        .help = "invert channel funct 0"
+    },
+    {  256, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_FUNCT1], 0, 0, 1),
+        .name = "rc_config.channel_inverted[FUNCT1]",
+        .help = "invert channel funct 1"
+    },
+    {  257, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_FUNCT2], 0, 0, 1),
+        .name = "rc_config.channel_inverted[FUNCT2]",
+        .help = "invert channel funct 2"
+    },
+
+    {  300, P_FLOAT(&pid_p, 1, 0 , 10),
+       .name = "pid_p",
+       .help = "all gyro PID P Part"
+    },
+    {  301, P_FLOAT(&pid_i, 0, 0, 10),
+       .name = "pid_i",
+       .help = "all gyro PID I Part"
+    },
+    {  302, P_FLOAT(&pid_d, 0, 0, 10),
+       .name = "pid_d",
+       .help = "all gyro PID D Part"
+    },
+
+
+    {  310, P_FLOAT(&pid_pitch.kp, 1, 0, 10),
+       .name = "pid_pitch.kp",
+       .help = "gyro pitch PID P Part"
+    },
+    {  311, P_FLOAT(&pid_pitch.ki, 0, 0 ,10),
+       .name = "pid_pitch.ki",
+       .help = "gyro pitch PID I Part"
+    },
+    {  312, P_FLOAT(&pid_pitch.kd, 0, 0, 10),
+       .name = "pid_pitch.kd",
+       .help = "gyro pitch PID D Part"
+    },
+
+    {  320, P_FLOAT(&pid_roll.kp, 1, 0, 10),
+        .name = "pid_roll.kp",
+        .help = "gyro roll PID P Part"
+    },
+    {  321, P_FLOAT(&pid_roll.ki, 0, 0, 10),
+        .name = "pid_roll.ki",
+        .help = "gyro roll PID I Part"
+    },
+    {  322, P_FLOAT(&pid_roll.kd, 0, 0, 10),
+        .name = "pid_roll.kd",
+        .help = "gyro roll PID D Part"
+    },
+
+    {  330, P_FLOAT(&pid_yaw.kp, 1, 0, 10),
+        .name = "pid_yaw.kp",
+        .help = "gyro yaw PID P Part"
+    },
+    {  331, P_FLOAT(&pid_yaw.ki, 0, 0, 10),
+        .name = "pid_yaw.ki",
+        .help = "gyro yaw PID I Part"
+    },
+    {  332, P_FLOAT(&pid_yaw.kd, 0, 0, 10),
+        .name = "pid_yaw.kd",
+        .help = "gyro yaw PID D Part"
+    },
+
+    {  360, P_FLOAT(&dcm.acc_kp, 0, 0, 10),
+        .name = "dcm.acc_kp",
+        .help = "DCM acc P Part"
+    },
+
+    {  361, P_FLOAT(&dcm.acc_ki, 0, 0, 10),
+       .name = "dcm.acc_ki",
+       .help = "DCM acc I Part"
+    },
+
+    {  380, P_FLOAT(&fc_config.thurst_gain, 5, 0.1, 10),
+       .name = "fc_config.thurst_gain",
+       .help = "gain for thurst"
+    },
+
+    {  381, P_FLOAT(&fc_config.pitch_roll_gain, 1, 0.1, 5),
+       .name = "fc_config.pitch_roll_gain",
+       .help = "gain for pitch and roll"
+    },
+    {  382, P_FLOAT(&fc_config.yaw_gain, 1, 0.1, 5),
+       .name = "fc_config.yaw_gain",
+       .help = "gain for yaw"
+    },
+
 
     // Debug DAC outputs
     //
