@@ -6,6 +6,8 @@ OPT = -Os -flto
 
 BOARD ?= REV_A
 
+FLASH_ADDR = 0x08000000
+
 # Object files directory
 # Warning: this will be removed by make clean!
 #
@@ -159,7 +161,8 @@ NM       = $(TOOLCHAIN)nm
 MKDIR    = mkdir
 DOXYGEN  = doxygen
 SUBWCREV = SubWCRev
-STLINK   = Tools/st-link/ST-LINK_CLI.exe
+STLINK_WIN = Tools/st-link/ST-LINK_CLI.exe
+STLINK_LNX = st-flash
 POSTLD   = Tools/add_version_info/add_version_info.py -v
 
 # Compiler flags to generate dependency files
@@ -175,6 +178,18 @@ CFLAGS   += $(CPU)
 CXXFLAGS += $(CPU)
 ASFLAGS  += $(CPU)
 LDFLAGS  += $(CPU)
+
+ifeq ($(OS),Windows_NT)
+	STLINK = $(STLINK_WIN) -c SWD -P $(TARGET).hex -Run
+else
+	UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S),Linux)
+		STLINK = $(STLINK_LNX) --reset write $(TARGET).bin $(FLASH_ADDR)
+	endif
+	ifeq ($(UNAME_S),Darwin)
+		$(error Don't know how to flash under OSX)
+	endif
+endif
 
 # Default target
 #
@@ -211,7 +226,7 @@ showsize: build
 # Flash the device  
 #
 flash: build showsize
-	$(STLINK) -c SWD -P $(TARGET).hex -Run
+	$(STLINK)
 
 # Target: clean project
 #
