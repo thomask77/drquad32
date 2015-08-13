@@ -11,6 +11,8 @@
 #include <unistd.h>
 
 
+#if 0
+
 // COBSR(CRC + ID + MSG_MAX_DATA_SIZE) + End-of-packet
 //
 #define MAX_BUF_LENGTH  \
@@ -54,40 +56,6 @@ int  msg_send(struct msg_header *msg)
     return msg->data_len;
 }
 
-
-void send_imu_data(void)
-{
-    struct msg_imu_data msg;
-    msg.h.id = MSG_ID_IMU_DATA;
-    msg.h.data_len = sizeof(struct msg_imu_data) -
-                        sizeof(struct msg_header);
-
-    float t = xTaskGetTickCount() * M_TWOPI / 1000.0;
-
-    msg.acc_x       = sinf(t + 0.0  * M_TWOPI) * 1;
-    msg.acc_y       = sinf(t + 0.1  * M_TWOPI) * 1;
-    msg.acc_z       = sinf(t + 0.2  * M_TWOPI) * 1;
-    msg.gyro_x      = sinf(t + 0.3  * M_TWOPI) * 2;
-    msg.gyro_y      = sinf(t + 0.4  * M_TWOPI) * 2;
-    msg.gyro_z      = sinf(t + 0.5  * M_TWOPI) * 2;
-    msg.mag_x       = sinf(t + 0.6  * M_TWOPI) * 3;
-    msg.mag_y       = sinf(t + 0.7  * M_TWOPI) * 3;
-    msg.mag_z       = sinf(t + 0.8  * M_TWOPI) * 3;
-    msg.baro_hpa    = sinf(t + 0.9  * M_TWOPI) * 4;
-    msg.baro_temp   = sinf(t + 0.95 * M_TWOPI) * 4;
-
-    msg_send(&msg.h);
-}
-
-
-static void cmd_test(void)
-{
-    send_imu_data();
-}
-
-
-SHELL_CMD(test, (cmdfunc_t)cmd_test, "test")
-
-
+#endif
 
 

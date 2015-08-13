@@ -120,16 +120,36 @@ static crc16_t msg_calc_crc(const struct msg_header *msg)
 }
 
 
-static ssize_t term_cobs_write_r(struct _reent *r, int fd, const void *ptr, size_t len)
+static int msg_send(struct msg_header *msg)
 {
+    msg->crc = msg_calc_crc(msg);
+
+    static uint8_t tx_packet_buf[1024];
+
     // Wait for previous transfer to finish
     //
     xSemaphoreTake(tx_sem, portMAX_DELAY);
 
+    // Encode and write to ringbuf
+    //
+    int encoded_len = cobsr_encode(
+        tx_packet_buf, sizeof(tx_packet_buf) - 1,   // 1 byte for end-of-packet
+        &msg->crc, 2 + 2 + msg->data_len            // CRC + ID + data
+    );
+    tx_packet_buf[encoded_len++] = 0;
+
+    dma_send(tx_packet_buf, encoded_len);
+
+    return encoded_len;
+}
+
+
+
+static ssize_t term_cobs_write_r(struct _reent *r, int fd, const void *ptr, size_t len)
+{
     // Encode message
     //
     static struct msg_shell_to_pc msg;
-    static uint8_t tx_packet_buf[1024];
 
     msg.h.id = MSG_ID_SHELL_TO_PC;
 
@@ -139,17 +159,7 @@ static ssize_t term_cobs_write_r(struct _reent *r, int fd, const void *ptr, size
     msg.h.data_len = len;
     memcpy(msg.data, ptr, len);
 
-    msg.h.crc = msg_calc_crc(&msg.h);
-
-    // Encode and write to ringbuf
-    //
-    int encoded_len = cobsr_encode(
-        tx_packet_buf, sizeof(tx_packet_buf) - 1,   // 1 byte for end-of-packet
-        &msg.h.crc, 2 + 2 + msg.h.data_len          // +CRC +ID
-    );
-    tx_packet_buf[encoded_len++] = 0;
-
-    dma_send(tx_packet_buf, encoded_len);
+    msg_send(&msg.h);
 
     return len;
 }
@@ -311,8 +321,41 @@ void handle_messsage(struct msg_generic *msg)
 }
 
 
+#include "sensors.h"
+#include "FreeRTOS.h"
+#include "task.h"
+
+
+void send_imu_data(void)
+{
+    struct sensor_data d;
+    sensor_read(&d);
+
+    struct msg_imu_data msg;
+    msg.h.id = MSG_ID_IMU_DATA;
+    msg.h.data_len  = MSG_DATA_LENGTH(struct msg_imu_data);
+
+    msg.timestamp   = xTaskGetTickCount(); // TODO: Timestamp sollte aus sensor_data kommen
+    msg.acc_x       = d.acc.x;
+    msg.acc_y       = d.acc.y;
+    msg.acc_z       = d.acc.z;
+    msg.gyro_x      = d.gyro.x;
+    msg.gyro_y      = d.gyro.y;
+    msg.gyro_z      = d.gyro.z;
+    msg.mag_x       = d.mag.x;
+    msg.mag_y       = d.mag.y;
+    msg.mag_z       = d.mag.z;
+    msg.baro_hpa    = d.pressure;
+    msg.baro_temp   = d.baro_temp;
+
+    msg_send(&msg.h);
+}
+
+
 void cobs_task(void *pv)
 {
+    TickType_t  t_last_imu_data = xTaskGetTickCount();
+
     for(;;) {
 
         for(;;) {
@@ -326,6 +369,17 @@ void cobs_task(void *pv)
             }
             else {
                 handle_messsage(&rx_packet);
+            }
+        }
+
+        TickType_t  t = xTaskGetTickCount();
+
+        if (t > 1000) {
+            // hack
+            //
+            if (t - t_last_imu_data > 100) {
+                send_imu_data();
+                t_last_imu_data = t;
             }
         }
 

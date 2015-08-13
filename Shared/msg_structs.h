@@ -22,6 +22,9 @@
     (sizeof(struct t) == (m).h.len)
 
 
+#define MSG_DATA_LENGTH(t)   (sizeof(t) - sizeof(struct msg_header))
+
+
 enum msg_id {
     MSG_ID_NOP                  = 0x0000,
 
@@ -85,6 +88,7 @@ struct msg_nop
 struct msg_imu_data
 {
     struct msg_header h;
+    uint32_t    timestamp;
     float   acc_x, acc_y, acc_z;
     float   gyro_x, gyro_y, gyro_z;
     float   mag_x, mag_y, mag_z;
