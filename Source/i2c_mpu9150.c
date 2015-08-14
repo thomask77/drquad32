@@ -117,13 +117,13 @@ int mpu9150_read(struct mpu9150_regs *regs)
 
 int mpu9150_convert(struct mpu9150_data *data, const struct mpu9150_regs *regs)
 {
-    int16_t ax = (regs->acc_xout_h  << 8) | regs->acc_xout_l;
-    int16_t ay = (regs->acc_yout_h  << 8) | regs->acc_yout_l;
-    int16_t az = (regs->acc_zout_h  << 8) | regs->acc_zout_l;
-    int16_t t  = (regs->temp_out_h  << 8) | regs->temp_out_l;
-    int16_t gx = (regs->gyro_xout_h << 8) | regs->gyro_xout_l;
-    int16_t gy = (regs->gyro_yout_h << 8) | regs->gyro_yout_l;
-    int16_t gz = (regs->gyro_zout_h << 8) | regs->gyro_zout_l;
+    int16_t ax =  ( (regs->acc_xout_h  << 8) | regs->acc_xout_l  );
+    int16_t ay =  ( (regs->acc_yout_h  << 8) | regs->acc_yout_l  );
+    int16_t az = -( (regs->acc_zout_h  << 8) | regs->acc_zout_l  );
+    int16_t t  =  ( (regs->temp_out_h  << 8) | regs->temp_out_l  );
+    int16_t gx =  ( (regs->gyro_xout_h << 8) | regs->gyro_xout_l );
+    int16_t gy =  ( (regs->gyro_yout_h << 8) | regs->gyro_yout_l );
+    int16_t gz =  ( (regs->gyro_zout_h << 8) | regs->gyro_zout_l );
 
     // Check for clipped values
     //

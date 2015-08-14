@@ -2,6 +2,7 @@
 #define MYGLWIDGET_H
 
 #include "GLTools.h"
+#include "Shared/msg_structs.h"
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions_2_1>
 #include <QMatrix4x4>
@@ -51,14 +52,14 @@ private:
 
     QMatrix4x4  m_projection;
 
+    QList<msg_imu_data> queue;
+
     virtual void initializeGL() override;
     virtual void resizeGL(int w, int h) override;
     virtual void paintGL() override;
 
-
-    float normalizeAngle(float angle);
-    void  draw_xy_plane(float size);
-    void  draw_coordinate_system(float size);
+    void drawPointCloud(const float *points, int numPoints, const QColor &color);
+    void connection_messageReceived(const msg_generic &msg);
 };
 
 #endif // MYGLWIDGET_H

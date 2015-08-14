@@ -64,10 +64,8 @@ static mat3f dcm_integrate(mat3f A, vec3f w, float dt)
 }
 
 
-extern void dcm_update(struct sensor_data *sensor, float dt)
+void dcm_update(struct sensor_data *sensor, float dt)
 {
-    dcm.offset_p = vec3f_zero;
-
     // Apply accelerometer correction
     //
     vec3f down  = vec3f_matmul(dcm.matrix, vec3f_norm(sensor->acc));
@@ -75,7 +73,9 @@ extern void dcm_update(struct sensor_data *sensor, float dt)
 
     dcm.debug = error;
 
+    dcm.offset_p = vec3f_zero;
     dcm.offset_p = vec3f_add(dcm.offset_p, vec3f_scale(error, dcm.acc_kp));
+
     dcm.offset_i = vec3f_add(dcm.offset_i, vec3f_scale(error, dcm.acc_ki));
 
     // todo: magnetometer correction, once we have one

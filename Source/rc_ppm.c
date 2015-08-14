@@ -17,7 +17,7 @@ volatile uint32_t  rc_ppm_irq_time;
 // Local copy of the last received frame
 //
 static struct rc_input rc_ppm_input;
-static int    ppm_channels[RC_MAX_CHANNELS];    // pulse width [us]
+static int    ppm_channels[RC_MAX_PHYS_CHANNELS];    // pulse width [us]
 
 
 
@@ -26,7 +26,7 @@ void TIM8_BRK_TIM12_IRQHandler(void)
     static bool valid;
     static int  rssi;
     static int  num_channels;
-    static int  channels[RC_MAX_CHANNELS];
+    static int  channels[RC_MAX_PHYS_CHANNELS];
     static uint16_t t0;
 
     uint16_t tim7_cnt = TIM7->CNT;
@@ -43,7 +43,7 @@ void TIM8_BRK_TIM12_IRQHandler(void)
                 rssi--;
         }
         else {
-            if (t < rc_ppm_config.max_width && num_channels < RC_MAX_CHANNELS)
+            if (t < rc_ppm_config.max_width && num_channels < RC_MAX_PHYS_CHANNELS)
                 channels[num_channels++] = t;
             else
                 valid = false;
@@ -106,7 +106,7 @@ void rc_ppm_update(struct rc_input *rc)
     rc->valid = rc_ppm_input.valid;
 
     for (uint8_t i = 0; i < rc_ppm_input.num_channels; i++)
-        rc->channels[rc_config.channel_map[i]] = (ppm_channels[i] - 1500) / 500.0;
+        rc->channels[i] = (ppm_channels[i] - 1500) / 500.0;
 
     taskENABLE_INTERRUPTS();
 

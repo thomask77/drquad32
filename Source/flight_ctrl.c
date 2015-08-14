@@ -70,13 +70,13 @@ void flight_ctrl(void *pvParameters)
         sensor_read(&sensor_data);
         rc_update(&rc_input);
 
-        if (rc_input.valid && (rc_input.channels[RC_CHANNEL_ARM] > -0.7))
+        if (rc_input.valid && (rc_input.mapped_channels[RC_CHANNEL_ARM] > -0.7))
         {
-            rc_pitch   = rc_input.channels[RC_CHANNEL_PITCH] * fc_config.pitch_roll_gain;
-            rc_roll    = rc_input.channels[RC_CHANNEL_ROLL] * fc_config.pitch_roll_gain;
-            rc_yaw     = rc_input.channels[RC_CHANNEL_YAW] * fc_config.yaw_gain;
+            rc_pitch   = rc_input.mapped_channels[RC_CHANNEL_PITCH] * fc_config.pitch_roll_gain;
+            rc_roll    = rc_input.mapped_channels[RC_CHANNEL_ROLL] * fc_config.pitch_roll_gain;
+            rc_yaw     = rc_input.mapped_channels[RC_CHANNEL_YAW] * fc_config.yaw_gain;
             // go from -1 - 1 to 0 - 1
-            rc_thrust  = ((rc_input.channels[RC_CHANNEL_THURST] * 0.5) + 0.5) * fc_config.thurst_gain;
+            rc_thrust  = ((rc_input.mapped_channels[RC_CHANNEL_THURST] * 0.5) + 0.5) * fc_config.thurst_gain;
 
             ok = 1;
         }
@@ -103,7 +103,7 @@ void flight_ctrl(void *pvParameters)
             pid_yaw  .kd = pid_d;
         }
 
-        if (fc_config.state & 0x02 || (rc_input.channels[RC_CHANNEL_FUNCT0] > -0.7)) {
+        if (fc_config.state & 0x02 || (rc_input.mapped_channels[RC_CHANNEL_FUNCT0] > -0.7)) {
                 dcm_update(&sensor_data, 1e-3);
 
                 pid_update(&pid_pitch, (rc_pitch - dcm.euler.x), 0);

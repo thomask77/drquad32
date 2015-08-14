@@ -34,7 +34,7 @@ static const char *rc_strchan_name(uint8_t chan_name)
     case RC_CHANNEL_FUNCT0:  return "funct0";
     case RC_CHANNEL_FUNCT1:  return "funct1";
     case RC_CHANNEL_FUNCT2:  return "funct2";
-    default:            return "Unknown";
+    default:                 return "nothing";
     }
 }
 
@@ -54,6 +54,11 @@ void rc_update(struct rc_input *rc)
     for (int i = 0; i < rc->num_channels; i++)
         if (rc_config.channel_inverted[i])
             rc->channels[i] *= -1;
+
+
+    for (int i = 0; i < RC_CHANNEL_MAX_LOGICAL; i++)
+        rc->mapped_channels[i] = rc->channels[ rc_config.channel_map[i] ];
+
 }
 
 
@@ -81,6 +86,17 @@ void rc_init(void)
 #include <stdlib.h>
 
 
+
+static int reverse_map(int channel)
+{
+    for (int i=0; i<RC_CHANNEL_MAX_LOGICAL; i++)
+        if (rc_config.channel_map[ i ] == channel)
+            return i;
+
+    return -1;
+}
+
+
 static void cmd_rc_show(void)
 {
     struct rc_input rc;
@@ -96,8 +112,10 @@ static void cmd_rc_show(void)
         char bar[31];
         strnbar(bar, sizeof(bar), rc.channels[i], -1, 1);
 
-        printf("ch: %i %s: [%s] %0.3f\n", i, rc_strchan_name(i), bar, rc.channels[i]);
+        printf("ch: %i %s: [%s] %0.3f\n", i, rc_strchan_name( reverse_map(i) ), bar, rc.channels[i]);
     }
+
+
 }
 
 

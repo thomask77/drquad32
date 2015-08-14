@@ -377,7 +377,7 @@ void cobs_task(void *pv)
         if (t > 1000) {
             // hack
             //
-            if (t - t_last_imu_data > 100) {
+            if (t - t_last_imu_data > 30) {
                 send_imu_data();
                 t_last_imu_data = t;
             }

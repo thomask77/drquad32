@@ -16,6 +16,9 @@
  */
 
 #include "MyGLWidget.h"
+#include "TangoColors.h"
+#include "MainWindow.h"
+#include <QtMath>
 
 MyGLWidget::MyGLWidget(QWidget *parent)
     : QOpenGLWidget(parent)
@@ -25,6 +28,8 @@ MyGLWidget::MyGLWidget(QWidget *parent)
     setFormat(format);
 
     connect(&timer, &QTimer::timeout, this, &MyGLWidget::timer_timeout);
+    connect(&mainWindow->connection, &Connection::messageReceived, this, &MyGLWidget::connection_messageReceived);
+
     timer.start(10);
 }
 
@@ -33,6 +38,14 @@ MyGLWidget::~MyGLWidget()
 {
     delete glt;
 }
+
+
+void MyGLWidget::connection_messageReceived(const msg_generic &msg)
+{
+    if (msg.h.id == MSG_ID_IMU_DATA)
+        queue.append((const msg_imu_data&)msg);
+}
+
 
 
 void MyGLWidget::initializeGL()
@@ -84,6 +97,7 @@ void MyGLWidget::initializeGL()
     glEnable(GL_COLOR_MATERIAL);
 }
 
+
 void MyGLWidget::resizeGL(int w, int h)
 {
     const float aspect = float(w) / h;
@@ -96,6 +110,37 @@ void MyGLWidget::resizeGL(int w, int h)
 
     glViewport(0, 0, w, h);
 }
+
+
+void MyGLWidget::drawPointCloud(const float *points, int numPoints, const QColor &color)
+{
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+    glEnable(GL_NORMALIZE);
+
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_NORMAL_ARRAY);
+
+    glVertexPointer(3, GL_FLOAT, 0, points);
+    glNormalPointer(   GL_FLOAT, 0, points);
+
+    glPointSize(5);
+    glColor4ub(color.red(), color.green(), color.blue(), 128);
+    glDrawArrays(GL_POINTS, 0, numPoints);
+
+//    glPointSize(2);
+//    glColor4ub(255, 255, 255, 128);
+//    glDrawArrays(GL_POINTS, 100, 900);
+
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_NORMAL_ARRAY);
+
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+
+    glPopAttrib();
+}
+
 
 void MyGLWidget::paintGL()
 {
@@ -129,25 +174,52 @@ void MyGLWidget::paintGL()
     // Switch to air-frame
     //
     glPushMatrix();
-    glRotatef(90, 1, 0, 0);
+  //  glRotatef(90, 1, 0, 0);
 
     glt->drawBigCoordinateSystem(32);
 
     // Draw a flying teapot
     //
-    glColor3ub(128, 128, 128);
-    glDisable(GL_CULL_FACE);
 
-    glt->drawSolidTeapot(16);
+    // glColor3ub(128, 128, 128);
+    // glDisable(GL_CULL_FACE);
+    // glt->drawSolidTeapot(16);
+
+    // Draw some points!
+    // 
+    const int N = queue.length();
+
+    if (N > 0) {
+        float pts[N][3] = { 0 };
+
+        int i=0;
+        for (const auto &imu: queue) {
+            pts[i][0] = imu.acc_x;
+            pts[i][1] = imu.acc_y;
+            pts[i][2] = imu.acc_z;
+            i++;
+        }  
+
+        if (N > 10) {
+ //           drawPointCloud(pts[0],    N-10, TangoColors::Aluminium1);
+            drawPointCloud(pts[N-10], 10, TangoColors::Chameleon1);
+        }
+        else {
+            drawPointCloud(pts[0], N, TangoColors::Chameleon1);
+        }
+    }
+
 
     glEnable(GL_CULL_FACE);
     glPopMatrix();
 }
 
+
 void MyGLWidget::mousePressEvent(QMouseEvent *event)
 {
     lastPos = event->pos();
 }
+
 
 void MyGLWidget::mouseMoveEvent(QMouseEvent *event)
 {
@@ -166,6 +238,7 @@ void MyGLWidget::mouseMoveEvent(QMouseEvent *event)
     lastPos = event->pos();
 }
 
+
 void MyGLWidget::setXRotation(float x)
 {
     x = glt->normalizeAngle(x);
@@ -175,6 +248,7 @@ void MyGLWidget::setXRotation(float x)
         update();
     }
 }
+
 
 void MyGLWidget::setYRotation(float y)
 {
@@ -186,6 +260,7 @@ void MyGLWidget::setYRotation(float y)
     }
 }
 
+
 void MyGLWidget::setZRotation(float z)
 {
     z = glt->normalizeAngle(z);
@@ -196,6 +271,7 @@ void MyGLWidget::setZRotation(float z)
     }
 }
 
+
 void MyGLWidget::setOrtho(bool ortho)
 {
     this->ortho = ortho;
@@ -203,10 +279,12 @@ void MyGLWidget::setOrtho(bool ortho)
     update();
 }
 
+
 void MyGLWidget::setAutoRotate(bool rotate)
 {
     auto_rotate = rotate;
 }
+
 
 void MyGLWidget::setRotation(float x, float y, float z)
 {
@@ -214,6 +292,7 @@ void MyGLWidget::setRotation(float x, float y, float z)
     setYRotation(y);
     setZRotation(z);
 }
+
 
 void MyGLWidget::timer_timeout()
 {
@@ -223,5 +302,8 @@ void MyGLWidget::timer_timeout()
     if (auto_rotate)
         setZRotation(zRot + 360 * dt / 60);
 
+    update();
+
     t_last = t;
 }
+

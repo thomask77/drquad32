@@ -3,7 +3,7 @@
 #include "FreeRTOS.h"
 #include <stdbool.h>
 
-#define RC_MAX_CHANNELS     10
+#define RC_MAX_PHYS_CHANNELS     10
 
 
 enum {
@@ -26,7 +26,7 @@ enum {
     RC_CHANNEL_FUNCT1,
     RC_CHANNEL_FUNCT2,
 
-    RC_CHANNEL_MAX,
+    RC_CHANNEL_MAX_LOGICAL,
 };
 
 struct rc_input {
@@ -34,14 +34,15 @@ struct rc_input {
     bool  valid;                        // 0, 1
     int   rssi;                         // 0 .. 100
     int   num_channels;                 // 0 .. RC_MAX_CHANNELS-1
-    float channels[RC_MAX_CHANNELS];    // scaled
+    float channels[RC_MAX_PHYS_CHANNELS];    // scaled
+    float mapped_channels[RC_CHANNEL_MAX_LOGICAL];
 };
 
 struct rc_config {
     int mode;
     int expected_channels;
-    int channel_map[RC_MAX_CHANNELS];
-    int channel_inverted[RC_MAX_CHANNELS];
+    int channel_map[RC_CHANNEL_MAX_LOGICAL];
+    int channel_inverted[RC_MAX_PHYS_CHANNELS];
 };
 
 

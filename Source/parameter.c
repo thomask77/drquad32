@@ -183,7 +183,7 @@ void param_save(void)
 
     // Erasing a 16k page takes up to 500 ms
     //
-    watchdog_set_timeout(500);
+    watchdog_set_timeout(1000);
     FLASH_Unlock();
     FLASH_EraseSector(PARAM_SECTOR0, VoltageRange_3);
     watchdog_set_timeout(WATCHDOG_TIMEOUT);

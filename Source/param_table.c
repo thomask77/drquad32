@@ -70,7 +70,7 @@ const struct param_info  param_table[] = {
                     "  4: Futaba SBUS\n"
     },
 
-    {  201, P_INT32(&rc_config.expected_channels, 0, 0, RC_MAX_CHANNELS),
+    {  201, P_INT32(&rc_config.expected_channels, 0, 0, RC_MAX_PHYS_CHANNELS),
             .name = "rc.expected_channels",
             .help = "Number of expected remote control channels.\n"
     },
@@ -96,35 +96,35 @@ const struct param_info  param_table[] = {
             .help = "PPM sum signal synchronization pulse width"
     },
 
-    {  240, P_INT32(&rc_config.channel_map[RC_CHANNEL_THURST], 2, 0, RC_MAX_CHANNELS),
+    {  240, P_INT32(&rc_config.channel_map[RC_CHANNEL_THURST], 2, 0, RC_MAX_PHYS_CHANNELS-1),
         .name = "rc_config.channel_map[THURST]",
         .help = "Channel with thurst signal"
     },
-    {  241, P_INT32(&rc_config.channel_map[RC_CHANNEL_PITCH], 1, 0, RC_MAX_CHANNELS),
+    {  241, P_INT32(&rc_config.channel_map[RC_CHANNEL_PITCH], 1, 0, RC_MAX_PHYS_CHANNELS-1),
         .name = "rc_config.channel_map[PITCH]",
         .help = "Channel with pitch signal"
     },
-    {  242, P_INT32(&rc_config.channel_map[RC_CHANNEL_ROLL], 0, 0, RC_MAX_CHANNELS),
+    {  242, P_INT32(&rc_config.channel_map[RC_CHANNEL_ROLL], 0, 0, RC_MAX_PHYS_CHANNELS-1),
         .name = "rc_config.channel_map[ROLL]",
         .help = "Channel with roll signal"
     },
-    {  243, P_INT32(&rc_config.channel_map[RC_CHANNEL_YAW], 3, 0, RC_MAX_CHANNELS),
+    {  243, P_INT32(&rc_config.channel_map[RC_CHANNEL_YAW], 3, 0, RC_MAX_PHYS_CHANNELS-1),
         .name = "rc_config.channel_map[YAW]",
         .help = "Channel with yaw signal"
     },
-    {  244, P_INT32(&rc_config.channel_map[RC_CHANNEL_ARM], 4, 0, RC_MAX_CHANNELS),
+    {  244, P_INT32(&rc_config.channel_map[RC_CHANNEL_ARM], 4, 0, RC_MAX_PHYS_CHANNELS-1),
         .name = "rc_config.channel_map[ARM]",
         .help = "Channel with arm signal"
     },
-    {  245, P_INT32(&rc_config.channel_map[RC_CHANNEL_FUNCT0], 5, 0, RC_MAX_CHANNELS),
+    {  245, P_INT32(&rc_config.channel_map[RC_CHANNEL_FUNCT0], 5, 0, RC_MAX_PHYS_CHANNELS-1),
         .name = "rc_config.channel_map[FUNCT0]",
         .help = "Channel with function 0 signal"
     },
-    {  246, P_INT32(&rc_config.channel_map[RC_CHANNEL_FUNCT1], 6, 0, RC_MAX_CHANNELS),
+    {  246, P_INT32(&rc_config.channel_map[RC_CHANNEL_FUNCT1], 6, 0, RC_MAX_PHYS_CHANNELS-1),
         .name = "rc_config.channel_map[FUNCT1]",
         .help = "Channel with function 1 signal"
     },
-    {  247, P_INT32(&rc_config.channel_map[RC_CHANNEL_FUNCT2], 7, 0, RC_MAX_CHANNELS),
+    {  247, P_INT32(&rc_config.channel_map[RC_CHANNEL_FUNCT2], 7, 0, RC_MAX_PHYS_CHANNELS-1),
         .name = "rc_config.channel_map[FUNCT1]",
         .help = "Channel with function 2 signal"
     },
