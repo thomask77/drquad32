@@ -200,8 +200,8 @@ void PlotWindow::timer_timeout()
 
 void PlotWindow::connection_messageReceived(const msg_generic &msg)
 {
-    if (msg.h.id == MSG_ID_IMU_DATA)
-        queue.append((const msg_imu_data&)msg);
+//    if (msg.h.id == MSG_ID_IMU_DATA)
+//        queue.append((const msg_imu_data&)msg);
 }
 
 

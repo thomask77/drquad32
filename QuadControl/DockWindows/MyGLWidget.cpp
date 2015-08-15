@@ -171,10 +171,12 @@ void MyGLWidget::paintGL()
     glTranslatef(32, 32, 32);
     glt->drawCoordinateSystem(48);
 
-    // Switch to air-frame
+    // Switch to North, East, Down air-frame
+    // https://pixhawk.org/dev/know-how/frames_of_reference
     //
     glPushMatrix();
-  //  glRotatef(90, 1, 0, 0);
+    glRotatef(90,  0, 0, 1);
+    glRotatef(180, 1, 0, 0);
 
     glt->drawBigCoordinateSystem(32);
 
@@ -187,28 +189,20 @@ void MyGLWidget::paintGL()
 
     // Draw some points!
     // 
-    const int N = queue.length();
+    const int N = std::min(queue.length(), 1000);
 
     if (N > 0) {
         float pts[N][3] = { 0 };
 
-        int i=0;
-        for (const auto &imu: queue) {
+        for (int i=0; i<N; i++) {
+            const auto &imu = queue[i + queue.length()-N];
             pts[i][0] = imu.acc_x;
             pts[i][1] = imu.acc_y;
             pts[i][2] = imu.acc_z;
-            i++;
-        }  
+        }
 
-        if (N > 10) {
- //           drawPointCloud(pts[0],    N-10, TangoColors::Aluminium1);
-            drawPointCloud(pts[N-10], 10, TangoColors::Chameleon1);
-        }
-        else {
-            drawPointCloud(pts[0], N, TangoColors::Chameleon1);
-        }
+        drawPointCloud(pts[0], N, TangoColors::Chameleon1);
     }
-
 
     glEnable(GL_CULL_FACE);
     glPopMatrix();
