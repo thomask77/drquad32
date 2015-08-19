@@ -337,7 +337,6 @@ void send_imu_data(void)
     msg.h.id = MSG_ID_IMU_DATA;
     msg.h.data_len  = MSG_DATA_LENGTH(struct msg_imu_data);
 
-    msg.timestamp   = xTaskGetTickCount(); // TODO: Timestamp sollte aus sensor_data kommen
     msg.acc_x       = d.acc.x;
     msg.acc_y       = d.acc.y;
     msg.acc_z       = d.acc.z;
