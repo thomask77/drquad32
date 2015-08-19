@@ -104,9 +104,10 @@ void flight_ctrl(void *pvParameters)
             pid_yaw  .kd = pid_d;
         }
 
-        if (fc_config.state & 0x02 || (rc_input.mapped_channels[RC_CHANNEL_FUNCT0] > -0.7)) {
-                dcm_update(&sensor_data, 1e-3);
+        dcm_update(&sensor_data, 1e-3);
 
+
+        if (fc_config.state & 0x02 || (rc_input.mapped_channels[RC_CHANNEL_FUNCT0] > -0.7)) {
                 pid_update(&pid_pitch, (rc_pitch - dcm.euler.x), 0);
                 pid_update(&pid_roll , (rc_roll  + dcm.euler.y), 0);
                 pid_update(&pid_yaw  , (rc_yaw   + dcm.euler.z), 0);

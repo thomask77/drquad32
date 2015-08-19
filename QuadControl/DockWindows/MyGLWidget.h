@@ -51,6 +51,7 @@ private:
     QTime   t_last;
 
     QMatrix4x4  m_projection;
+    QMatrix4x4  m_dcm;
 
     QList<msg_imu_data> queue;
 

@@ -1,5 +1,7 @@
 #include "term_cobs.h"
 #include "util.h"
+#include "attitude.h"
+
 #include "Shared/errors.h"
 #include "Shared/ringbuf.h"
 #include "Shared/cobsr.h"
@@ -14,7 +16,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
 
 #define XBEE_BAUDRATE  460800
 #define RX_QUEUE_SIZE  1024
@@ -352,9 +354,23 @@ void send_imu_data(void)
 }
 
 
+void send_attitude(void)
+{
+    struct msg_attitude msg;
+    msg.h.id = MSG_ID_ATTITUDE;
+    msg.h.data_len  = MSG_DATA_LENGTH(struct msg_attitude);
+
+    memcpy(&msg.m00, &dcm.matrix.m00, 9*4);
+
+    msg_send(&msg.h);
+}
+
+
+
 void cobs_task(void *pv)
 {
     TickType_t  t_last_imu_data = xTaskGetTickCount();
+    TickType_t  t_last_attitude = xTaskGetTickCount();
 
     for(;;) {
 
@@ -377,9 +393,14 @@ void cobs_task(void *pv)
         if (t > 1000) {
             // hack
             //
-            if (t - t_last_imu_data > 1) {
-                send_imu_data();
-                t_last_imu_data = t;
+            //if (t - t_last_imu_data > 4) {
+            //    send_imu_data();
+            //    t_last_imu_data = t;
+            //}
+
+            if (t - t_last_attitude > 20) {
+                send_attitude();
+                t_last_attitude = t;
             }
         }
 

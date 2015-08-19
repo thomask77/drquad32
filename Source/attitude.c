@@ -30,6 +30,9 @@ static mat3f dcm_integrate(mat3f A, vec3f w, float dt)
 {
     w = vec3f_scale(w, dt);
 
+    w.y = 0;
+    w.z = 0;
+
     // Calculate the new x and y axes. z is calculated later.
     //
     vec3f x = vec3f_matmul(A, (vec3f){    1, w.z, -w.y } );
@@ -83,8 +86,8 @@ void dcm_update(struct sensor_data *sensor, float dt)
     // Calculate drift-corrected roll, pitch and yaw angles
     //
     dcm.omega = sensor->gyro;
-    dcm.omega = vec3f_add(dcm.omega, dcm.offset_p);
-    dcm.omega = vec3f_add(dcm.omega, dcm.offset_i);
+    // dcm.omega = vec3f_add(dcm.omega, dcm.offset_p);
+    // dcm.omega = vec3f_add(dcm.omega, dcm.offset_i);
 
     // Apply rotation to the direction cosine matrix
     //
@@ -130,3 +133,4 @@ static void cmd_dcm_show(void)
 }
 
 SHELL_CMD(dcm_show, (cmdfunc_t)cmd_dcm_show, "show dcm values")
+SHELL_CMD(dcm_reset, (cmdfunc_t)dcm_reset, "reset dcm values")

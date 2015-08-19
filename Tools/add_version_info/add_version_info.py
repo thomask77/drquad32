@@ -174,10 +174,14 @@ def find_info_offset(data):
 
 
 def patch_raw():
+    t0 = datetime.now()
+    
     dprint("loading \"%s\"..." % args.source)
 
     with open(args.source, "rb") as f:
         raw_data = bytearray(f.read())
+
+    t1 = datetime.now()
 
     ##########
 
@@ -187,20 +191,31 @@ def patch_raw():
     if info_offset < 0:
         raise Exception("structure marker not found")
 
+ 
     dprint("  found at %d" % info_offset)
     
+    t2 = datetime.now()
+ 
     info = version_info.from_buffer(raw_data, info_offset)
     
     if info.image_crc and not args.force:
         raise Exception("already filled out")
 
+    t3 = datetime.now()
+  
     fill_version_info(info)
     
+    t4 = datetime.now()
+
+    # TODO: this takes 17s for a 17 meg file
+
     info.image_size = len(raw_data)
     info.image_crc = CRC32().forge(
         args.crc, str(raw_data), 
         info_offset + info.offsetof_image_crc
     )
+
+    t5 = datetime.now()
 
     dprint("  image_crc  = 0x%08x" % info.image_crc)
     dprint("  image_size = %d" % info.image_size)
@@ -211,6 +226,10 @@ def patch_raw():
 
     with open(args.target, "wb") as f:
         f.write(raw_data)
+
+    t6 = datetime.now()
+    
+    print t1-t0, t2-t1, t3-t2, t4-t3, t5-t4, t6-t5
 
 
 def patch_elf():

@@ -30,6 +30,8 @@ MyGLWidget::MyGLWidget(QWidget *parent)
     connect(&timer, &QTimer::timeout, this, &MyGLWidget::timer_timeout);
     connect(&mainWindow->connection, &Connection::messageReceived, this, &MyGLWidget::connection_messageReceived);
 
+    m_dcm.setToIdentity();
+
     timer.start(10);
 }
 
@@ -44,6 +46,27 @@ void MyGLWidget::connection_messageReceived(const msg_generic &msg)
 {
     if (msg.h.id == MSG_ID_IMU_DATA)
         queue.append((const msg_imu_data&)msg);
+
+    if (msg.h.id == MSG_ID_ATTITUDE) {
+        auto m = (const msg_attitude&)msg;
+
+        // m_dcm = QMatrix4x4(
+        //     m.m00, m.m10, m.m20, 0,
+        //     m.m01, m.m11, m.m21, 0,
+        //     m.m02, m.m12, m.m22, 0,
+        //     0,     0,     0,     1
+        // );
+
+        m_dcm = QMatrix4x4(
+            m.m00, m.m01, m.m02, 0,
+            m.m10, m.m11, m.m12, 0,
+            m.m20, m.m21, m.m22, 0,
+            0,     0,     0,     1
+        );
+
+
+    }
+
 }
 
 
@@ -160,32 +183,36 @@ void MyGLWidget::paintGL()
     glRotatef(yRot, 0, 1, 0);
     glRotatef(zRot, 0, 0, 1);
 
-    glt->drawXyPlane(32);
-    glt->drawCoordinateSystem(32);
-
-    // Draw fixed ground reference systems
-    //
-    glTranslatef(-32, -32, -32);
-    glt->drawBigCoordinateSystem(32);
-
-    glTranslatef(32, 32, 32);
-    glt->drawCoordinateSystem(48);
+    glPushMatrix();
+      glTranslatef(-32, -32, -32);
+      glt->drawBigCoordinateSystem(32);
+    glPopMatrix();
 
     // Switch to North, East, Down air-frame
     // https://pixhawk.org/dev/know-how/frames_of_reference
     //
-    glPushMatrix();
     glRotatef(90,  0, 0, 1);
     glRotatef(180, 1, 0, 0);
 
-    glt->drawBigCoordinateSystem(32);
+    glt->drawCoordinateSystem(32);
 
+
+    // Apply the DCM matrix
+    //
+    glMultMatrixf(m_dcm.constData());
+
+    glt->drawBigCoordinateSystem(32);
+    glt->drawXyPlane(32);
+/*
     // Draw a flying teapot
     //
-
-    // glColor3ub(128, 128, 128);
-    // glDisable(GL_CULL_FACE);
-    // glt->drawSolidTeapot(16);
+    glPushMatrix();
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+      glRotatef(-90,  1, 0, 0);
+      glColor3ub(128, 128, 128);
+      glt->drawSolidTeapot(16);
+    glPopAttrib();
+    glPopMatrix();
 
     // Draw some points!
     // 
@@ -205,7 +232,8 @@ void MyGLWidget::paintGL()
     }
 
     glEnable(GL_CULL_FACE);
-    glPopMatrix();
+*/
+
 }
 
 

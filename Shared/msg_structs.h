@@ -29,6 +29,7 @@ enum msg_id {
     MSG_ID_NOP                  = 0x0000,
 
     MSG_ID_IMU_DATA             = 0x0010,
+    MSG_ID_ATTITUDE             = 0x0020,
 
     MSG_ID_BOOT_ENTER           = 0xB000,
     MSG_ID_BOOT_READ_DATA       = 0xB001,
@@ -95,6 +96,14 @@ struct msg_imu_data
     float   baro_hpa, baro_temp;
 };
 
+
+struct msg_attitude
+{
+    struct msg_header h;
+    float  m00, m01, m02;
+    float  m10, m11, m12;
+    float  m20, m21, m22;
+};
 
 
 /**
