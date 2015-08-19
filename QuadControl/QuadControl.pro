@@ -84,9 +84,9 @@ RESOURCES += \
     resources.qrc
 
 ADD_VERSION_INFO = \
-    ../Tools/add_version_info/add_version_info.py -rv
+    ../Tools/add_version_info/add_version_info.py -rv --no-crc
 
 # this is insane :/
 #
-linux:QMAKE_POST_LINK += $$ADD_VERSION_INFO $(OUT_PWD)$(TARGET);
+linux:QMAKE_POST_LINK += $$ADD_VERSION_INFO $(OUT_PWD)$(TARGET)
 win32:QMAKE_POST_LINK += $$ADD_VERSION_INFO $(DESTDIR_TARGET)
