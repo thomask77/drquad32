@@ -15,11 +15,12 @@ win32:QT += winextras
 TARGET = quadcontrol
 TEMPLATE = app
 
-CONFIG += c++11
+CONFIG += c++14
 
 INCLUDEPATH += .. \
-    Widgets/qcustomplot-1.3.0 \
-    Widgets/qflightinstruments-20140126
+    Libraries/qcustomplot-1.3.0 \
+    Libraries/qflightinstruments-20140126 \
+    Libraries/half-1.11.0/include
 
 SOURCES += main.cpp \
     MainWindow.cpp \
@@ -32,7 +33,7 @@ SOURCES += main.cpp \
     BootProtocol.cpp \
     WiFlyListener.cpp \
     PuTTYLauncher.cpp \
-    Widgets/qcustomplot-1.3.0/qcustomplot.cpp \
+    Libraries/qcustomplot-1.3.0/qcustomplot.cpp \
     DockWindows/AddConnectionDialog.cpp \
     ../Shared/cobsr.c \
     ../Shared/crc16.c \
@@ -56,7 +57,7 @@ HEADERS += MainWindow.h \
     QProgressDialogEx.h \
     WiFlyListener.h \
     PuTTYLauncher.h \
-    Widgets/qcustomplot-1.3.0/qcustomplot.h \
+    Libraries/qcustomplot-1.3.0/qcustomplot.h \
     DockWindows/AddConnectionDialog.h \
     TryAction.h \
     InterleavedFuture.h \

@@ -49,26 +49,14 @@ void MyGLWidget::connection_messageReceived(const msg_generic &msg)
 
     if (msg.h.id == MSG_ID_ATTITUDE) {
         auto m = (const msg_attitude&)msg;
-
-        // m_dcm = QMatrix4x4(
-        //     m.m00, m.m10, m.m20, 0,
-        //     m.m01, m.m11, m.m21, 0,
-        //     m.m02, m.m12, m.m22, 0,
-        //     0,     0,     0,     1
-        // );
-
         m_dcm = QMatrix4x4(
             m.m00, m.m01, m.m02, 0,
             m.m10, m.m11, m.m12, 0,
             m.m20, m.m21, m.m22, 0,
             0,     0,     0,     1
         );
-
-
     }
-
 }
-
 
 
 void MyGLWidget::initializeGL()
@@ -194,7 +182,7 @@ void MyGLWidget::paintGL()
     glRotatef(90,  0, 0, 1);
     glRotatef(180, 1, 0, 0);
 
-    glt->drawCoordinateSystem(32);
+    glt->drawCoordinateSystem(40);
 
 
     // Apply the DCM matrix
@@ -203,16 +191,21 @@ void MyGLWidget::paintGL()
 
     glt->drawBigCoordinateSystem(32);
     glt->drawXyPlane(32);
-/*
+
     // Draw a flying teapot
     //
-    glPushMatrix();
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
-      glRotatef(-90,  1, 0, 0);
-      glColor3ub(128, 128, 128);
-      glt->drawSolidTeapot(16);
-    glPopAttrib();
-    glPopMatrix();
+    {
+        glPushMatrix();
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glDisable(GL_CULL_FACE);
+
+        glRotatef(-90,  1, 0, 0);
+        glColor3ub(128, 128, 128);
+        glt->drawSolidTeapot(16);
+
+        glPopAttrib();
+        glPopMatrix();
+    }
 
     // Draw some points!
     // 
@@ -230,9 +223,6 @@ void MyGLWidget::paintGL()
 
         drawPointCloud(pts[0], N, TangoColors::Chameleon1);
     }
-
-    glEnable(GL_CULL_FACE);
-*/
 
 }
 

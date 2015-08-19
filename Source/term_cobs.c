@@ -360,7 +360,15 @@ void send_attitude(void)
     msg.h.id = MSG_ID_ATTITUDE;
     msg.h.data_len  = MSG_DATA_LENGTH(struct msg_attitude);
 
-    memcpy(&msg.m00, &dcm.matrix.m00, 9*4);
+    msg.m00 = dcm.matrix.m00;
+    msg.m01 = dcm.matrix.m01;
+    msg.m02 = dcm.matrix.m02;
+    msg.m10 = dcm.matrix.m10;
+    msg.m11 = dcm.matrix.m11;
+    msg.m12 = dcm.matrix.m12;
+    msg.m20 = dcm.matrix.m20;
+    msg.m21 = dcm.matrix.m21;
+    msg.m22 = dcm.matrix.m22;
 
     msg_send(&msg.h);
 }
@@ -391,12 +399,10 @@ void cobs_task(void *pv)
         TickType_t  t = xTaskGetTickCount();
 
         if (t > 1000) {
-            // hack
-            //
-            //if (t - t_last_imu_data > 4) {
-            //    send_imu_data();
-            //    t_last_imu_data = t;
-            //}
+            if (t - t_last_imu_data > 0) {
+                send_imu_data();
+                t_last_imu_data = t;
+            }
 
             if (t - t_last_attitude > 20) {
                 send_attitude();

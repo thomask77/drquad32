@@ -11,6 +11,13 @@
 #include <stddef.h>
 #include <assert.h>
 
+#ifdef __arm__
+    #define half __fp16
+#else
+    #include "half.hpp"
+    using namespace half_float;
+#endif
+
 // XBee Series 1:           100 bytes
 // XBee Series 2 ZNet:      72 bytes
 // XBee Series 2 ZB Pro:    84 bytes
@@ -90,19 +97,19 @@ struct msg_imu_data
 {
     struct msg_header h;
     uint32_t    timestamp;
-    float   acc_x, acc_y, acc_z;
-    float   gyro_x, gyro_y, gyro_z;
-    float   mag_x, mag_y, mag_z;
-    float   baro_hpa, baro_temp;
+    half    acc_x, acc_y, acc_z;
+    half    gyro_x, gyro_y, gyro_z;
+    half    mag_x, mag_y, mag_z;
+    half    baro_hpa, baro_temp;
 };
 
 
 struct msg_attitude
 {
     struct msg_header h;
-    float  m00, m01, m02;
-    float  m10, m11, m12;
-    float  m20, m21, m22;
+    half    m00, m01, m02;
+    half    m10, m11, m12;
+    half    m20, m21, m22;
 };
 
 

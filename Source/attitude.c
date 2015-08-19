@@ -30,8 +30,9 @@ static mat3f dcm_integrate(mat3f A, vec3f w, float dt)
 {
     w = vec3f_scale(w, dt);
 
-    w.y = 0;
-    w.z = 0;
+    // w.x = 0;
+    // w.y = 0;
+    // w.z = 0;
 
     // Calculate the new x and y axes. z is calculated later.
     //

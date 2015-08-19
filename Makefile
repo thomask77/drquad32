@@ -201,6 +201,7 @@ CPPFLAGS += $(addprefix -I,$(INCDIRS))
 #  -save-temps    preserve .s and .i-files
 #
 CPPFLAGS += -fsingle-precision-constant
+CPPFLAGS += -mfp16-format=ieee
 CPPFLAGS += -g
 # CPPFLAGS += -save-temps=obj
 
