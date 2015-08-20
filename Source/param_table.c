@@ -215,12 +215,12 @@ const struct param_info  param_table[] = {
         .help = "gyro yaw PID D Part"
     },
 
-    {  360, P_FLOAT(&dcm.acc_kp, 0, 0, 10),
+    {  360, P_FLOAT(&dcm.acc_kp, 1, 0, 10),
         .name = "dcm.acc_kp",
         .help = "DCM acc P Part"
     },
 
-    {  361, P_FLOAT(&dcm.acc_ki, 0, 0, 10),
+    {  361, P_FLOAT(&dcm.acc_ki, 0.0001, 0, 10),
        .name = "dcm.acc_ki",
        .help = "DCM acc I Part"
     },

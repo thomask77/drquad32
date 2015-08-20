@@ -43,7 +43,7 @@ TerminalWidget::TerminalWidget(QWidget *parent) :
 
     // Copy text on selection change
     //
-    connect(this, &TerminalWidget::selectionChanged, this, &copy);
+    connect(this, &TerminalWidget::selectionChanged, this, &TerminalWidget::copy);
 
     auto p = palette();
     p.setColor(QPalette::All, QPalette::Base, ansiPalette[0].color());

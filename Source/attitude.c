@@ -6,7 +6,7 @@
 
 struct dcm dcm = {
     .matrix    = MAT3_IDENTITY,
-    .acc_kp = 1, .acc_ki = 0.0001
+    //.acc_kp = 1, .acc_ki = 0.0001
     // .mag_kp = 0, .mag_ki = 0
 };
 
