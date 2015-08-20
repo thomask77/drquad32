@@ -3,17 +3,16 @@
 #include "sensors.h"
 #include <stdio.h>
 
+
 struct dcm dcm = {
     .matrix    = MAT3_IDENTITY,
-/*
-    .acc_kp = 1, .acc_ki = 0.001,
-    .mag_kp = 0, .mag_ki = 0
-*/
+    .acc_kp = 1, .acc_ki = 0.0001
+    // .mag_kp = 0, .mag_ki = 0
 };
 
 
-static const vec3f down_ref   = { 0, 0, 1 };     // down reference
-static const vec3f north_ref  = { 1, 0, 0 };     // north reference
+static const vec3f down_ref   = { 0, 0, 1 };  // down direction
+static const vec3f north_ref  = { 1, 0, 0 };  // north direction
 
 
 /**
@@ -70,8 +69,12 @@ void dcm_update(const struct sensor_data *sensor, float dt)
 {
     // Apply accelerometer correction
     //
-    dcm.down    = vec3f_matmul( dcm.matrix, vec3f_scale(sensor->acc, -1) );
-    dcm.down_error = vec3f_cross(dcm.down, down_ref);
+    dcm.down        = vec3f_matmul(dcm.matrix, vec3f_scale(sensor->acc, -1));
+    dcm.down_error  = vec3f_cross( vec3f_norm(dcm.down), down_ref );
+
+    // down_error hat jetzt sin(error)
+    // arcsin(x) ~= sin(x) für kleine x
+    //
 
     dcm.offset_p = vec3f_zero;
     dcm.offset_p = vec3f_add(dcm.offset_p, vec3f_scale(dcm.down_error, dcm.acc_kp));
@@ -80,8 +83,8 @@ void dcm_update(const struct sensor_data *sensor, float dt)
     // Calculate drift-corrected roll, pitch and yaw angles
     //
     dcm.omega = sensor->gyro;
-    // dcm.omega = vec3f_add(dcm.omega, dcm.offset_p);
-    // dcm.omega = vec3f_add(dcm.omega, dcm.offset_i);
+    dcm.omega = vec3f_add(dcm.omega, dcm.offset_p);
+    dcm.omega = vec3f_add(dcm.omega, dcm.offset_i);
 
     // Apply rotation to the direction cosine matrix
     //
@@ -100,6 +103,7 @@ void  dcm_reset(void)
 }
 
 // -----
+
 #include <string.h>
 #include "command.h"
 
@@ -111,7 +115,10 @@ static void cmd_dcm_show(void)
 
     printf("                x/roll    y/pitch      z/yaw\n");
     printf("down      : %10.4f %10.4f %10.4f\n", d.down.x,  d.down.y,  d.down.z );
+    printf("down_err  : %10.4f %10.4f %10.4f\n", d.down_error.x,  d.down_error.y,  d.down_error.z );
+    printf("\n");
     printf("north     : %10.4f %10.4f %10.4f\n", d.north.x, d.north.y, d.north.z);
+    printf("north_err : %10.4f %10.4f %10.4f\n", d.north_error.x, d.north_error.y, d.north_error.z);
     printf("\n");
     printf("offset_p  : %10.4f %10.4f %10.4f\n", d.offset_p.x, d.offset_p.y, d.offset_p.z);
     printf("offset_i  : %10.4f %10.4f %10.4f\n", d.offset_i.x, d.offset_i.y, d.offset_i.z);
