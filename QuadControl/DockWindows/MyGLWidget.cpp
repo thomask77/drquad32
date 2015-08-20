@@ -20,6 +20,7 @@
 #include "MainWindow.h"
 #include <QtMath>
 
+
 MyGLWidget::MyGLWidget(QWidget *parent)
     : QOpenGLWidget(parent)
 {
@@ -44,18 +45,22 @@ MyGLWidget::~MyGLWidget()
 
 void MyGLWidget::connection_messageReceived(const msg_generic &msg)
 {
-    if (msg.h.id == MSG_ID_IMU_DATA)
-        queue.append((const msg_imu_data&)msg);
-
-    if (msg.h.id == MSG_ID_ATTITUDE) {
-        auto m = (const msg_attitude&)msg;
+    if (msg.h.id == MSG_ID_DCM_MATRIX) {
+        auto m = (const msg_dcm_matrix&)msg;
         m_dcm = QMatrix4x4(
             m.m00, m.m01, m.m02, 0,
             m.m10, m.m11, m.m12, 0,
             m.m20, m.m21, m.m22, 0,
             0,     0,     0,     1
         );
+
     }
+
+    if (msg.h.id == MSG_ID_DCM_DOWN) {
+        auto m = (const msg_dcm_down&)msg;
+        dcm_down_queue.append( QVector3D(m.x, m.y, m.z) );
+    }
+
 }
 
 
@@ -128,26 +133,31 @@ void MyGLWidget::drawPointCloud(const float *points, int numPoints, const QColor
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
     glEnable(GL_NORMALIZE);
-
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_NORMAL_ARRAY);
 
     glVertexPointer(3, GL_FLOAT, 0, points);
-    glNormalPointer(   GL_FLOAT, 0, points);
+    glNormalPointer(GL_FLOAT, 0, points);
 
+    int recent = std::min(numPoints, 1);
+
+    if (numPoints > recent) {
+        glDepthMask(GL_FALSE);
+        glEnable(GL_LIGHTING);
+        glPointSize(2);
+        glColor4ub(255, 255, 255, 128);
+        glDrawArrays(GL_POINTS, 0, numPoints-recent);
+    }
+
+    glDepthMask(GL_TRUE);
+    glDisable(GL_LIGHTING);
     glPointSize(5);
-    glColor4ub(color.red(), color.green(), color.blue(), 128);
-    glDrawArrays(GL_POINTS, 0, numPoints);
+    glColor3ub(color.red(), color.green(), color.blue());
+    glDrawArrays(GL_POINTS, numPoints-recent, recent);
 
-//    glPointSize(2);
-//    glColor4ub(255, 255, 255, 128);
-//    glDrawArrays(GL_POINTS, 100, 900);
 
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_NORMAL_ARRAY);
-
-    glDepthMask(GL_TRUE);
-    glDisable(GL_BLEND);
 
     glPopAttrib();
 }
@@ -184,6 +194,25 @@ void MyGLWidget::paintGL()
 
     glt->drawCoordinateSystem(40);
 
+    // Draw down reference
+    //
+    {
+        const int N = std::min(dcm_down_queue.length(), 1000);
+
+        if (N > 0) {
+            float pts[N][3];
+
+            for (int i=0; i<N; i++) {
+                const auto &d = dcm_down_queue[i + dcm_down_queue.length() - N];
+                pts[i][0] = d.x();
+                pts[i][1] = d.y();
+                pts[i][2] = d.z();
+            }
+
+            drawPointCloud(pts[0], N, TangoColors::Chameleon1);
+        }
+    }
+
 
     // Apply the DCM matrix
     //
@@ -192,6 +221,8 @@ void MyGLWidget::paintGL()
     glt->drawBigCoordinateSystem(32);
     glt->drawXyPlane(32);
 
+
+    /*
     // Draw a flying teapot
     //
     {
@@ -206,13 +237,16 @@ void MyGLWidget::paintGL()
         glPopAttrib();
         glPopMatrix();
     }
+    */
 
-    // Draw some points!
-    // 
+
+    /*
+    // Draw accelerometer values
+    //
     const int N = std::min(queue.length(), 1000);
 
     if (N > 0) {
-        float pts[N][3] = { 0 };
+        float pts[N][3];
 
         for (int i=0; i<N; i++) {
             const auto &imu = queue[i + queue.length()-N];
@@ -223,7 +257,7 @@ void MyGLWidget::paintGL()
 
         drawPointCloud(pts[0], N, TangoColors::Chameleon1);
     }
-
+    */
 }
 
 

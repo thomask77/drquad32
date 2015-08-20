@@ -5,13 +5,15 @@
 
 struct dcm dcm = {
     .matrix    = MAT3_IDENTITY,
-    .down_ref  = { 0,  0, -1 },
-    .north_ref = { 1,  0,  0 },
 /*
     .acc_kp = 1, .acc_ki = 0.001,
     .mag_kp = 0, .mag_ki = 0
 */
 };
+
+
+static const vec3f down_ref   = { 0, 0, 1 };     // down reference
+static const vec3f north_ref  = { 1, 0, 0 };     // north reference
 
 
 /**
@@ -29,10 +31,6 @@ struct dcm dcm = {
 static mat3f dcm_integrate(mat3f A, vec3f w, float dt)
 {
     w = vec3f_scale(w, dt);
-
-    // w.x = 0;
-    // w.y = 0;
-    // w.z = 0;
 
     // Calculate the new x and y axes. z is calculated later.
     //
@@ -68,21 +66,16 @@ static mat3f dcm_integrate(mat3f A, vec3f w, float dt)
 }
 
 
-void dcm_update(struct sensor_data *sensor, float dt)
+void dcm_update(const struct sensor_data *sensor, float dt)
 {
     // Apply accelerometer correction
     //
-    vec3f down  = vec3f_matmul(dcm.matrix, vec3f_norm(sensor->acc));
-    vec3f error = vec3f_cross(down, dcm.down_ref);
-
-    dcm.debug = error;
+    dcm.down    = vec3f_matmul( dcm.matrix, vec3f_scale(sensor->acc, -1) );
+    dcm.down_error = vec3f_cross(dcm.down, down_ref);
 
     dcm.offset_p = vec3f_zero;
-    dcm.offset_p = vec3f_add(dcm.offset_p, vec3f_scale(error, dcm.acc_kp));
-
-    dcm.offset_i = vec3f_add(dcm.offset_i, vec3f_scale(error, dcm.acc_ki));
-
-    // todo: magnetometer correction, once we have one
+    dcm.offset_p = vec3f_add(dcm.offset_p, vec3f_scale(dcm.down_error, dcm.acc_kp));
+    dcm.offset_i = vec3f_add(dcm.offset_i, vec3f_scale(dcm.down_error, dcm.acc_ki));
 
     // Calculate drift-corrected roll, pitch and yaw angles
     //
@@ -117,8 +110,8 @@ static void cmd_dcm_show(void)
     memcpy(&d, &dcm, sizeof(d));
 
     printf("                x/roll    y/pitch      z/yaw\n");
-    printf("down_ref  : %10.4f %10.4f %10.4f\n", d.down_ref.x, d.down_ref.y, d.down_ref.z);
-    printf("north_ref : %10.4f %10.4f %10.4f\n", d.north_ref.x, d.north_ref.y, d.north_ref.z);
+    printf("down      : %10.4f %10.4f %10.4f\n", d.down.x,  d.down.y,  d.down.z );
+    printf("north     : %10.4f %10.4f %10.4f\n", d.north.x, d.north.y, d.north.z);
     printf("\n");
     printf("offset_p  : %10.4f %10.4f %10.4f\n", d.offset_p.x, d.offset_p.y, d.offset_p.z);
     printf("offset_i  : %10.4f %10.4f %10.4f\n", d.offset_i.x, d.offset_i.y, d.offset_i.z);
@@ -129,8 +122,6 @@ static void cmd_dcm_show(void)
     printf("dcm_matrix: %10.4f %10.4f %10.4f\n", d.matrix.m00, d.matrix.m01, d.matrix.m02);
     printf("            %10.4f %10.4f %10.4f\n", d.matrix.m10, d.matrix.m11, d.matrix.m12);
     printf("            %10.4f %10.4f %10.4f\n", d.matrix.m20, d.matrix.m21, d.matrix.m22);
-    printf("\n");
-    printf("debug     : %10.4f %10.4f %10.4f\n", d.debug.x, d.debug.y, d.debug.z);
 }
 
 SHELL_CMD(dcm_show, (cmdfunc_t)cmd_dcm_show, "show dcm values")

@@ -353,11 +353,11 @@ void send_imu_data(void)
 }
 
 
-void send_attitude(void)
+void send_dcm_matrix(void)
 {
-    struct msg_attitude msg;
-    msg.h.id = MSG_ID_ATTITUDE;
-    msg.h.data_len  = MSG_DATA_LENGTH(struct msg_attitude);
+    struct msg_dcm_matrix msg;
+    msg.h.id = MSG_ID_DCM_MATRIX;
+    msg.h.data_len  = MSG_DATA_LENGTH(struct msg_dcm_matrix);
 
     msg.m00 = dcm.matrix.m00;
     msg.m01 = dcm.matrix.m01;
@@ -372,11 +372,23 @@ void send_attitude(void)
     msg_send(&msg.h);
 }
 
+void send_dcm_down(void)
+{
+    struct msg_dcm_down msg;
+    msg.h.id = MSG_ID_DCM_DOWN;
+    msg.h.data_len  = MSG_DATA_LENGTH(struct msg_dcm_down);
+
+    msg.x = dcm.down.x;
+    msg.y = dcm.down.y;
+    msg.z = dcm.down.z;
+    msg_send(&msg.h);
+}
+
 
 
 void cobs_task(void *pv)
 {
-    TickType_t  t_last_imu_data = xTaskGetTickCount();
+    TickType_t  t_last_dcm_down = xTaskGetTickCount();
     TickType_t  t_last_attitude = xTaskGetTickCount();
 
     for(;;) {
@@ -398,14 +410,14 @@ void cobs_task(void *pv)
         TickType_t  t = xTaskGetTickCount();
 
         if (t > 1000) {
-            if (t - t_last_imu_data > 0) {
-                send_imu_data();
-                t_last_imu_data = t;
+            if (t - t_last_attitude > 20) {
+                send_dcm_matrix();
+                t_last_attitude = t;
             }
 
-            if (t - t_last_attitude > 20) {
-                send_attitude();
-                t_last_attitude = t;
+            if (t - t_last_dcm_down > 0) {
+                send_dcm_down();
+                t_last_dcm_down = t;
             }
         }
 

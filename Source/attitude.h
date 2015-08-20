@@ -11,18 +11,18 @@ struct dcm {
     vec3f offset_p;     ///< drift correction p-term
     vec3f offset_i;     ///< drift correction i-term
 
-    vec3f down_ref;     ///< accelerometer "down" reference
+    vec3f down;
+    vec3f down_error;
     float acc_kp;       ///< accelerometer p gain
     float acc_ki;       ///< accelerometer i gain
 
-    vec3f north_ref;    ///< magnetometer "north" reference
+    vec3f north;
+    vec3f north_error;
     float mag_kp;       ///< magnetometer p gain
     float mag_ki;       ///< magnetometer i gain
-
-    vec3f debug;
 };
 
 extern struct dcm dcm;
 
-extern void dcm_update(struct sensor_data *sensor, float dt);
+extern void dcm_update(const struct sensor_data *sensor, float dt);
 extern void dcm_reset(void);

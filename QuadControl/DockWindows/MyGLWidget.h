@@ -6,6 +6,7 @@
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions_2_1>
 #include <QMatrix4x4>
+
 #include <QTimer>
 #include <QTime>
 #include <QMouseEvent>
@@ -53,7 +54,8 @@ private:
     QMatrix4x4  m_projection;
     QMatrix4x4  m_dcm;
 
-    QList<msg_imu_data> queue;
+    QList<QVector3D>    dcm_down_queue;
+    QList<QVector3D>    imu_acc_queue;
 
     virtual void initializeGL() override;
     virtual void resizeGL(int w, int h) override;
