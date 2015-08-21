@@ -1,8 +1,9 @@
 # Optimization level, can be [0, 1, 2, 3, s]. 
 #     0 = turn off optimization. s = optimize for size.
 # 
-OPT = -Os -flto
-# OPT = -O1				# for debugging
+
+# OPT = -O1         # for debugging
+OPT = -Os
 
 BOARD ?= REV_A
 
@@ -90,25 +91,29 @@ endif
 CPPFLAGS += -DSTM32F40_41xxx
 LDSCRIPT = Bootloader/stm32f4xx_boot.ld
 
+
 #============================================================================
 #
 OBJECTS  += $(addprefix $(OBJDIR)/,$(addsuffix .o,$(basename $(SOURCES))))
 CPPFLAGS += $(addprefix -I,$(INCDIRS))
 
-# make better use of the single-precision FPU
+#---------------- Preprocessor Options ----------------
+#  -fsingle...    make better use of the single-precision FPU
+#  -g             generate debugging information
+#  -save-temps    preserve .s and .i-files
 #
-CPPFLAGS += -fsingle-precision-constant 
+CPPFLAGS += -fsingle-precision-constant
+CPPFLAGS += -mfp16-format=ieee
+CPPFLAGS += -g
+# CPPFLAGS += -save-temps=obj
 
-#---------------- Compiler Options C ----------------
-#  -g*:          generate debugging information
-#  -O*:          optimization level
-#  -f...:        tuning, see GCC documentation
-#  -Wall...:     warning level
-#  -save-temps:  preserve .s and .i-files
+#---------------- C Compiler Options ----------------
+#  -O*            optimization level
+#  -f...          tuning, see GCC documentation
+#  -Wall...       warning level
 #
 CFLAGS += $(OPT)
 CFLAGS += -std=gnu11
-CFLAGS += -gdwarf-2
 CFLAGS += -ffunction-sections
 CFLAGS += -fdata-sections
 CFLAGS += -Wall
@@ -118,29 +123,28 @@ CFLAGS += -Wstrict-prototypes
 #CFLAGS += -Winline
 #CFLAGS += -Wunreachable-code
 #CFLAGS += -Wundef
-#CFLAGS += -save-temps=obj
 
+# Use a friendly C dialect
+CPPFLAGS += -fno-strict-aliasing
+CPPFLAGS += -fwrapv
 
-#---------------- Compiler Options C++ ----------------
+#---------------- C++ Compiler Options ----------------
 #
-CXXFLAGS  = -O$(OPT)
-CXXFLAGS += -gdwarf-2
+CXXFLAGS += $(OPT)
 CXXFLAGS += -ffunction-sections
 CXXFLAGS += -fdata-sections
 CXXFLAGS += -Wall
-#CXXFLAGS += -save-temps=obj
 
 #---------------- Assembler Options ----------------
-#  -Wa,...:   tell GCC to pass this to the assembler
+#  -Wa,...    tell GCC to pass this to the assembler
 #
-ASFLAGS += -gdwarf-2
-#ASFLAGS += -save-temps=obj
 
 #---------------- Linker Options ----------------
-#  -Wl,...:     tell GCC to pass this to linker
-#    -Map:      create map file
-#    --cref:    add cross reference to  map file
+#  -Wl,...      tell GCC to pass this to linker
+#    -Map       create map file
+#    --cref     add cross reference to  map file
 #
+LDFLAGS += $(OPT)
 LDFLAGS += -lm
 LDFLAGS += -Wl,-Map=$(TARGET).map,--cref
 LDFLAGS += -Wl,--gc-sections
@@ -149,7 +153,6 @@ LDFLAGS += -specs=nano.specs        # -u _printf_float -u _scanf_float
 LDFLAGS += -T$(LDSCRIPT)
 
 #============================================================================
-
 
 # Define programs and commands
 #
@@ -161,7 +164,6 @@ SIZE     = $(TOOLCHAIN)size
 NM       = $(TOOLCHAIN)nm
 MKDIR    = mkdir
 DOXYGEN  = doxygen
-SUBWCREV = SubWCRev
 STLINK_WIN = Tools/st-link/ST-LINK_CLI.exe
 STLINK_LNX = st-flash
 POSTLD   = Tools/add_version_info/add_version_info.py -v
