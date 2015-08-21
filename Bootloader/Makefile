@@ -36,6 +36,7 @@ SOURCES += Shared/crc32.c
 # Standard peripheral library
 #
 CPPFLAGS += -DUSE_STDPERIPH_DRIVER
+CPPFLAGS += -mfp16-format=ieee
 # CPPFLAGS += -DUSE_FULL_ASSERT
 
 STDPERIPH_DIR = Libraries/STM32F4xx_StdPeriph_Driver-1.4.0
