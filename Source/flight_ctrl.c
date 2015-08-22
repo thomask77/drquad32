@@ -108,9 +108,9 @@ void flight_ctrl(void *pvParameters)
 
 
         if (fc_config.state & 0x02 || (rc_input.mapped_channels[RC_CHANNEL_FUNCT0] > -0.7)) {
-                pid_update(&pid_pitch, (rc_pitch - dcm.euler.x), 0);
-                pid_update(&pid_roll , (rc_roll  + dcm.euler.y), 0);
-                pid_update(&pid_yaw  , (rc_yaw   + dcm.euler.z), 0);
+                pid_update(&pid_pitch, (rc_pitch - dcm.euler.y), 0);
+                pid_update(&pid_roll , (rc_roll  + dcm.euler.x), 0);
+                pid_update(&pid_yaw  , (rc_yaw   - dcm.euler.z), 0);
         } else {
                 pid_update(&pid_pitch, (rc_pitch - sensor_data.gyro.x), 0);
                 pid_update(&pid_roll , (rc_roll  + sensor_data.gyro.y), 0);
