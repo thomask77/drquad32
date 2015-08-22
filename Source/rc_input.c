@@ -51,14 +51,12 @@ void rc_update(struct rc_input *rc)
         break;
     }
 
-    for (int i = 0; i < rc->num_channels; i++)
-        if (rc_config.channel_inverted[i])
-            rc->channels[i] *= -1;
-
-
     for (int i = 0; i < RC_CHANNEL_MAX_LOGICAL; i++)
         rc->mapped_channels[i] = rc->channels[ rc_config.channel_map[i] ];
 
+    for (int i = 0; i < rc->num_channels; i++)
+        if (rc_config.channel_inverted[i])
+            rc->channels[i] *= -1;
 }
 
 
