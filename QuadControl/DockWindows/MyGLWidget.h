@@ -29,8 +29,9 @@ public:
 
     void setRotation(float x, float y, float z);
 
-    void setOrtho(bool ortho);
-    void setAutoRotate(bool rotate);
+    void setOrthoProjection(bool orthoProjection);
+    void setEnableAutoRotate(bool rotate);
+    void setEnableDrawPointCloud(bool draw);
 
     void mousePressEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
@@ -47,7 +48,10 @@ private:
     QTimer  timer;
     QPoint  lastPos;
     float   xRot = 0, yRot = 0, zRot = 0;
-    bool    ortho = false, auto_rotate = false;
+
+    bool    orthoProjection = false;
+    bool    enableAutoRotate = false;
+    bool    enableDrawPointCloud = true;
 
     QTime   t_last;
 

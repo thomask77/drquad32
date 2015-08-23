@@ -19,7 +19,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
-     <widget class="MyGLWidget" name="glWidget">
+     <widget class="MyGLWidget" name="glWidget" native="true">
       <property name="minimumSize">
        <size>
         <width>64</width>
@@ -139,7 +139,7 @@
     <string>Ctrl+O</string>
    </property>
   </action>
-  <action name="actionAuto_rotate">
+  <action name="actionAutoRotate">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -150,11 +150,22 @@
     <string>Ctrl+A</string>
    </property>
   </action>
+  <action name="actionDrawPointCloud">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Draw point cloud</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
    <class>MyGLWidget</class>
-   <extends>QGLWidget</extends>
+   <extends>QWidget</extends>
    <header>DockWindows/MyGLWidget.h</header>
   </customwidget>
  </customwidgets>

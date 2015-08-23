@@ -44,7 +44,8 @@ GLWindow::GLWindow(QWidget *parent)
     ui->glWidget->addAction(separator);
 
     ui->glWidget->addAction(ui->actionOrthogonal);
-    ui->glWidget->addAction(ui->actionAuto_rotate);
+    ui->glWidget->addAction(ui->actionAutoRotate);
+    ui->glWidget->addAction(ui->actionDrawPointCloud);
 
     // Connect actions
     //
@@ -56,8 +57,9 @@ GLWindow::GLWindow(QWidget *parent)
     connect(ui->glWidget, &MyGLWidget::yRotationChanged, ui->ySlider, &QSlider::setValue);
     connect(ui->glWidget, &MyGLWidget::zRotationChanged, ui->zSlider, &QSlider::setValue);
 
-    connect(ui->actionOrthogonal,   &QAction::triggered, ui->glWidget, &MyGLWidget::setOrtho);
-    connect(ui->actionAuto_rotate,  &QAction::triggered, ui->glWidget, &MyGLWidget::setAutoRotate);
+    connect(ui->actionOrthogonal,  &QAction::triggered, ui->glWidget, &MyGLWidget::setOrthoProjection);
+    connect(ui->actionAutoRotate,  &QAction::triggered, ui->glWidget, &MyGLWidget::setEnableAutoRotate);
+    connect(ui->actionDrawPointCloud, &QAction::triggered, ui->glWidget, &MyGLWidget::setEnableDrawPointCloud);
 
     // TODO: Dangerous! No automatic disconnect when receiver is destroyed!
     //

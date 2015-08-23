@@ -119,7 +119,7 @@ void MyGLWidget::resizeGL(int w, int h)
     const float aspect = float(w) / h;
     m_projection.setToIdentity();
 
-    if (ortho)
+    if (orthoProjection)
         m_projection.ortho(-64 * aspect, 64 * aspect, -64, 64, -1000, 1000);
     else
         m_projection.perspective(45, aspect, 10, 15000);
@@ -154,7 +154,6 @@ void MyGLWidget::drawPointCloud(const float *points, int numPoints, const QColor
     glPointSize(5);
     glColor3ub(color.red(), color.green(), color.blue());
     glDrawArrays(GL_POINTS, numPoints-recent, recent);
-
 
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_NORMAL_ARRAY);
@@ -196,7 +195,7 @@ void MyGLWidget::paintGL()
 
     // Draw down reference
     //
-    {
+    if (enableDrawPointCloud) {
         const int N = std::min(dcm_down_queue.length(), 1000);
 
         if (N > 0) {
@@ -212,7 +211,6 @@ void MyGLWidget::paintGL()
             drawPointCloud(pts[0], N, TangoColors::Chameleon1);
         }
     }
-
 
     // Apply the DCM matrix
     //
@@ -318,17 +316,23 @@ void MyGLWidget::setZRotation(float z)
 }
 
 
-void MyGLWidget::setOrtho(bool ortho)
+void MyGLWidget::setOrthoProjection(bool ortho)
 {
-    this->ortho = ortho;
+    this->orthoProjection = ortho;
     resizeGL(width(), height());
     update();
 }
 
 
-void MyGLWidget::setAutoRotate(bool rotate)
+void MyGLWidget::setEnableAutoRotate(bool rotate)
 {
-    auto_rotate = rotate;
+    enableAutoRotate = rotate;
+}
+
+
+void MyGLWidget::setEnableDrawPointCloud(bool draw)
+{
+    enableDrawPointCloud = draw;
 }
 
 
@@ -345,7 +349,7 @@ void MyGLWidget::timer_timeout()
     auto t = QTime::currentTime();
     auto dt = t_last.msecsTo(t) * 1e-3;
 
-    if (auto_rotate)
+    if (enableAutoRotate)
         setZRotation(zRot + 360 * dt / 60);
 
     update();
