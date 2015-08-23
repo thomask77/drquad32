@@ -144,7 +144,9 @@ void MyGLWidget::drawPointCloud(const float *points, int numPoints, const QColor
     if (numPoints > recent) {
         glDepthMask(GL_FALSE);
         glEnable(GL_LIGHTING);
+        glEnable(GL_BLEND);
         glPointSize(2);
+
         glColor4ub(255, 255, 255, 128);
         glDrawArrays(GL_POINTS, 0, numPoints-recent);
     }

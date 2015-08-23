@@ -31,6 +31,7 @@
 #include "DockWindows/GLWindow.h"
 #include "DockWindows/PlotWindow.h"
 #include "DockWindows/UpdateWindow.h"
+#include "DockWindows/InputMappingWindow.h"
 #include "VersionInfo.h"
 
 
@@ -74,6 +75,9 @@ void MainWindow::showEvent(QShowEvent *event)
     consoleWindow    = new class ConsoleWindow(this);
     glWindow         = new class GLWindow(this);
     plotWindow       = new class PlotWindow(this);
+    inputMappingWindow = new class InputMappingWindow(this);
+
+    addDockWindow(Qt::LeftDockWidgetArea, inputMappingWindow);
 
     addDockWindow(Qt::LeftDockWidgetArea, connectionWindow);
     addDockWindow(Qt::LeftDockWidgetArea, updateWindow);
@@ -132,7 +136,7 @@ void MainWindow::timer_timeout()
 
 
 
-QDockWidget *MainWindow::addDockWindow(Qt::DockWidgetArea area, QMainWindow *window)
+QDockWidget *MainWindow::addDockWindow(Qt::DockWidgetArea area, QWidget *window)
 {
     window->setWindowFlags(Qt::Widget);
 

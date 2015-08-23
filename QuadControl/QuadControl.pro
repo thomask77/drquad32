@@ -44,7 +44,8 @@ SOURCES += main.cpp \
     DockWindows/GLWindow.cpp \
     DockWindows/MyGLWidget.cpp \
     GLTools.cpp \
-    TerminalWidget.cpp
+    TerminalWidget.cpp \
+    DockWindows/InputMappingWindow.cpp
 
 HEADERS += MainWindow.h \
     DockWindows/ConnectionWindow.h \
@@ -71,7 +72,8 @@ HEADERS += MainWindow.h \
     DockWindows/GLWindow.h \
     DockWindows/MyGLWidget.h \
     GLTools.h \
-    TerminalWidget.h
+    TerminalWidget.h \
+    DockWindows/InputMappingWindow.h
 
 FORMS += MainWindow.ui \
     DockWindows/ConnectionWindow.ui \
@@ -79,7 +81,8 @@ FORMS += MainWindow.ui \
     DockWindows/UpdateWindow.ui \
     DockWindows/PlotWindow.ui \
     DockWindows/AddConnectionDialog.ui \
-    DockWindows/GLWindow.ui
+    DockWindows/GLWindow.ui \
+    DockWindows/InputMappingWindow.ui
 
 RESOURCES += \
     resources.qrc

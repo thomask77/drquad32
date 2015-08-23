@@ -31,6 +31,7 @@ private:
     class ConsoleWindow     *consoleWindow;
     class GLWindow          *glWindow;
     class PlotWindow        *plotWindow;
+    class InputMappingWindow *inputMappingWindow;
 
     bool isInitialized = false;
 
@@ -41,7 +42,7 @@ private:
     QTime old_stats_t;
     Connection::Statistics old_stats;
 
-    QDockWidget *addDockWindow(Qt::DockWidgetArea area, QMainWindow *window);
+    QDockWidget *addDockWindow(Qt::DockWidgetArea area, QWidget *window);
 
     void timer_timeout();
     void actionFullscreen_triggered();

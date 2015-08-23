@@ -189,8 +189,8 @@ void PlotWindow::timer_timeout()
     }
 
     if (queue.count()) {
-        if (!ui->plot->axisRect()->dragging())
-            ui->plot->xAxis->setRange(key + 10, 1000, Qt::AlignRight);
+//        if (!ui->plot->axisRect()->dragging())
+//            ui->plot->xAxis->setRange(key + 10, 1000, Qt::AlignRight);
 
         ui->plot->replot();
         queue.clear();
