@@ -9,12 +9,10 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-
 static struct sensor_data   sensor_data;
-static struct rc_input      rc_input;
 
-struct pid_ctrl pid_pitch = { .min = -5, .max = 5, .dt = 1e-3 };
 struct pid_ctrl pid_roll  = { .min = -5, .max = 5, .dt = 1e-3 };
+struct pid_ctrl pid_pitch = { .min = -5, .max = 5, .dt = 1e-3 };
 struct pid_ctrl pid_yaw   = { .min = -5, .max = 5, .dt = 1e-3 };
 
 float rc_pitch, rc_roll, rc_yaw, rc_thrust;
@@ -26,30 +24,6 @@ float pid_d = 0;
 struct s_fc_config fc_config;
 
 
-/*
-void systick_handler(void)
-{
-    dcm_update(
-    sensor_data.gyro,
-    sensor_data.acc,
-    1.0 / SYSTICK_FREQ
-    );
-
-    flt_pid_update(&pid_pitch, (rc_pitch - dcm.euler.x), 0);
-    flt_pid_update(&pid_roll , (rc_roll  - dcm.euler.y), 0);
-    flt_pid_update(&pid_yaw  , (rc_yaw   - dcm.euler.z), 0);
-
-    int pwm_front = rc_thrust + pid_pitch.out + pid_yaw.out;
-    int pwm_back  = rc_thrust - pid_pitch.out + pid_yaw.out;
-    int pwm_left  = rc_thrust + pid_roll.out  - pid_yaw.out;
-    int pwm_right = rc_thrust - pid_roll.out  - pid_yaw.out;
-
-    motor[ID_FRONT].pwm = clamp(pwm_front, 32, 400);
-    motor[ID_BACK ].pwm = clamp(pwm_back , 32, 400);
-    motor[ID_LEFT ].pwm = clamp(pwm_left , 32, 400);
-    motor[ID_RIGHT].pwm = clamp(pwm_right, 32, 400);
-}
-*/
 void flight_ctrl(void *pvParameters)
 {
     //uint32_t t0 = xTaskGetTickCount();
@@ -69,16 +43,13 @@ void flight_ctrl(void *pvParameters)
 
     for (;;) {
         sensor_read(&sensor_data);
-        rc_update(&rc_input);
+        rc_input_update();
 
-        if (rc_input.valid && (rc_input.mapped_channels[RC_CHANNEL_ARM] > -0.7))
-        {
-            rc_pitch   = rc_input.mapped_channels[RC_CHANNEL_PITCH] * fc_config.pitch_roll_gain;
-            rc_roll    = rc_input.mapped_channels[RC_CHANNEL_ROLL] * fc_config.pitch_roll_gain;
-            rc_yaw     = rc_input.mapped_channels[RC_CHANNEL_YAW] * fc_config.yaw_gain;
-            // go from -1 - 1 to 0 - 1
-            rc_thrust  = ((rc_input.mapped_channels[RC_CHANNEL_THURST] * 0.5) + 0.5) * fc_config.thurst_gain;
-
+        if (rc_input.valid && rc_input.fmod > -0.7) {
+            rc_pitch   = rc_input.pitch * fc_config.pitch_roll_gain;
+            rc_roll    = rc_input.roll  * fc_config.pitch_roll_gain;
+            rc_yaw     = rc_input.yaw   * fc_config.yaw_gain;
+            rc_thrust  = (rc_input.thrust * 0.5 + 0.5) * fc_config.thrust_gain;
             ok = 1;
         }
         else {
@@ -107,20 +78,20 @@ void flight_ctrl(void *pvParameters)
         dcm_update(&sensor_data, 1e-3);
 
 
-        if (fc_config.state & 0x02 || (rc_input.mapped_channels[RC_CHANNEL_FUNCT0] > -0.7)) {
+        if (fc_config.state & 0x02 || (rc_input.hold > -0.7)) {
+                pid_update(&pid_roll , (rc_roll  - dcm.euler.x), 0);
                 pid_update(&pid_pitch, (rc_pitch - dcm.euler.y), 0);
-                pid_update(&pid_roll , (rc_roll  + dcm.euler.x), 0);
                 pid_update(&pid_yaw  , (rc_yaw   - dcm.euler.z), 0);
         } else {
-                pid_update(&pid_pitch, (rc_pitch - sensor_data.gyro.x), 0);
-                pid_update(&pid_roll , (rc_roll  + sensor_data.gyro.y), 0);
-                pid_update(&pid_yaw  , (rc_yaw   + sensor_data.gyro.z), 0);
+                pid_update(&pid_roll , (rc_roll  - dcm.omega.x), 0);
+                pid_update(&pid_pitch, (rc_pitch - dcm.omega.y), 0);
+                pid_update(&pid_yaw  , (rc_yaw   - dcm.omega.z), 0);
         }
         if (ok) {
-            bldc_state.motors[ID_FL].u_d = clamp(rc_thrust + pid_pitch.u - pid_roll.u - pid_yaw.u, 1, 10);
-            bldc_state.motors[ID_FR].u_d = clamp(rc_thrust + pid_pitch.u + pid_roll.u + pid_yaw.u, 1, 10);
-            bldc_state.motors[ID_RL].u_d = clamp(rc_thrust - pid_pitch.u - pid_roll.u + pid_yaw.u, 1, 10);
-            bldc_state.motors[ID_RR].u_d = clamp(rc_thrust - pid_pitch.u + pid_roll.u - pid_yaw.u, 1, 10);
+            bldc_state.motors[ID_FL].u_d = clamp(rc_thrust + pid_pitch.u + pid_roll.u - pid_yaw.u, 1, 10);
+            bldc_state.motors[ID_FR].u_d = clamp(rc_thrust + pid_pitch.u - pid_roll.u + pid_yaw.u, 1, 10);
+            bldc_state.motors[ID_RL].u_d = clamp(rc_thrust - pid_pitch.u + pid_roll.u + pid_yaw.u, 1, 10);
+            bldc_state.motors[ID_RR].u_d = clamp(rc_thrust - pid_pitch.u - pid_roll.u - pid_yaw.u, 1, 10);
 
             if (!old_ok) {
                 bldc_state.motors[ID_FL].state = STATE_START;

@@ -1,7 +1,8 @@
+#if 0
+
+#include "led_ws2812.h"
 #include "gpn_foo.h"
 #include "stm32f4xx_conf.h"
-#include "dma_io_driver.h"
-#include "dma_io_ws2812.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "util.h"
@@ -234,3 +235,5 @@ void gpn_foo_task(void *pvParameters)
         vTaskDelayUntil(&prev_time, 20);
     }
 }
+
+#endif

@@ -9,7 +9,7 @@ extern struct pid_ctrl pid_pitch, pid_roll, pid_yaw;
 
 
 struct s_fc_config {
-    float thurst_gain;
+    float thrust_gain;
     float pitch_roll_gain;
     float yaw_gain;
     uint8_t state;

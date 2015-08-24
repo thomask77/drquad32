@@ -17,6 +17,7 @@
 #include "debug_dac.h"
 #include "i2c_driver.h"
 #include "sensors.h"
+#include "led_ws2812.h"
 #include "dma_io_driver.h"
 #include "rc_input.h"
 #include "gpn_foo.h"
@@ -43,7 +44,6 @@ static void init_task(void *pvParameters)
 
     term_cobs_init();
 
-
     printf("\n");
     print_version_info(&version_info, 0);
 
@@ -54,8 +54,10 @@ static void init_task(void *pvParameters)
 
     debug_dac_init();
     i2c_init();
+
     dma_io_init();
-    rc_init();
+    led_ws2812_init();
+    rc_input_init();
 
     // The watchdog task is created with idle priority to check
     // for CPU starvation as a side effect.

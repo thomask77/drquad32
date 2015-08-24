@@ -103,7 +103,9 @@ static inline float pid_update(struct pid_ctrl *pid, float e, float u)
     u += pid->kd * (e - pid->e_1) / pid->dt;
 
     pid->u = clamp(u, pid->min, pid->max);
-    pid->i += (pid->ki * e - pid->kaw * (u - pid->u)) * pid->dt;
+    pid->i += pid->ki  * e * pid->dt;
+    pid->i -= pid->kaw * (u - pid->u);
+
     pid->e_1 = e;
 
     return pid->u;

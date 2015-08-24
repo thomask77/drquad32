@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 
 #define DMA_IO_FREQ     800000
 
@@ -12,20 +13,18 @@
 //
 #define DMA_IO_RX_SIZE  (2 * DMA_IO_FREQ / 1000)
 
-
 // Transmit buffer for PPM pulses and WS2812 bit stream.
 // Maximum PPM pulse length of 3ms or 100 RGB LEDs.
 //
 #define DMA_IO_TX_SIZE  (3 * DMA_IO_FREQ / 1000)
 
-extern uint8_t  dma_io_tx_buf[DMA_IO_TX_SIZE];
+size_t dma_io_rx_get_pointers(
+    const void **ptr1, size_t *len1,
+    const void **ptr2, size_t *len2
+);
 
-extern int ws2812_brightness;
+size_t dma_io_rx_commit(size_t len);
 
-extern volatile uint32_t dma_io_irq_count;
-extern volatile uint32_t dma_io_irq_time;
-
-void dma_io_clear(void);
-void dma_io_send(void);
+void dma_io_tx_start(void);
 
 void dma_io_init(void);

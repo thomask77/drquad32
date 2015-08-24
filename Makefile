@@ -34,16 +34,14 @@ SOURCES += Source/i2c_ak8975.c
 SOURCES += Source/i2c_bmp180.c
 SOURCES += Source/sensors.c
 SOURCES += Source/debug_dac.c
-
 SOURCES += Source/dma_io_driver.c
-SOURCES += Source/dma_io_ws2812.c
-SOURCES += Source/dma_io_servo_in.c
-SOURCES += Source/dma_io_servo_out.c
+SOURCES += Source/led_ws2812.c
 
 SOURCES += Source/rc_input.c
-SOURCES += Source/rc_ppm.c
-SOURCES += Source/rc_sbus.c
-SOURCES += Source/rc_dsm2.c
+SOURCES += Source/rc_ppm_sum.c
+SOURCES += Source/rc_separate.c
+# SOURCES += Source/rc_sbus.c
+# SOURCES += Source/rc_dsm2.c
 
 SOURCES += Source/tetris.c
 

@@ -1,16 +1,18 @@
+#include <rc_ppm_sum.h>
 #include "param_table.h"
 #include "util.h"
 #include "bldc_driver.h"
 #include "bldc_task.h"
 #include "debug_dac.h"
 #include "rc_input.h"
-#include "rc_ppm.h"
-#include "dma_io_driver.h"
+
 #include "sensors.h"
 #include "flight_ctrl.h"
 #include "attitude.h"
 
 static int board_address;
+
+extern int foo;
 
 const struct param_info  param_table[] = {
     {    1, P_INT32(&board_address    ), READONLY, .name = "board_address" },
@@ -23,7 +25,7 @@ const struct param_info  param_table[] = {
     },
 
     {   38, P_FLOAT(&bldc_params.K_v, 700, 0,  10000 ),
-            .name = "K_v", .unit = "rpm/V",
+            .name = "K_v", .unit = "RPM/V",
             .help = "Motor velocity constant"
     },
 
@@ -60,156 +62,65 @@ const struct param_info  param_table[] = {
                     "into brake mode to prevent further voltage rise."
     },
 
-    {  200, P_INT32(&rc_config.mode, 0, 0, RC_MODE_MAX),
-            .name = "rc.mode",
-            .help = "Select remote control mode (requires reboot):\n"
+    {  200, P_INT32((int*)&rc_config.driver, 0, 0, RC_DRIVER_COUNT - 1),
+            .name = "rc.driver",
+            .help = "Select remote control driver (requires reboot):\n"
                     "  0: No remote control\n"
                     "  1: PPM sum signal\n"
-                    "  2: Individual servo channels\n"
-                    "  3: Spektrum DSM2 satellite\n"
-                    "  4: Futaba SBUS\n"
+                    "  2: Separate servo channels\n"
+                    // "  3: Spektrum DSM2 satellite\n"
+                    // "  4: Futaba SBUS\n"
     },
 
-    {  201, P_INT32(&rc_config.expected_channels, 0, 0, RC_MAX_PHYS_CHANNELS),
-            .name = "rc.expected_channels",
+    {  201, P_INT32(&rc_ppm_sum_config.expected_channels, 8, 0, RC_MAX_CHANNELS),
+            .name = "rc_ppm_sum.expected_channels",
             .help = "Number of expected remote control channels.\n"
     },
 
-    {  210, P_INT32(&rc_ppm_config.polarity, 1, 0, 1),
-            .name = "rc_ppm.polarity",
+    {  210, P_INT32(&rc_ppm_sum_config.polarity, 1, 0, 1),
+            .name = "rc_ppm_sum.polarity",
             .help = "Polarity of the PPM sum signal\n"
                     "  0: Idle low\n"
                     "  1: Idle high\n"
     },
 
-    {  211, P_INT32(&rc_ppm_config.min_width, 800, 0, 3000),
-            .name = "rc_ppm.min_width", .unit = "us",
-            .help = "PPM sum signal minimum pulse width"
-    },
-    {  212, P_INT32(&rc_ppm_config.max_width, 2500, 0, 3000),
-            .name = "rc_ppm.max_width", .unit = "us",
-            .help = "PPM sum signal maximum pulse width"
-    },
 
-    {  213, P_INT32(&rc_ppm_config.sync_width, 3800, 3000, 50000),
-            .name = "rc_ppm.sync_width", .unit = "us",
-            .help = "PPM sum signal synchronization pulse width"
-    },
-
-    {  240, P_INT32(&rc_config.channel_map[RC_CHANNEL_THURST], 2, 0, RC_MAX_PHYS_CHANNELS-1),
-        .name = "rc_config.channel_map[THURST]",
-        .help = "Channel with thurst signal"
-    },
-    {  241, P_INT32(&rc_config.channel_map[RC_CHANNEL_PITCH], 1, 0, RC_MAX_PHYS_CHANNELS-1),
-        .name = "rc_config.channel_map[PITCH]",
-        .help = "Channel with pitch signal"
-    },
-    {  242, P_INT32(&rc_config.channel_map[RC_CHANNEL_ROLL], 0, 0, RC_MAX_PHYS_CHANNELS-1),
-        .name = "rc_config.channel_map[ROLL]",
-        .help = "Channel with roll signal"
-    },
-    {  243, P_INT32(&rc_config.channel_map[RC_CHANNEL_YAW], 3, 0, RC_MAX_PHYS_CHANNELS-1),
-        .name = "rc_config.channel_map[YAW]",
-        .help = "Channel with yaw signal"
-    },
-    {  244, P_INT32(&rc_config.channel_map[RC_CHANNEL_ARM], 4, 0, RC_MAX_PHYS_CHANNELS-1),
-        .name = "rc_config.channel_map[ARM]",
-        .help = "Channel with arm signal"
-    },
-    {  245, P_INT32(&rc_config.channel_map[RC_CHANNEL_FUNCT0], 5, 0, RC_MAX_PHYS_CHANNELS-1),
-        .name = "rc_config.channel_map[FUNCT0]",
-        .help = "Channel with function 0 signal"
-    },
-    {  246, P_INT32(&rc_config.channel_map[RC_CHANNEL_FUNCT1], 6, 0, RC_MAX_PHYS_CHANNELS-1),
-        .name = "rc_config.channel_map[FUNCT1]",
-        .help = "Channel with function 1 signal"
-    },
-    {  247, P_INT32(&rc_config.channel_map[RC_CHANNEL_FUNCT2], 7, 0, RC_MAX_PHYS_CHANNELS-1),
-        .name = "rc_config.channel_map[FUNCT1]",
-        .help = "Channel with function 2 signal"
-    },
-
-    {  250, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_THURST], 0, 0, 1),
-        .name = "rc_config.channel_inverted[THURST]",
-        .help = "invert channel thurst"
-    },
-    {  251, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_PITCH], 0, 0, 1),
-        .name = "rc_config.channel_inverted[PITCH]",
-        .help = "invert channel pitch"
-    },
-    {  252, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_ROLL], 0, 0, 1),
-        .name = "rc_config.channel_inverted[ROLL]",
-        .help = "invert channel roll"
-    },
-    {  253, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_YAW], 0, 0, 1),
-        .name = "rc_config.channel_inverted[YAW]",
-        .help = "invert channel yaw"
-    },
-    {  254, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_ARM], 0, 0, 1),
-        .name = "rc_config.channel_inverted[ARM]",
-        .help = "invert channel arm"
-    },
-    {  255, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_FUNCT0], 0, 0, 1),
-        .name = "rc_config.channel_inverted[FUNCT0]",
-        .help = "invert channel funct 0"
-    },
-    {  256, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_FUNCT1], 0, 0, 1),
-        .name = "rc_config.channel_inverted[FUNCT1]",
-        .help = "invert channel funct 1"
-    },
-    {  257, P_INT32((int *) &rc_config.channel_inverted[RC_CHANNEL_FUNCT2], 0, 0, 1),
-        .name = "rc_config.channel_inverted[FUNCT2]",
-        .help = "invert channel funct 2"
-    },
-
-    {  300, P_FLOAT(&pid_p, 1, 0 , 10),
-       .name = "pid_p",
-       .help = "all gyro PID P Part"
-    },
-    {  301, P_FLOAT(&pid_i, 0, 0, 10),
-       .name = "pid_i",
-       .help = "all gyro PID I Part"
-    },
-    {  302, P_FLOAT(&pid_d, 0, 0, 10),
-       .name = "pid_d",
-       .help = "all gyro PID D Part"
-    },
-
-
-    {  310, P_FLOAT(&pid_pitch.kp, 1, 0, 10),
-       .name = "pid_pitch.kp",
-       .help = "gyro pitch PID P Part"
-    },
-    {  311, P_FLOAT(&pid_pitch.ki, 0, 0 ,10),
-       .name = "pid_pitch.ki",
-       .help = "gyro pitch PID I Part"
-    },
-    {  312, P_FLOAT(&pid_pitch.kd, 0, 0, 10),
-       .name = "pid_pitch.kd",
-       .help = "gyro pitch PID D Part"
-    },
-
-    {  320, P_FLOAT(&pid_roll.kp, 1, 0, 10),
+    {  310, P_FLOAT(&pid_roll.kp, 3, 0, 10),
         .name = "pid_roll.kp",
         .help = "gyro roll PID P Part"
     },
-    {  321, P_FLOAT(&pid_roll.ki, 0, 0, 10),
+    {  311, P_FLOAT(&pid_roll.ki, 1, 0, 10),
         .name = "pid_roll.ki",
         .help = "gyro roll PID I Part"
     },
-    {  322, P_FLOAT(&pid_roll.kd, 0, 0, 10),
+    {  312, P_FLOAT(&pid_roll.kd, 1, 0, 10),
         .name = "pid_roll.kd",
         .help = "gyro roll PID D Part"
+    },
+
+    {  320, P_FLOAT(&pid_pitch.kp, 3, 0, 10),
+       .name = "pid_pitch.kp",
+       .help = "gyro pitch PID P Part"
+    },
+    {  321, P_FLOAT(&pid_pitch.ki, 1, 0 ,10),
+       .name = "pid_pitch.ki",
+       .help = "gyro pitch PID I Part"
+    },
+    {  322, P_FLOAT(&pid_pitch.kd, 1, 0, 10),
+       .name = "pid_pitch.kd",
+       .help = "gyro pitch PID D Part"
     },
 
     {  330, P_FLOAT(&pid_yaw.kp, 1, 0, 10),
         .name = "pid_yaw.kp",
         .help = "gyro yaw PID P Part"
     },
-    {  331, P_FLOAT(&pid_yaw.ki, 0, 0, 10),
+
+    {  331, P_FLOAT(&pid_yaw.ki, 1, 0, 10),
         .name = "pid_yaw.ki",
         .help = "gyro yaw PID I Part"
     },
+
     {  332, P_FLOAT(&pid_yaw.kd, 0, 0, 10),
         .name = "pid_yaw.kd",
         .help = "gyro yaw PID D Part"
@@ -225,16 +136,17 @@ const struct param_info  param_table[] = {
        .help = "DCM acc I Part"
     },
 
-    {  380, P_FLOAT(&fc_config.thurst_gain, 5, 0.1, 10),
-       .name = "fc_config.thurst_gain",
-       .help = "gain for thurst"
+    {  380, P_FLOAT(&fc_config.thrust_gain, 5, 0.1, 10),
+       .name = "fc_config.thrust_gain",
+       .help = "gain for thrust"
     },
 
-    {  381, P_FLOAT(&fc_config.pitch_roll_gain, 1, 0.1, 5),
+    {  381, P_FLOAT(&fc_config.pitch_roll_gain, 1, 0.1, 10),
        .name = "fc_config.pitch_roll_gain",
        .help = "gain for pitch and roll"
     },
-    {  382, P_FLOAT(&fc_config.yaw_gain, 1, 0.1, 5),
+
+    {  382, P_FLOAT(&fc_config.yaw_gain, 2, 0.1, 10),
        .name = "fc_config.yaw_gain",
        .help = "gain for yaw"
     },
@@ -272,13 +184,62 @@ const struct param_info  param_table[] = {
             .help = "Offset for DAC channel 1"
     },
 
+/*
     {  500, P_INT32(&ws2812_brightness, 128, 0, 255),
             .name = "ws2812_brightness",
             .help = "Overall brightness for WS2128 leds. Adjust this parameter "
                     "to obey the current limit for long LED chains."
     },
+*/
 
-    {  600, P_FLOAT(&sensor_calib.gyro_offset.z) },
+#define RC_CHANNEL(ID, CH)  \
+    { ID + CH*10 + 0, P_INT32(&rc_input.channels[CH].pulse, 1500, 0, 3000), READONLY, \
+        .name = "ch" #CH ".pulse", .unit = "us", \
+        .help = !ID ? "" : "Measured pulse width" \
+    }, \
+    { ID + CH*10 + 1, P_INT32(&rc_input.channels[CH].center, 1500, 0, 3000), \
+        .name = "ch" #CH ".center"  , .unit="us", \
+        .help = !ID ? "" : "Pulse width in center position" \
+    }, \
+    { ID + CH*10 + 2, P_INT32(&rc_input.channels[CH].max, 1900, 0, 3000), \
+        .name = "ch" #CH ".max"     , .unit="us", \
+        .help = !ID ? "" : "Pulse width in max position" \
+    }, \
+    { ID + CH*10 + 3, P_INT32(&rc_input.channels[CH].deadband, 10, 0, 3000), \
+        .name = "ch" #CH ".deadband", .unit="us", \
+        .help = !ID ? "" : "Deadband around cnter position" \
+    }, \
+    { ID + CH*10 + 4, P_INT32(&rc_input.channels[CH].invert, CH != 2, 0, 1), \
+        .name = "ch" #CH ".invert", .unit="0, 1", \
+        .help = !ID ? "" : "Invert channel" \
+    }, \
+    { ID + CH*10 + 5, P_INT32((int*)&rc_input.channels[CH].function, CH+1, 0, RC_FUNCTION_COUNT-1), \
+        .name = "ch" #CH ".function", \
+        .help = !ID ? "" : "Select channel function" \
+                           "  0: NONE"      \
+                           "  1: PITCH"     \
+                           "  2: ROLL"      \
+                           "  3: THRUST"    \
+                           "  4: YAW"       \
+                           "  5: FMOD"      \
+                           "  6: HOLD"      \
+                           "  7: AUX1"      \
+                           "  8: AUX2"      \
+    }, \
+    { ID + CH*10 + 6, P_FLOAT(&rc_input.channels[CH].value, 0, -1, 1), NOEEPROM, \
+        .name = "ch" #CH ".value", .unit="-1 .. 1", \
+        .help = !ID ? "" : "Output value" \
+    }
+
+    RC_CHANNEL(800, 0),
+    RC_CHANNEL(800, 1),
+    RC_CHANNEL(800, 2),
+    RC_CHANNEL(800, 3),
+    RC_CHANNEL(800, 4),
+    RC_CHANNEL(800, 5),
+    RC_CHANNEL(800, 6),
+    RC_CHANNEL(800, 7),
+#undef RC_CHANNEL
 
     { 1000, P_FLOAT(&bldc_state.motors[0].u_d, 0, -25, 25 ), NOEEPROM },
     { 1001, P_FLOAT(&bldc_state.motors[0].u_pwm, 0, -25, 25 ), NOEEPROM },
@@ -337,16 +298,12 @@ const struct param_info  param_table[] = {
     { 4040, P_FLOAT(&bldc_state.motors[3].rpm_filter.y[0]),  .unit = "rpm", READONLY },
 
     { 20000, P_INT32((int*)&bldc_irq_count), READONLY },
-    { 20001, P_INT32((int*)&bldc_irq_time), READONLY, .unit = "us" },
+    { 20001, P_INT32((int*)&bldc_irq_time),  READONLY, .unit = "us" },
     { 20002, P_INT32((int*)&bldc_irq_time1), READONLY, .unit = "us" },
     { 20003, P_INT32((int*)&bldc_irq_time2), READONLY, .unit = "us" },
     { 20004, P_INT32((int*)&bldc_irq_time3), READONLY, .unit = "us" },
 
-    { 20010, P_INT32((int*)&rc_ppm_irq_count), READONLY },
-    { 20011, P_INT32((int*)&rc_ppm_irq_time), READONLY, .unit = "us" },
-
-    { 20020, P_INT32((int*)&dma_io_irq_count), READONLY },
-    { 20021, P_INT32((int*)&dma_io_irq_time), READONLY, .unit = "us" }
+    { 30000, P_INT32(&foo), READONLY }
 };
 
 

@@ -1,52 +1,97 @@
 #pragma once
 
+#include "util.h"
 #include "FreeRTOS.h"
+#include <limits.h>
 #include <stdbool.h>
 
-#define RC_MAX_PHYS_CHANNELS     10
+#define RC_MAX_CHANNELS     8
 
 
-enum {
-    RC_MODE_NONE,
-    RC_MODE_PPM,
-    RC_MODE_SERVO,
-    RC_MODE_DSM2,
-    RC_MODE_SBUS,
+enum rc_driver {
+    RC_DRIVER_NONE,
+    RC_DRIVER_PPM_SUM,
+    RC_DRIVER_PPM_SEPARATE,
+    // RC_DRIVER_DSM2,
+    // RC_DRIVER_SBUS,
 
-    RC_MODE_MAX = RC_MODE_SBUS
+    RC_DRIVER_COUNT,
+    RC_DRIVER_PADDING = INT_MAX
 };
 
-enum {
-    RC_CHANNEL_THURST,
-    RC_CHANNEL_PITCH,
-    RC_CHANNEL_ROLL,
-    RC_CHANNEL_YAW,
-    RC_CHANNEL_ARM,
-    RC_CHANNEL_FUNCT0,
-    RC_CHANNEL_FUNCT1,
-    RC_CHANNEL_FUNCT2,
 
-    RC_CHANNEL_MAX_LOGICAL,
+enum rc_function {
+    RC_FUNCTION_NONE,
+    RC_FUNCTION_PITCH,
+    RC_FUNCTION_ROLL,
+    RC_FUNCTION_THRUST,
+    RC_FUNCTION_YAW,
+    RC_FUNCTION_FMOD,
+    RC_FUNCTION_HOLD,
+    RC_FUNCTION_AUX1,
+    RC_FUNCTION_AUX2,
+
+    RC_FUNCTION_COUNT,
+    RC_FUNCTION_PADDING = INT_MAX
 };
+
+
+// check for parameter table compatibility
+//
+STATIC_ASSERT(sizeof(enum rc_driver)   == sizeof(int));
+STATIC_ASSERT(sizeof(enum rc_function) == sizeof(int));
+
+
+struct rc_channel {
+    // input value (filled by driver)
+    //
+    int     pulse;      // [us]
+
+    // calibration settings
+    //
+    int     center;     // [us]     neutral pulse length
+    int     max;        // [us]     maximum pulse length
+    int     deadband;   // [us]     deadband around center position
+    int     invert;     // [0,1]    invert channel
+
+    // output value
+    //
+    enum    rc_function  function;
+    float   value;      // mapped output value [-1..1]
+};
+
 
 struct rc_input {
-    TickType_t  timestamp;              // Time of last update
-    bool  valid;                        // 0, 1
-    int   rssi;                         // 0 .. 100
-    int   num_channels;                 // 0 .. RC_MAX_CHANNELS-1
-    float channels[RC_MAX_PHYS_CHANNELS];    // scaled
-    float mapped_channels[RC_CHANNEL_MAX_LOGICAL];
+    TickType_t  timestamp;
+    bool    valid;
+    int     rssi;       // [0..100]
+
+    struct  rc_channel  channels[RC_MAX_CHANNELS];
+
+    union {
+        float values[RC_FUNCTION_COUNT];
+        struct {    // order must match enum
+            float   _none;
+            float   pitch;
+            float   roll;
+            float   thrust;
+            float   yaw;
+            float   fmod;
+            float   hold;
+            float   aux1;
+            float   aux2;
+        };
+    };
 };
+
 
 struct rc_config {
-    int mode;
-    int expected_channels;
-    int channel_map[RC_CHANNEL_MAX_LOGICAL];
-    int channel_inverted[RC_MAX_PHYS_CHANNELS];
+    enum rc_driver  driver;
 };
 
 
+extern struct rc_input  rc_input;
 extern struct rc_config rc_config;
 
-void rc_update(struct rc_input *rc);
-void rc_init(void);
+void rc_input_init(void);
+void rc_input_update(void);

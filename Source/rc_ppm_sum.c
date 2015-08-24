@@ -2,23 +2,22 @@
  * PPM sum signal decoder
  *
  */
-#include "rc_ppm.h"
+#include "rc_ppm_sum.h"
 #include "util.h"
 #include "stm32f4xx.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include <stdio.h>
-#include <string.h>
 
-struct rc_ppm_config rc_ppm_config;
-volatile uint32_t  rc_ppm_irq_count;
-volatile uint32_t  rc_ppm_irq_time;
 
-// Local copy of the last received frame
-//
-static struct rc_input rc_ppm_input;
-static int    ppm_channels[RC_MAX_PHYS_CHANNELS];    // pulse width [us]
+#define MIN_WIDTH   (1500 - 750)
+#define MAX_WIDTH   (1500 + 750)
+#define SYNC_WIDTH  3000
 
+volatile int foo;
+
+
+struct rc_ppm_sum_config rc_ppm_sum_config;
 
 
 void TIM8_BRK_TIM12_IRQHandler(void)
@@ -26,16 +25,16 @@ void TIM8_BRK_TIM12_IRQHandler(void)
     static bool valid;
     static int  rssi;
     static int  num_channels;
-    static int  channels[RC_MAX_PHYS_CHANNELS];
+    static int  channels[RC_MAX_CHANNELS];
+
     static uint16_t t0;
 
-    uint16_t tim7_cnt = TIM7->CNT;
     uint16_t status = TIM12->SR;
 
     if (status & TIM_SR_CC2IF) {
         uint16_t t = TIM12->CCR2 - t0;
 
-        if (t < rc_ppm_config.min_width) {
+        if (t < MIN_WIDTH) {
             // Ignore short glitches and log them as
             // an indicator of bad RF signal quality
             //
@@ -43,7 +42,7 @@ void TIM8_BRK_TIM12_IRQHandler(void)
                 rssi--;
         }
         else {
-            if (t < rc_ppm_config.max_width && num_channels < RC_MAX_PHYS_CHANNELS)
+            if (t < MAX_WIDTH && num_channels < RC_MAX_CHANNELS)
                 channels[num_channels++] = t;
             else
                 valid = false;
@@ -53,7 +52,7 @@ void TIM8_BRK_TIM12_IRQHandler(void)
             if (t0 < 50000) {
                 // Wait for end of frame
                 //
-                TIM12->ARR = t0 + rc_ppm_config.sync_width;
+                TIM12->ARR = t0 + SYNC_WIDTH;
             }
         }
     }
@@ -61,63 +60,45 @@ void TIM8_BRK_TIM12_IRQHandler(void)
     if (status & TIM_SR_UIF) {
         // Validate and copy the frame
         //
-        if (num_channels != rc_config.expected_channels)
+        if (num_channels != rc_ppm_sum_config.expected_channels)
             valid = false;
 
-        rc_ppm_input.timestamp = xTaskGetTickCountFromISR();
-        rc_ppm_input.valid = valid;
-        rc_ppm_input.num_channels = num_channels;
-        rc_ppm_input.rssi  = rssi;
-        memcpy(ppm_channels, channels, sizeof(channels));
+        rc_input.timestamp = xTaskGetTickCountFromISR();
+        rc_input.valid = valid;
+        rc_input.rssi  = rssi;
+
+        for (int i=0; i<8; i++)
+            rc_input.channels[i].pulse = channels[i];
 
         // Reset the frame
         //
         valid = true;
         rssi = 100;
         num_channels = 0;
-        memset(channels, 0, sizeof(channels));
+        for (int i=0; i<8; i++)
+            channels[i] = 0;
         t0  = 0;
 
         // Reset the counter
         //
         TIM12->CR1 &= ~TIM_CR1_CEN;
         TIM12->SR  &= ~TIM_SR_UIF;
-        TIM12->ARR  = rc_ppm_config.sync_width;
+        TIM12->ARR  = SYNC_WIDTH;
         TIM12->CNT  = 0;
     }
-
-    rc_ppm_irq_count++;
-    rc_ppm_irq_time = (uint16_t)(TIM7->CNT - tim7_cnt);
 }
 
 
-void rc_ppm_update(struct rc_input *rc)
+void rc_ppm_sum_update(void)
 {
-    taskDISABLE_INTERRUPTS();
-
-    // Timeout after 100ms
-    //
-    if (xTaskGetTickCount() - rc_ppm_input.timestamp > 100)
-        rc_ppm_input.valid = false;
-
-    rc->num_channels = rc_ppm_input.num_channels;
-    rc->rssi = rc_ppm_input.rssi;
-    rc->timestamp = rc_ppm_input.timestamp;
-    rc->valid = rc_ppm_input.valid;
-
-    for (uint8_t i = 0; i < rc_ppm_input.num_channels; i++)
-        rc->channels[i] = (ppm_channels[i] - 1500) / 500.0;
-
-    taskENABLE_INTERRUPTS();
-
-    if (rc_ppm_config.polarity)
+    if (rc_ppm_sum_config.polarity)
         TIM12->CCER |= TIM_CCER_CC2P;   // Falling edge
     else
         TIM12->CCER &= ~TIM_CCER_CC2P;  // Rising edge
 }
 
 
-void rc_ppm_init(void)
+void rc_ppm_sum_init(void)
 {
     // Enable peripheral clocks
     //
@@ -140,7 +121,7 @@ void rc_ppm_init(void)
         //
         .TIM_Prescaler      = SystemCoreClock/2 / 1000000 - 1,
         .TIM_CounterMode    = TIM_CounterMode_Up,
-        .TIM_Period         = rc_ppm_config.max_width,
+        .TIM_Period         = MAX_WIDTH,            // TODO: don't.
 
         // f_DTS = 21 MHz digital filter clock
         //

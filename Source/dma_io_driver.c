@@ -1,76 +1,53 @@
 #include "dma_io_driver.h"
-#include "dma_io_ws2812.h"
-#include "dma_io_servo_in.h"
-#include "dma_io_servo_out.h"
 #include "util.h"
+#include "Shared/ringbuf.h"
 #include "stm32f4xx.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include <stdio.h>
 #include <string.h>
 
-
-// Receive buffer for PPM signal decoding.
-// 2ms buffer will cause a 1 kHz interrupt rate.
-//
-#define DMA_IO_RX_SIZE  (2 * DMA_IO_FREQ / 1000)
-
-
-// Transmit buffer for PPM pulses and WS2812 bit stream.
-// Maximum PPM pulse length of 3ms or 100 RGB LEDs.
-//
-#define DMA_IO_TX_SIZE  (3 * DMA_IO_FREQ / 1000)
-
-
 // DMA bursts may not cross 1kb boundaries. Make sure that the
 // buffers are 16 byte aligned and are a multiple of 16 bytes.
 //
-STATIC_ASSERT(DMA_IO_RX_SIZE % 16 == 0);
-STATIC_ASSERT(DMA_IO_TX_SIZE % 16 == 0);
+// See Reference Manual - "9.3.11 Single and burst transfers"
+//
+uint8_t  rx_dma_mem[DMA_IO_RX_SIZE] __attribute__ ((aligned(16)));
+uint8_t  tx_dma_mem[DMA_IO_TX_SIZE] __attribute__ ((aligned(16)));
 
-static uint8_t  dma_io_rx_buf[DMA_IO_RX_SIZE] __attribute__ ((aligned(16)));
-uint8_t         dma_io_tx_buf[DMA_IO_TX_SIZE] __attribute__ ((aligned(16)));
+STATIC_ASSERT((unsigned)rx_dma_mem % 16 == 0 && sizeof(rx_dma_mem) % 16 == 0);
+STATIC_ASSERT((unsigned)tx_dma_mem % 16 == 0 && sizeof(tx_dma_mem) % 16 == 0);
+
+static struct ringbuf rx_buf = { rx_dma_mem, sizeof(rx_dma_mem) };
+static struct ringbuf tx_buf = { tx_dma_mem, sizeof(tx_dma_mem) };
+
 
 static uint8_t  dma_tx_ws2812_bits = 0x80;
 
-volatile uint32_t dma_io_irq_count;
-volatile uint32_t dma_io_irq_time;
 
-
-void DMA2_Stream7_IRQHandler(void)
+size_t dma_io_rx_get_pointers(
+    const void **ptr1, size_t *len1,
+    const void **ptr2, size_t *len2
+)
 {
-    uint16_t tim7_cnt = TIM7->CNT;
-    uint32_t hisr = DMA2->HISR;
+    // Update write position from DMA hardware
+    //
+    rx_buf.write_pos = rx_buf.buf_size - DMA2_Stream7->NDTR;
 
-    const int len_2 = DMA_IO_RX_SIZE / 2;
-    const uint8_t mask = ~dma_tx_ws2812_bits;
-
-    if (hisr & DMA_HISR_HTIF7) {
-        dma_io_decode_servo(&dma_io_rx_buf[0], len_2, mask);
-
-        DMA2->HIFCR = DMA_HIFCR_CHTIF7;
-        DMA2->HIFCR; // dummy read to prevent IRQ glitches
-    }
-
-    if (hisr & DMA_HISR_TCIF7) {
-        dma_io_decode_servo(&dma_io_rx_buf[len_2], len_2, mask);
-
-        DMA2->HIFCR = DMA_HIFCR_CTCIF7;
-        DMA2->HIFCR; // dummy read to prevent IRQ glitches
-    }
-
-    dma_io_irq_count++;
-    dma_io_irq_time = (uint16_t)(TIM7->CNT - tim7_cnt);
+    return rb_get_pointers(
+        &rx_buf, RB_READ, SIZE_MAX,
+        (void **)ptr1, len1, (void **)ptr2, len2
+    );
 }
 
 
-void dma_io_clear(void)
+size_t dma_io_rx_commit(size_t len)
 {
-    memset(dma_io_tx_buf, 0, sizeof(dma_io_tx_buf));
+    return rb_commit(&rx_buf, RB_READ, len);
 }
 
 
-void dma_io_send(void)
+void dma_io_tx_start(void)
 {
     // Disable DMA requests and restart DMA
     //
@@ -95,8 +72,8 @@ void dma_io_send(void)
     // * Set/Clear bits to match the first tx_buf entry
     // * Pins in WS2812 mode must start with a low level
     //
-    GPIOE->BSRRH =  dma_io_tx_buf[0] |  dma_tx_ws2812_bits;
-    GPIOE->BSRRL = ~dma_io_tx_buf[0] & ~dma_tx_ws2812_bits;
+    GPIOE->BSRRH =  tx_dma_mem[0] |  dma_tx_ws2812_bits;
+    GPIOE->BSRRL = ~tx_dma_mem[0] & ~dma_tx_ws2812_bits;
 
     // Enable DMA requests
     //
@@ -108,7 +85,7 @@ void dma_io_send(void)
 
 void dma_io_init(void)
 {
-    // Enable peripheral clocks
+    // Initialize peripherals
     //
     RCC->APB2ENR |= RCC_APB2Periph_TIM8;
     RCC->AHB1ENR |= RCC_AHB1ENR_DMA2EN | RCC_AHB1ENR_GPIOEEN;
@@ -142,7 +119,7 @@ void dma_io_init(void)
         .DMA_PeripheralBaseAddr = (uint32_t)&GPIOE->BSRRL,
         .DMA_Memory0BaseAddr    = (uint32_t)&dma_tx_ws2812_bits,
         .DMA_DIR                = DMA_DIR_MemoryToPeripheral,
-        .DMA_BufferSize         = ARRAY_SIZE(dma_io_tx_buf),
+        .DMA_BufferSize         = tx_buf.buf_size,
         .DMA_PeripheralInc      = DMA_PeripheralInc_Disable,
         .DMA_MemoryInc          = DMA_MemoryInc_Disable,
         .DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte,
@@ -161,9 +138,9 @@ void dma_io_init(void)
     DMA_Init(DMA2_Stream3, &(DMA_InitTypeDef) {
         .DMA_Channel            = DMA_Channel_7,
         .DMA_PeripheralBaseAddr = (uint32_t)&GPIOE->BSRRH,
-        .DMA_Memory0BaseAddr    = (uint32_t)&dma_io_tx_buf,
+        .DMA_Memory0BaseAddr    = (uint32_t)tx_buf.buf,
         .DMA_DIR                = DMA_DIR_MemoryToPeripheral,
-        .DMA_BufferSize         = ARRAY_SIZE(dma_io_tx_buf),
+        .DMA_BufferSize         = tx_buf.buf_size,
         .DMA_PeripheralInc      = DMA_PeripheralInc_Disable,
         .DMA_MemoryInc          = DMA_MemoryInc_Enable,
         .DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte,
@@ -182,7 +159,7 @@ void dma_io_init(void)
         .DMA_PeripheralBaseAddr = (uint32_t)&GPIOE->BSRRH,
         .DMA_Memory0BaseAddr    = (uint32_t)&dma_tx_ws2812_bits,
         .DMA_DIR                = DMA_DIR_MemoryToPeripheral,
-        .DMA_BufferSize         = ARRAY_SIZE(dma_io_tx_buf),
+        .DMA_BufferSize         = tx_buf.buf_size,
         .DMA_PeripheralInc      = DMA_PeripheralInc_Disable,
         .DMA_MemoryInc          = DMA_MemoryInc_Disable,
         .DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte,
@@ -198,9 +175,9 @@ void dma_io_init(void)
     DMA_Init(DMA2_Stream7, &(DMA_InitTypeDef) {
         .DMA_Channel            = DMA_Channel_7,
         .DMA_PeripheralBaseAddr = (uint32_t)&GPIOE->IDR,
-        .DMA_Memory0BaseAddr    = (uint32_t)&dma_io_rx_buf,
+        .DMA_Memory0BaseAddr    = (uint32_t)rx_buf.buf,
         .DMA_DIR                = DMA_DIR_PeripheralToMemory,
-        .DMA_BufferSize         = ARRAY_SIZE(dma_io_rx_buf),
+        .DMA_BufferSize         = rx_buf.buf_size,          // /4 ??
         .DMA_PeripheralInc      = DMA_PeripheralInc_Disable,
         .DMA_MemoryInc          = DMA_MemoryInc_Enable,
         .DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte,
@@ -213,17 +190,6 @@ void dma_io_init(void)
         .DMA_MemoryBurst        = DMA_MemoryBurst_INC4,
         .DMA_PeripheralBurst    = DMA_PeripheralBurst_Single
     });
-
-    // Set up half-transfer and transfer-complete interrupt
-    //
-    NVIC_Init(&(NVIC_InitTypeDef) {
-        .NVIC_IRQChannel = DMA2_Stream7_IRQn,
-        .NVIC_IRQChannelPreemptionPriority =
-                configLIBRARY_LOWEST_INTERRUPT_PRIORITY,
-        .NVIC_IRQChannelCmd = ENABLE
-    });
-
-    DMA_ITConfig(DMA2_Stream7, DMA_IT_HT | DMA_IT_TC, ENABLE);
 
     DMA_Cmd(DMA2_Stream7, ENABLE);
 
@@ -238,6 +204,8 @@ void dma_io_init(void)
         .TIM_OCMode = TIM_OCMode_Timing,
     };
 
+    // Bit timing for WS2812 output
+    //
     oc_init.TIM_Pulse = 1;
     TIM_OC1Init(TIM8, &oc_init);
 
@@ -247,10 +215,13 @@ void dma_io_init(void)
     oc_init.TIM_Pulse = 2 * TIM8->ARR / 3;
     TIM_OC3Init(TIM8, &oc_init);
 
+    // Generate DMA requests for PWM input
+    //
     oc_init.TIM_Pulse = 2.5 * TIM8->ARR / 3;
     TIM_OC4Init(TIM8, &oc_init);
 
-    TIM8->DIER |= TIM_DIER_CC4DE;
+    TIM_DMACmd(TIM8, TIM_DMA_CC4, ENABLE);
+
 
     TIM_Cmd(TIM8, ENABLE);
 }
