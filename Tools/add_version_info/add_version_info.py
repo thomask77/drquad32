@@ -113,7 +113,7 @@ def parse_args():
     )
     
     parser.add_argument(
-        "--version", action="version", version="%(prog)s 2.0.1"
+        "--version", action="version", version="%(prog)s 2.0.2"
     )
 
     parser.add_argument(
