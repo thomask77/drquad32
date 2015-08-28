@@ -17,11 +17,7 @@ struct pid_ctrl pid_yaw   = { .min = -5, .max = 5, .dt = 1e-3 };
 
 float rc_pitch, rc_roll, rc_yaw, rc_thrust;
 
-float pid_p = 1;
-float pid_i = 0;
-float pid_d = 0;
-
-struct s_fc_config fc_config;
+struct fc_config fc_config;
 
 
 void flight_ctrl(void *pvParameters)
@@ -57,36 +53,27 @@ void flight_ctrl(void *pvParameters)
             rc_roll     = 0;
             rc_yaw      = 0;
             rc_thrust   = 0;
-
             ok = 0;
-        }
 
-        if (fc_config.state & 0x01) {
-            pid_pitch.kp = pid_p;
-            pid_roll .kp = pid_p;
-            pid_yaw  .kp = pid_p;
-
-            pid_pitch.ki = pid_i;
-            pid_roll .ki = pid_i;
-            pid_yaw  .ki = pid_i;
-
-            pid_pitch.kd = pid_d;
-            pid_roll .kd = pid_d;
-            pid_yaw  .kd = pid_d;
+            pid_reset(&pid_roll , 0);
+            pid_reset(&pid_pitch, 0);
+            pid_reset(&pid_yaw  , 0);
         }
 
         dcm_update(&sensor_data, 1e-3);
 
 
-        if (fc_config.state & 0x02 || (rc_input.hold > -0.7)) {
-                pid_update(&pid_roll , (rc_roll  - dcm.euler.x), 0);
-                pid_update(&pid_pitch, (rc_pitch - dcm.euler.y), 0);
-                pid_update(&pid_yaw  , (rc_yaw   - dcm.euler.z), 0);
-        } else {
-                pid_update(&pid_roll , (rc_roll  - dcm.omega.x), 0);
-                pid_update(&pid_pitch, (rc_pitch - dcm.omega.y), 0);
-                pid_update(&pid_yaw  , (rc_yaw   - dcm.omega.z), 0);
+        if (rc_input.hold > -0.7) {
+            pid_update(&pid_roll , (rc_roll  - dcm.euler.x), 0);        // angle
+            pid_update(&pid_pitch, (rc_pitch - dcm.euler.y), 0);        // angle
+            pid_update(&pid_yaw  , (rc_yaw   - dcm.omega.z), 0);        // rate control for yaw
         }
+        else {
+            pid_update(&pid_roll , (rc_roll  - dcm.omega.x), 0);
+            pid_update(&pid_pitch, (rc_pitch - dcm.omega.y), 0);
+            pid_update(&pid_yaw  , (rc_yaw   - dcm.omega.z), 0);
+        }
+
         if (ok) {
             bldc_state.motors[ID_FL].u_d = clamp(rc_thrust + pid_pitch.u + pid_roll.u - pid_yaw.u, 1, 10);
             bldc_state.motors[ID_FR].u_d = clamp(rc_thrust + pid_pitch.u - pid_roll.u + pid_yaw.u, 1, 10);
