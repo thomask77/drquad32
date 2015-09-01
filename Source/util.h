@@ -74,13 +74,13 @@ inline float wrap_twopi(float x)
  */
 struct stats {
     int    n;                ///< Number of samples processed
-    double min, max;         ///< Minimum and maximum values
-    double sum, sqsum;       ///< Sum and sum-of-squares
-    double mean, var, std;   ///< Mean, variance and standard deviation
+    float  min, max;         ///< Minimum and maximum values
+    double sum, sqsum;       ///< Sum and sum-of-squares (need double precision)
+    float  mean, var, std;   ///< Mean, variance and standard deviation
 };
 
 
-void  stats_update(struct stats *s, double val);
+void  stats_update(struct stats *s, float val);
 void  stats_reset(struct stats *s);
 
 

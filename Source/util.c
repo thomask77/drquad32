@@ -161,7 +161,7 @@ void hexdump(const void *mem, unsigned length)
  * \param  s    pointer to stats structure
  * \param  val  value to process
  */
-void stats_update(struct stats *s, double val)
+void stats_update(struct stats *s, float val)
 {
     s->n++;
     s->sum   += val;
@@ -174,7 +174,7 @@ void stats_update(struct stats *s, double val)
     s->var  = (s->sqsum - (s->sum * s->sum) / s->n) / (s->n-1);
     if (s->var < 0)
         s->var = 0;
-    s->std  = sqrt(s->var);
+    s->std  = sqrtf(s->var);
 }
 
 
