@@ -410,12 +410,12 @@ void cobs_task(void *pv)
         TickType_t  t = xTaskGetTickCount();
 
         if (t > 1000) {
-            if (t - t_last_attitude > 20) {
+            if (t - t_last_attitude > 30) {
                 send_dcm_matrix();
                 t_last_attitude = t;
             }
 
-            if (t - t_last_dcm_down > 0) {
+            if (t - t_last_dcm_down > 10) {
                 send_dcm_down();
                 t_last_dcm_down = t;
             }
