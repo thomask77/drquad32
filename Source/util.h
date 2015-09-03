@@ -89,22 +89,26 @@ void  stats_reset(struct stats *s);
  *
  */
 struct pid_ctrl {
-    float   kp, ki, kd, kaw;
+    float   kp, ki, kd;
     float   dt, min, max;
-
     float   u, i, e_1;
 };
 
 
-static inline float pid_update(struct pid_ctrl *pid, float e, float u)
+static inline float pid_update(struct pid_ctrl *pid, float e, float ffwd)
 {
-    u += pid->kp * e;
-    u += pid->i;
-    u += pid->kd * (e - pid->e_1) / pid->dt;
+    pid->i = clamp(
+        pid->i + pid->ki * e * pid->dt,
+        pid->min, pid->max
+    );
 
-    pid->u = clamp(u, pid->min, pid->max);
-    pid->i += pid->ki  * e * pid->dt;
-    pid->i -= pid->kaw * (u - pid->u);
+    pid->u = clamp(
+        ffwd +
+        pid->kp * e +
+        pid->i +
+        pid->kd * (e - pid->e_1) / pid->dt,
+        pid->min, pid->max
+    );
 
     pid->e_1 = e;
 
