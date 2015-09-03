@@ -44,7 +44,7 @@ const struct param_info  param_table[] = {
             .help = "Deadtime between ADC measurements and PWM output"
     },
 
-    {  100, P_FLOAT(&bldc_params.dudt_max, 25, 1, 1000),
+    {  100, P_FLOAT(&bldc_params.dudt_max, 100, 1, 1000),
             .name = "dudt_max", .unit = "V/s",
             .help = "Maximum slew rate of the motor voltage"
     },
@@ -116,7 +116,7 @@ const struct param_info  param_table[] = {
         .help = "gyro yaw PID P Part"
     },
 
-    {  331, P_FLOAT(&pid_yaw.ki, 1, 0, 10),
+    {  331, P_FLOAT(&pid_yaw.ki, 0, 0, 10),
         .name = "pid_yaw.ki",
         .help = "gyro yaw PID I Part"
     },
