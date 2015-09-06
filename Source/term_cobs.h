@@ -9,3 +9,4 @@ extern struct file_ops  term_cobs_ops;
 //
 void term_cobs_init(void);
 
+void cobs_task(void *pv);

@@ -1,6 +1,7 @@
 #include "term_cobs.h"
 #include "util.h"
 #include "attitude.h"
+#include "sensors.h"
 
 #include "Shared/errors.h"
 #include "Shared/ringbuf.h"
@@ -37,16 +38,24 @@ static struct cobs_stats cobs_stats;
 static struct ringbuf rx_dma_buf = RINGBUF(1024);
 static struct ringbuf tx_dma_buf = RINGBUF(1024);
 
-size_t tx_dma_len;
-
+static size_t tx_dma_len;
 
 static SemaphoreHandle_t  rx_sem;
 static SemaphoreHandle_t  tx_sem;
 
 static QueueHandle_t rx_queue;
 
+static uint8_t   len,  last_len;
 
-void start_next_tx(void)
+static uint8_t   rx_packet_buf[1024];
+static ssize_t   rx_packet_len;
+
+struct  msg_generic   rx_packet;
+
+
+/** RINGBUFFER <-> UART/DMA */
+
+static void start_next_tx(void)
 {
     void    *ptr1;
     size_t  len1;
@@ -62,8 +71,6 @@ void start_next_tx(void)
 }
 
 
-// DMA TX Interrupt (transfer complete)
-//
 void DMA1_Stream3_IRQHandler(void)
 {
     cobs_stats.tx_bytes += tx_dma_len;
@@ -88,7 +95,7 @@ void DMA1_Stream3_IRQHandler(void)
 }
 
 
-void dma_send(void *data, int len)
+static void dma_send(void *data, int len)
 {
     // TODO: This must be atomic.
     // Messages may not be split if
@@ -112,6 +119,7 @@ void dma_send(void *data, int len)
 }
 
 
+/** COBS <-> RINGBUFFER */
 
 static crc16_t msg_calc_crc(const struct msg_header *msg)
 {
@@ -122,7 +130,7 @@ static crc16_t msg_calc_crc(const struct msg_header *msg)
 }
 
 
-static int msg_send(struct msg_header *msg)
+static int cobs_send(struct msg_header *msg)
 {
     msg->crc = msg_calc_crc(msg);
 
@@ -146,116 +154,48 @@ static int msg_send(struct msg_header *msg)
 }
 
 
-
-static ssize_t term_cobs_write_r(struct _reent *r, int fd, const void *ptr, size_t len)
+static int cobs_recv(void)
 {
-    // Encode message
-    //
-    static struct msg_shell_to_pc msg;
 
-    msg.h.id = MSG_ID_SHELL_TO_PC;
+    void emit(uint8_t c)
+    {
+        if (rx_packet_len >= sizeof(rx_packet_buf))
+            rx_packet_len = -1;
 
-    if (len > sizeof(msg.data))
-        len = sizeof(msg.data);
-
-    msg.h.data_len = len;
-    memcpy(msg.data, ptr, len);
-
-    msg_send(&msg.h);
-
-    return len;
-}
-
-
-static ssize_t term_cobs_read_r(struct _reent *r, int fd, void *ptr, size_t len)
-{
-    // Blocking wait for the first char
-    //
-    unsigned timeout = portMAX_DELAY;
-
-    char *dest = ptr;
-    int  received = 0;
-    static char last_c;
-
-    while (len--) {
-        char c;
-        if (!xQueueReceive(rx_queue, &c, timeout))
-            break;
-
-        // Convert terminal CRLF to c-newline
-        //
-        if (c == '\n' && last_c == '\r')
-            if (!xQueueReceive(rx_queue, &c, timeout))
-                break;
-
-        if (c == '\r')
-            *dest++ = '\n';
+        if (rx_packet_len == -1)
+            cobs_stats.rx_overrun++;
         else
-            *dest++ = c;
-
-        last_c  = c;
-        timeout = 0;
-        received++;
+            rx_packet_buf[rx_packet_len++] = c;
     }
 
-    return received;
-}
 
+    int decode_char(uint8_t c)
+    {
+        if (c == 0) {
+            if (len > 1)
+                emit(last_len);
+            len = 0;
+            return 1;
+        }
 
-static ssize_t term_cobs_chars_avail_r(struct _reent *r, int fd)
-{
-    return uxQueueMessagesWaiting(rx_queue);
-}
+        if (len == 0) {
+            last_len = c;
+            len = c;
+            return 0;
+        }
 
-
-static uint8_t   len,  last_len;
-
-static uint8_t   rx_packet_buf[1024];
-static ssize_t   rx_packet_len;
-
-struct  msg_generic   rx_packet;
-
-
-static void emit(uint8_t c)
-{
-    if (rx_packet_len >= sizeof(rx_packet_buf))
-        rx_packet_len = -1;
-
-    if (rx_packet_len == -1)
-        cobs_stats.rx_overrun++;
-    else
-        rx_packet_buf[rx_packet_len++] = c;
-}
-
-
-static int decode_char(uint8_t c)
-{
-    if (c == 0) {
-        if (len > 1)
-            emit(last_len);
-        len = 0;
-        return 1;
+        if (--len) {
+            emit(c);
+            return 0;
+        }
+        else {
+            emit(0);
+            return decode_char(c);
+        }
     }
 
-    if (len == 0) {
-        last_len = c;
-        len = c;
-        return 0;
-    }
-
-    if (--len) {
-        emit(c);
-        return 0;
-    }
-    else {
-        emit(0);
-        return decode_char(c);
-    }
-}
 
 
-int cobs_recv(void)
-{
     // Update write position from DMA hardware
     //
     rx_dma_buf.write_pos = rx_dma_buf.buf_size - DMA1_Stream1->NDTR;
@@ -300,129 +240,67 @@ int cobs_recv(void)
 }
 
 
-void handle_shell_from_pc(const struct msg_shell_from_pc *msg)
+
+/** TERMINAL messages <-> character device stuff */
+
+static ssize_t term_cobs_write_r(struct _reent *r, int fd, const void *ptr, size_t len)
 {
-    for (int i=0; i<msg->h.data_len; i++)
-        xQueueSend(rx_queue, &msg->data[i], 0);
+    // Encode message
+    //
+    static struct msg_shell_to_pc msg;
+
+    msg.h.id = MSG_ID_SHELL_TO_PC;
+
+    if (len > sizeof(msg.data))
+        len = sizeof(msg.data);
+
+    msg.h.data_len = len;
+    memcpy(msg.data, ptr, len);
+
+    cobs_send(&msg.h);
+
+    return len;
 }
 
 
-void handle_unknown_message(const struct msg_generic *msg)
+static ssize_t term_cobs_read_r(struct _reent *r, int fd, void *ptr, size_t len)
 {
-    printf("unknown message(0x%04x, %d)\n", msg->h.id, msg->h.data_len);
-    hexdump(&msg->h.data, msg->h.data_len);
-}
+    // Blocking wait for the first char
+    //
+    unsigned timeout = portMAX_DELAY;
 
+    char *dest = ptr;
+    int  received = 0;
+    static char last_c;
 
-void handle_messsage(struct msg_generic *msg)
-{
-    switch (msg->h.id) {
-    case MSG_ID_SHELL_FROM_PC:  handle_shell_from_pc((void*)msg);      break;
-    default:                    handle_unknown_message((void*)msg);    break;
-    }
-}
+    while (len--) {
+        char c;
+        if (!xQueueReceive(rx_queue, &c, timeout))
+            break;
 
-
-#include "sensors.h"
-#include "FreeRTOS.h"
-#include "task.h"
-
-
-void send_imu_data(void)
-{
-    struct sensor_data d;
-    sensor_read(&d);
-
-    struct msg_imu_data msg;
-    msg.h.id = MSG_ID_IMU_DATA;
-    msg.h.data_len  = MSG_DATA_LENGTH(struct msg_imu_data);
-
-    msg.acc_x       = d.acc.x;
-    msg.acc_y       = d.acc.y;
-    msg.acc_z       = d.acc.z;
-    msg.gyro_x      = d.gyro.x;
-    msg.gyro_y      = d.gyro.y;
-    msg.gyro_z      = d.gyro.z;
-    msg.mag_x       = d.mag.x;
-    msg.mag_y       = d.mag.y;
-    msg.mag_z       = d.mag.z;
-    msg.baro_hpa    = d.pressure;
-    msg.baro_temp   = d.baro_temp;
-
-    msg_send(&msg.h);
-}
-
-
-void send_dcm_matrix(void)
-{
-    struct msg_dcm_matrix msg;
-    msg.h.id = MSG_ID_DCM_MATRIX;
-    msg.h.data_len  = MSG_DATA_LENGTH(struct msg_dcm_matrix);
-
-    msg.m00 = dcm.matrix.m00;
-    msg.m01 = dcm.matrix.m01;
-    msg.m02 = dcm.matrix.m02;
-    msg.m10 = dcm.matrix.m10;
-    msg.m11 = dcm.matrix.m11;
-    msg.m12 = dcm.matrix.m12;
-    msg.m20 = dcm.matrix.m20;
-    msg.m21 = dcm.matrix.m21;
-    msg.m22 = dcm.matrix.m22;
-
-    msg_send(&msg.h);
-}
-
-void send_dcm_down(void)
-{
-    struct msg_dcm_down msg;
-    msg.h.id = MSG_ID_DCM_DOWN;
-    msg.h.data_len  = MSG_DATA_LENGTH(struct msg_dcm_down);
-
-    msg.x = dcm.down.x;
-    msg.y = dcm.down.y;
-    msg.z = dcm.down.z;
-    msg_send(&msg.h);
-}
-
-
-
-void cobs_task(void *pv)
-{
-    TickType_t  t_last_dcm_down = xTaskGetTickCount();
-    TickType_t  t_last_attitude = xTaskGetTickCount();
-
-    for(;;) {
-
-        for(;;) {
-            ssize_t len = cobs_recv();
-
-            if (len == 0) {
+        // Convert terminal CRLF to c-newline
+        //
+        if (c == '\n' && last_c == '\r')
+            if (!xQueueReceive(rx_queue, &c, timeout))
                 break;
-            }
-            else if (len < 0) {
-                printf("recv failed: %s\n", strerror(errno));
-            }
-            else {
-                handle_messsage(&rx_packet);
-            }
-        }
 
-        TickType_t  t = xTaskGetTickCount();
+        if (c == '\r')
+            *dest++ = '\n';
+        else
+            *dest++ = c;
 
-        if (t > 1000) {
-            if (t - t_last_attitude > 30) {
-                send_dcm_matrix();
-                t_last_attitude = t;
-            }
-
-            if (t - t_last_dcm_down > 10) {
-                send_dcm_down();
-                t_last_dcm_down = t;
-            }
-        }
-
-        vTaskDelay(1);
+        last_c  = c;
+        timeout = 0;
+        received++;
     }
+
+    return received;
+}
+
+
+static ssize_t term_cobs_chars_avail_r(struct _reent *r, int fd)
+{
+    return uxQueueMessagesWaiting(rx_queue);
 }
 
 
@@ -537,10 +415,6 @@ void term_cobs_init(void)
     DMA_ITConfig(DMA1_Stream3, DMA_IT_TC, ENABLE);
 
     USART_Cmd(USART3, ENABLE);
-
-    printf("Starting COBS task..\n");
-    xTaskCreate(cobs_task, "cobs_task", 256, NULL, 0, NULL);
-    vTaskDelay(100);
 }
 
 
@@ -549,3 +423,144 @@ struct  file_ops   term_cobs_ops = {
     .write_r       = term_cobs_write_r,
     .chars_avail_r = term_cobs_chars_avail_r
 };
+
+
+
+
+/** Debug message handling, periodic send */
+
+
+static void handle_shell_from_pc(const struct msg_shell_from_pc *msg)
+{
+    for (int i=0; i<msg->h.data_len; i++)
+        xQueueSend(rx_queue, &msg->data[i], 0);
+}
+
+
+static void handle_messsage(const struct msg_generic *msg)
+{
+    switch (msg->h.id) {
+    case MSG_ID_SHELL_FROM_PC:
+        handle_shell_from_pc((void*)msg);
+        break;
+
+    default:
+        printf("unknown message(0x%04x, %d)\n", msg->h.id, msg->h.data_len);
+        hexdump(&msg->h.data, msg->h.data_len);
+        break;
+    }
+}
+
+
+static void send_imu_data(void)
+{
+    struct sensor_data d;
+    sensor_read(&d);
+
+    struct msg_imu_data msg;
+    msg.h.id = MSG_ID_IMU_DATA;
+    msg.h.data_len  = MSG_DATA_LENGTH(struct msg_imu_data);
+
+    msg.acc_x       = d.acc.x;
+    msg.acc_y       = d.acc.y;
+    msg.acc_z       = d.acc.z;
+    msg.gyro_x      = d.gyro.x;
+    msg.gyro_y      = d.gyro.y;
+    msg.gyro_z      = d.gyro.z;
+    msg.mag_x       = d.mag.x;
+    msg.mag_y       = d.mag.y;
+    msg.mag_z       = d.mag.z;
+    msg.baro_hpa    = d.pressure;
+    msg.baro_temp   = d.baro_temp;
+
+    cobs_send(&msg.h);
+}
+
+
+static void send_dcm_matrix(void)
+{
+    struct msg_dcm_matrix msg;
+    msg.h.id = MSG_ID_DCM_MATRIX;
+    msg.h.data_len  = MSG_DATA_LENGTH(struct msg_dcm_matrix);
+
+    msg.m00 = dcm.matrix.m00;
+    msg.m01 = dcm.matrix.m01;
+    msg.m02 = dcm.matrix.m02;
+    msg.m10 = dcm.matrix.m10;
+    msg.m11 = dcm.matrix.m11;
+    msg.m12 = dcm.matrix.m12;
+    msg.m20 = dcm.matrix.m20;
+    msg.m21 = dcm.matrix.m21;
+    msg.m22 = dcm.matrix.m22;
+
+    cobs_send(&msg.h);
+}
+
+
+static void send_dcm_reference(void)
+{
+    struct msg_dcm_reference msg;
+    msg.h.id = MSG_ID_DCM_REFERENCE;
+    msg.h.data_len = MSG_DATA_LENGTH(struct msg_dcm_reference);
+
+    msg.down_x  = dcm.down.x;
+    msg.down_y  = dcm.down.y;
+    msg.down_z  = dcm.down.z;
+    msg.north_x = dcm.north.x;
+    msg.north_y = dcm.north.y;
+    msg.north_z = dcm.north.z;
+
+    cobs_send(&msg.h);
+}
+
+
+static void send_periodic(void)
+{
+    static TickType_t   t_last_dcm_reference;
+    static TickType_t   t_last_attitude;
+    static TickType_t   t_last_imu_data;
+
+    TickType_t  t = xTaskGetTickCount();
+
+    if (t - t_last_attitude > 16) {
+        send_dcm_matrix();
+        t_last_attitude = t;
+    }
+
+    if (t - t_last_dcm_reference > 16) {
+        send_dcm_reference();
+        t_last_dcm_reference = t;
+    }
+
+    if (t - t_last_imu_data > 16) {
+        send_imu_data();
+        t_last_imu_data = t;
+    }
+}
+
+
+void cobs_task(void *pv)
+{
+    for(;;) {
+
+        for(;;) {
+            ssize_t len = cobs_recv();
+
+            if (len == 0) {
+                break;
+            }
+            else if (len < 0) {
+                printf("recv failed: %s\n", strerror(errno));
+            }
+            else {
+                handle_messsage(&rx_packet);
+            }
+        }
+
+        if (xTaskGetTickCount() > 1000)
+            send_periodic();
+
+        vTaskDelay(1);
+    }
+}
+

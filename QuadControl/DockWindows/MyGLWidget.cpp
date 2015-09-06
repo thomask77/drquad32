@@ -56,11 +56,8 @@ void MyGLWidget::connection_messageReceived(const msg_generic &msg)
 
     }
 
-    if (msg.h.id == MSG_ID_DCM_DOWN) {
-        auto m = (const msg_dcm_down&)msg;
-        dcm_down_queue.append( QVector3D(m.x, m.y, m.z) );
-    }
-
+    if (msg.h.id == MSG_ID_DCM_REFERENCE)
+        dcm_reference_queue.append( (const msg_dcm_reference&)msg );
 }
 
 
@@ -196,19 +193,19 @@ void MyGLWidget::paintGL()
     // Draw down reference
     //
     if (enableDrawPointCloud) {
-        const int N = std::min(dcm_down_queue.length(), 1000);
+        const int N = std::min(dcm_reference_queue.length(), 1000);
 
         if (N > 0) {
-            float pts[N][3];
+            float down[N][3], north[N][3];
 
             for (int i=0; i<N; i++) {
-                const auto &d = dcm_down_queue[i + dcm_down_queue.length() - N];
-                pts[i][0] = d.x();
-                pts[i][1] = d.y();
-                pts[i][2] = d.z();
+                const auto &d = dcm_reference_queue[i + dcm_reference_queue.length() - N];
+                down[i][0]  = d.down_x;     down[i][1]  = d.down_y;     down[i][2]  = d.down_z;
+                north[i][0] = d.north_x;    north[i][1] = d.north_y;    north[i][2] = d.north_z;
             }
 
-            drawPointCloud(pts[0], N, TangoColors::Chameleon1);
+            drawPointCloud(down[0], N, TangoColors::Chameleon1);
+            drawPointCloud(north[0], N, TangoColors::ScarletRed1);
         }
     }
 

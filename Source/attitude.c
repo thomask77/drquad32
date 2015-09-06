@@ -67,17 +67,18 @@ static mat3f dcm_integrate(mat3f A, vec3f w, float dt)
 
 void dcm_update(const struct sensor_data *sensor, float dt)
 {
+    dcm.down    = vec3f_matmul(dcm.matrix, vec3f_scale(sensor->acc, -1));
+    dcm.north   = vec3f_matmul(dcm.matrix, sensor->mag);
+
     // Apply accelerometer correction
     //
-    dcm.down        = vec3f_matmul(dcm.matrix, vec3f_scale(sensor->acc, -1));
-    dcm.down_error  = vec3f_cross( vec3f_norm(dcm.down), down_ref );
-
+    // Umrechnung in Vehicle-Koordinaten
     // down_error hat jetzt sin(error) in Weltkoordinaten
     // arcsin(x) ~= sin(x) für kleine x
-
-    // Umrechnung in Vehicle-Koordinaten
     //
+    dcm.down_error = vec3f_cross( vec3f_norm(dcm.down), down_ref );
     dcm.down_error = vec3f_matmul( mat3f_trans(dcm.matrix), dcm.down_error);
+
 
     dcm.offset_p = vec3f_zero;
     dcm.offset_p = vec3f_add(dcm.offset_p, vec3f_scale(dcm.down_error, dcm.acc_kp));

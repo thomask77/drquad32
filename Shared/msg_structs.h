@@ -39,7 +39,7 @@ enum msg_id {
 
     MSG_ID_IMU_DATA             = 0x0010,
     MSG_ID_DCM_MATRIX           = 0x0020,
-    MSG_ID_DCM_DOWN             = 0x0030,
+    MSG_ID_DCM_REFERENCE        = 0x0030,
 
     MSG_ID_BOOT_ENTER           = 0xB000,
     MSG_ID_BOOT_READ_DATA       = 0xB001,
@@ -115,10 +115,11 @@ struct msg_dcm_matrix
 };
 
 
-struct msg_dcm_down
+struct msg_dcm_reference
 {
     struct msg_header h;
-    half    x, y, z;
+    half    down_x, down_y, down_z;
+    half    north_x, north_y, north_z;
 };
 
 

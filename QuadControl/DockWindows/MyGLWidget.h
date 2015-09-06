@@ -58,8 +58,7 @@ private:
     QMatrix4x4  m_projection;
     QMatrix4x4  m_dcm;
 
-    QList<QVector3D>    dcm_down_queue;
-    QList<QVector3D>    imu_acc_queue;
+    QList<msg_dcm_reference>    dcm_reference_queue;
 
     virtual void initializeGL() override;
     virtual void resizeGL(int w, int h) override;

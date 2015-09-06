@@ -103,6 +103,11 @@ static void init_task(void *pvParameters)
 //    xTaskCreate(gpn_foo_task, "gpn_foo", 1024, NULL, 1, NULL);
 //    vTaskDelay(100);
 
+    printf("Starting COBS task..\n");
+    xTaskCreate(cobs_task, "cobs_task", 256, NULL, 0, NULL);
+    vTaskDelay(100);
+
+
     // We're not needed any more.
     //
     vTaskDelete(NULL);
