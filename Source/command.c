@@ -27,7 +27,7 @@
 
 #include "command.h"
 #include "readline.h"
-#include "Shared/ansi.h"
+#include "ansi.h"
 #include <stdlib.h>
 #include <limits.h>
 #include <ctype.h>

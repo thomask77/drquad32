@@ -2,7 +2,7 @@
 #include "command.h"
 #include "readline.h"
 #include "board.h"
-#include "Shared/ansi.h"
+#include "ansi.h"
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>

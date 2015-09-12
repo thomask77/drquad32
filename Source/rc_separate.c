@@ -2,7 +2,7 @@
 #include "rc_input.h"
 #include "dma_io_driver.h"
 #include "util.h"
-#include "Shared/ringbuf.h"
+#include "ringbuf.h"
 
 #include <stdio.h>
 

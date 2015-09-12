@@ -1,6 +1,6 @@
-#include "Shared/msg_structs.h"
-#include "Shared/crc16.h"
-#include "Shared/cobsr.h"
+#include "msg_structs.h"
+#include "crc16.h"
+#include "cobsr.h"
 
 #include "command.h"
 

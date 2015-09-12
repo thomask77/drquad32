@@ -227,7 +227,7 @@ uint32_t hsv_to_rgb(uint32_t hsv)
 
 // -------------------- Shell commands --------------------
 //
-#include "Shared/ansi.h"
+#include "ansi.h"
 #include "syscalls.h"
 
 /**

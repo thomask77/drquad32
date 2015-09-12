@@ -106,7 +106,7 @@ void rc_input_init(void)
 //
 #include "command.h"
 #include "util.h"
-#include "Shared/ansi.h"
+#include "ansi.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "syscalls.h"

@@ -1,6 +1,6 @@
 #include "dma_io_driver.h"
 #include "util.h"
-#include "Shared/ringbuf.h"
+#include "ringbuf.h"
 #include "stm32f4xx.h"
 #include "FreeRTOS.h"
 #include "task.h"

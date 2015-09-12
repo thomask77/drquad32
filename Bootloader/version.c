@@ -1,5 +1,5 @@
 #include "version.h"
-#include "Shared/ansi.h"
+#include "ansi.h"
 #include <stdio.h>
 #include <string.h>
 

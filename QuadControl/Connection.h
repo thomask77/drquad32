@@ -6,7 +6,7 @@
 #include <QTimer>
 #include <QUrl>
 
-#include "Shared/msg_structs.h"
+#include "msg_structs.h"
 
 
 class Connection : public QObject

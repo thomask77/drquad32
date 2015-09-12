@@ -138,7 +138,7 @@ void sensor_task(void *param)
 #include "command.h"
 #include "util.h"
 #include "syscalls.h"
-#include "Shared/ansi.h"
+#include "ansi.h"
 #include <stdio.h>
 #include <string.h>
 

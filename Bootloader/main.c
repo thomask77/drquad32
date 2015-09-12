@@ -3,9 +3,9 @@
 #include "msg_packet.h"
 #include "stm32f4xx.h"
 #include "version.h"
-#include "Shared/crc32.h"
-#include "Shared/msg_structs.h"
-#include "Shared/errors.h"
+#include "crc32.h"
+#include "msg_structs.h"
+#include "errors.h"
 
 #include <string.h>
 #include <stdio.h>

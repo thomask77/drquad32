@@ -3,7 +3,7 @@
 #include "tetris.h"
 #include "ustime.h"
 #include "syscalls.h"
-#include "Shared/ansi.h"
+#include "ansi.h"
 
 struct tetris_level {
     int score;

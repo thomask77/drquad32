@@ -3,11 +3,11 @@
 #include "attitude.h"
 #include "sensors.h"
 
-#include "Shared/errors.h"
-#include "Shared/ringbuf.h"
-#include "Shared/cobsr.h"
-#include "Shared/crc16.h"
-#include "Shared/msg_structs.h"
+#include "errors.h"
+#include "ringbuf.h"
+#include "cobsr.h"
+#include "crc16.h"
+#include "msg_structs.h"
 
 #include "stm32f4xx.h"
 
@@ -95,7 +95,7 @@ void DMA1_Stream3_IRQHandler(void)
 }
 
 
-static void dma_send(void *data, int len)
+static void dma_send(const void *data, int len)
 {
     // TODO: This must be atomic.
     // Messages may not be split if

@@ -2,9 +2,9 @@
 #include "uart.h"
 #include "board.h"
 
-#include "Shared/crc16.h"
-#include "Shared/cobsr.h"
-#include "Shared/errors.h"
+#include "crc16.h"
+#include "cobsr.h"
+#include "errors.h"
 
 #define PACKET_TIMEOUT  1000     // [ms]
 

@@ -19,8 +19,8 @@ TARGET = $(OBJDIR)/drquad
 
 # Define all C source files (dependencies are generated automatically)
 #
-INCDIRS += .
 INCDIRS += Source
+INCDIRS += Shared
 
 SOURCES += Source/test.c
 SOURCES += Source/main.c

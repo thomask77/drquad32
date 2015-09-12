@@ -19,8 +19,8 @@ TARGET = $(OBJDIR)/f00b00t
 
 # Define all C source files (dependencies are generated automatically)
 #
-INCDIRS += .
 INCDIRS += Bootloader
+INCDIRS += Shared
 
 SOURCES += Bootloader/syscalls.c
 SOURCES += Bootloader/main.c
