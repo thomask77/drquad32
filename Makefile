@@ -22,6 +22,8 @@ TARGET = $(OBJDIR)/drquad
 INCDIRS += Source
 INCDIRS += Shared
 
+SOURCES += Source/cobsr_codec.c 
+
 SOURCES += Source/test.c
 SOURCES += Source/main.c
 SOURCES += Source/gpn_foo.c

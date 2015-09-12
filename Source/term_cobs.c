@@ -6,6 +6,9 @@
 #include "errors.h"
 #include "ringbuf.h"
 #include "cobsr.h"
+
+#include "cobsr_codec.h"
+
 #include "crc16.h"
 #include "msg_structs.h"
 
@@ -130,10 +133,8 @@ static crc16_t msg_calc_crc(const struct msg_header *msg)
 }
 
 
-static int cobs_send(struct msg_header *msg)
+static int cobs_send(const struct msg_header *msg)
 {
-    msg->crc = msg_calc_crc(msg);
-
     static uint8_t tx_packet_buf[1024];
 
     // Wait for previous transfer to finish
@@ -257,6 +258,7 @@ static ssize_t term_cobs_write_r(struct _reent *r, int fd, const void *ptr, size
     msg.h.data_len = len;
     memcpy(msg.data, ptr, len);
 
+    msg.crc = msg_calc_crc(&msg);
     cobs_send(&msg.h);
 
     return len;
@@ -473,6 +475,7 @@ static void send_imu_data(void)
     msg.baro_hpa    = d.pressure;
     msg.baro_temp   = d.baro_temp;
 
+    msg.crc = msg_calc_crc(&msg);
     cobs_send(&msg.h);
 }
 
@@ -493,6 +496,7 @@ static void send_dcm_matrix(void)
     msg.m21 = dcm.matrix.m21;
     msg.m22 = dcm.matrix.m22;
 
+    msg.crc = msg_calc_crc(&msg);
     cobs_send(&msg.h);
 }
 
@@ -510,6 +514,7 @@ static void send_dcm_reference(void)
     msg.north_y = dcm.north.y;
     msg.north_z = dcm.north.z;
 
+    msg.crc = msg_calc_crc(&msg);
     cobs_send(&msg.h);
 }
 
