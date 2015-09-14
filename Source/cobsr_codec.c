@@ -3,22 +3,26 @@
 #include <errno.h>
 
 
-int cobsr_encode_x(struct ringbuf *rb, const void *data, size_t len)
-{
-    static char encbuf[1024];   // TODO: don't
+// TODO: cobs encode/decode direkt integrieren, zero-copy rx/tx machen
+//
+static char slow_buf[1024];
 
-    if (rb_bytes_free(rb) < COBSR_ENCODE_DST_BUF_LEN_MAX(len)) {
+
+int cobsr_encode_rb(struct ringbuf *rb, const void *data, size_t len)
+{
+    if (rb_bytes_free(rb) < COBSR_ENCODE_DST_BUF_LEN_MAX(len) + 1) {
         errno = EWOULDBLOCK;
         return -1;
     }
 
-    ssize_t enclen = cobsr_encode(encbuf, sizeof(encbuf), data, len);
+    ssize_t enc_len = cobsr_encode(slow_buf, sizeof(slow_buf), data, len);
 
-    rb_write(rb, encbuf, enclen);
+    slow_buf[enc_len++] = 0;
+    rb_write(rb, slow_buf, enc_len);
 
     return len;
 
-    // später:
+    // later:
     //
     // void *ptr1, *ptr2;
     // int   len1, len2;
@@ -27,16 +31,16 @@ int cobsr_encode_x(struct ringbuf *rb, const void *data, size_t len)
     // if (r != len)
     //   return 0;
     //
-    // .. in ptr1/2 kodieren ..
+    // .. code into ptr1/2 ..
     //
-    // rb_commit(rb, tatsächlich kodierte länge)
+    // rb_commit(rb, coded length)
     //
     // immer so viel rein wie gerade passt geht leider nicht..
     // (look-ahead beim kodieren notwendig!)
 }
 
 
-int cobsr_decode_x(struct cobsr_codec *c)
+int cobsr_decode_rb(struct cobsr_codec *c)
 {
     // gucken, ob eine \0 dazu gekommen ist.
     // wenn ja, alles in lineares array kopieren, cobsr_decode aufrufen
@@ -44,8 +48,7 @@ int cobsr_decode_x(struct cobsr_codec *c)
     // r�ckgabewert 0, wenn nichts da ist.
     // ansonsten l�nge des empfangenen frames
     //
+    return 0;
 }
 
 
-// TODO: cobs encode/decode direkt integrieren, zero-copy rx/tx machen
-//

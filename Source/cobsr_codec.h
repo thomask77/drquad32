@@ -12,7 +12,7 @@ struct cobsr_codec {
     size_t  decoded_pos;
 };
 
-int cobsr_encode_x(struct ringbuf *rb, const void *data, size_t len);
+int cobsr_encode_rb(struct ringbuf *rb, const void *data, size_t len);
 
-int cobsr_decode_x(struct cobsr_codec *c);
+int cobsr_decode_rb(struct cobsr_codec *c);
 

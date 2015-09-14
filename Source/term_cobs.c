@@ -98,30 +98,6 @@ void DMA1_Stream3_IRQHandler(void)
 }
 
 
-static void dma_send(const void *data, int len)
-{
-    // TODO: This must be atomic.
-    // Messages may not be split if
-    // several tasks call dma_send.
-    // Also combine with cobs_encode.
-    //
-    while (len > 0) {
-        int chunk = rb_write(&tx_dma_buf, data, len);
-
-        if (chunk != 0) {
-            data += chunk;
-            len  -= chunk;
-
-            if (!(DMA1_Stream3->CR & DMA_SxCR_EN))
-                start_next_tx();
-        }
-        else {
-            xSemaphoreTake(tx_sem, portMAX_DELAY);
-        }
-    }
-}
-
-
 /** COBS <-> RINGBUFFER */
 
 static crc16_t msg_calc_crc(const struct msg_header *msg)
@@ -135,23 +111,17 @@ static crc16_t msg_calc_crc(const struct msg_header *msg)
 
 static int cobs_send(const struct msg_header *msg)
 {
-    static uint8_t tx_packet_buf[1024];
-
-    // Wait for previous transfer to finish
-    //
-    xSemaphoreTake(tx_sem, portMAX_DELAY);
-
     // Encode and write to ringbuf
     //
-    int encoded_len = cobsr_encode(
-        tx_packet_buf, sizeof(tx_packet_buf) - 1,   // 1 byte for end-of-packet
-        &msg->crc, 2 + 2 + msg->data_len            // CRC + ID + data
+    int len = cobsr_encode_rb(
+        &tx_dma_buf, &msg->crc,
+        2 + 2 + msg->data_len       // CRC + ID + data
     );
-    tx_packet_buf[encoded_len++] = 0;
 
-    dma_send(tx_packet_buf, encoded_len);
+    if (!(DMA1_Stream3->CR & DMA_SxCR_EN))
+        start_next_tx();
 
-    return encoded_len;
+    return len;
 }
 
 
@@ -258,7 +228,7 @@ static ssize_t term_cobs_write_r(struct _reent *r, int fd, const void *ptr, size
     msg.h.data_len = len;
     memcpy(msg.data, ptr, len);
 
-    msg.h.crc = msg_calc_crc(&msg);
+    msg.h.crc = msg_calc_crc(&msg.h);
     cobs_send(&msg.h);
 
     return len;
@@ -475,7 +445,7 @@ static void send_imu_data(void)
     msg.baro_hpa    = d.pressure;
     msg.baro_temp   = d.baro_temp;
 
-    msg.h.crc = msg_calc_crc(&msg);
+    msg.h.crc = msg_calc_crc(&msg.h);
     cobs_send(&msg.h);
 }
 
@@ -496,7 +466,7 @@ static void send_dcm_matrix(void)
     msg.m21 = dcm.matrix.m21;
     msg.m22 = dcm.matrix.m22;
 
-    msg.h.crc = msg_calc_crc(&msg);
+    msg.h.crc = msg_calc_crc(&msg.h);
     cobs_send(&msg.h);
 }
 
@@ -514,7 +484,7 @@ static void send_dcm_reference(void)
     msg.north_y = dcm.north.y;
     msg.north_z = dcm.north.z;
 
-    msg.h.crc = msg_calc_crc(&msg);
+    msg.h.crc = msg_calc_crc(&msg.h);
     cobs_send(&msg.h);
 }
 
