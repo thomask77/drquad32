@@ -1,7 +1,7 @@
 #ifndef CONSOLEWINDOW_H
 #define CONSOLEWINDOW_H
 
-#include "Shared/msg_structs.h"
+#include "msg_structs.h"
 
 #include <QTimer>
 #include <QTextCursor>

@@ -21,9 +21,9 @@
 #include <QTcpSocket>
 #include <QFile>
 
-#include "Shared/cobsr.h"
-#include "Shared/crc16.h"
-#include "Shared/errors.h"
+#include "cobsr.h"
+#include "crc16.h"
+#include "errors.h"
 
 
 Connection::Connection(QObject *parent)

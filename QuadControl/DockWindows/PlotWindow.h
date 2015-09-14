@@ -6,7 +6,7 @@
 #include <QQueue>
 
 #include "qcustomplot.h"
-#include "Shared/msg_structs.h"
+#include "msg_structs.h"
 
 namespace Ui {
 class PlotWindow;

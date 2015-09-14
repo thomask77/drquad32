@@ -2,7 +2,7 @@
 #define MYGLWIDGET_H
 
 #include "GLTools.h"
-#include "Shared/msg_structs.h"
+#include "msg_structs.h"
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions_2_1>
 #include <QMatrix4x4>

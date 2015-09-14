@@ -17,7 +17,8 @@ TEMPLATE = app
 
 CONFIG += c++14
 
-INCLUDEPATH += .. \
+INCLUDEPATH +=  \
+    ../Shared \
     Libraries/qcustomplot-1.3.0 \
     Libraries/qflightinstruments-20140126 \
     Libraries/half-1.11.0/include

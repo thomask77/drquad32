@@ -16,9 +16,9 @@
  */
 
 #include "BootProtocol.h"
-#include "Shared/msg_structs.h"
-#include "Shared/errors.h"
-#include "Shared/crc32.h"
+#include "msg_structs.h"
+#include "errors.h"
+#include "crc32.h"
 
 #include <QDebug>
 #include <QApplication>
