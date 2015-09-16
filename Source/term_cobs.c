@@ -25,20 +25,6 @@
 #define XBEE_BAUDRATE  460800
 #define RX_QUEUE_SIZE  1024
 
-
-struct cobs_stats {
-    uint32_t    rx_bytes;
-    uint32_t    rx_packets;
-    uint32_t    rx_crc_errors;
-    uint32_t    rx_overrun;
-
-    uint32_t    tx_bytes;
-    uint32_t    tx_packets;
-};
-
-
-static struct cobs_stats cobs_stats;
-
 static struct ringbuf rx_dma_buf = RINGBUF(1024);
 static struct ringbuf tx_dma_buf = RINGBUF(1024);
 
@@ -48,8 +34,6 @@ static SemaphoreHandle_t  rx_sem;
 static SemaphoreHandle_t  tx_sem;
 
 static QueueHandle_t rx_queue;
-
-static uint8_t   len,  last_len;
 struct msg_generic   rx_packet;
 
 
@@ -73,9 +57,6 @@ static void start_next_tx(void)
 
 void DMA1_Stream3_IRQHandler(void)
 {
-    cobs_stats.tx_bytes += tx_dma_len;
-    cobs_stats.tx_packets++;
-
     rb_commit(&tx_dma_buf, RB_READ, tx_dma_len);
 
     // Clear all flags
