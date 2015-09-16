@@ -50,13 +50,13 @@ int cobsr_decode_rb(struct ringbuf *rb, void *data, size_t len)
     char *ptr1;
     size_t len1;
 
-    rb_get_pointers(rb, RB_READ, sizeof(rx_buf), (void*)&ptr1, &len1, NULL, NULL);
+    rb_get_pointers(rb, RB_READ, INT_MAX, (void*)&ptr1, &len1, NULL, NULL);
 
     bool eop = false;
 
-    int i;
-    for (i=0; i<len1; i++) {
-        char c = *ptr1++;
+    int i = 0;
+    while (i < len1) {
+        char c = ptr1[i++];
         if (c == 0) {
             eop = true;
             break;
@@ -67,7 +67,6 @@ int cobsr_decode_rb(struct ringbuf *rb, void *data, size_t len)
     }
 
     rb_commit(rb, RB_READ, i);
-
 
     int ret = 0;
     if (eop) {
@@ -89,5 +88,4 @@ int cobsr_decode_rb(struct ringbuf *rb, void *data, size_t len)
 
     return ret;
 }
-
 

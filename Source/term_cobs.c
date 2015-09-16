@@ -96,6 +96,8 @@ static int msg_send(const struct msg_header *msg)
         2 + 2 + msg->data_len       // CRC + ID + data
     );
 
+    // Keep DMA running
+    //
     if (!(DMA1_Stream3->CR & DMA_SxCR_EN))
         start_next_tx();
 
@@ -106,20 +108,24 @@ static int msg_send(const struct msg_header *msg)
 static int msg_recv(void)
 {
     int n = cobsr_decode_rb(
-        &rx_dma_buf, &rx_packet, sizeof(rx_packet)
+        &rx_dma_buf, &rx_packet.h.crc, 
+        2 + 2 + sizeof(rx_packet.data)
     );
+
+    if (n == 0)
+        return 0;
 
     if (n < 4) {
         errno = EMSG_TOO_SHORT;
         return -1;
     }
 
+    rx_packet.h.data_len = n - 2 - 2;
+
     if (msg_calc_crc(&rx_packet.h) != rx_packet.h.crc) {
         errno = EMSG_CRC;
         return -1;
     }
-
-    rx_packet.h.data_len = n - 2 - 2;
 
     return n;
 }
