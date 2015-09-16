@@ -36,6 +36,7 @@ struct cobs_stats {
     uint32_t    tx_packets;
 };
 
+
 static struct cobs_stats cobs_stats;
 
 static struct ringbuf rx_dma_buf = RINGBUF(1024);
@@ -49,11 +50,7 @@ static SemaphoreHandle_t  tx_sem;
 static QueueHandle_t rx_queue;
 
 static uint8_t   len,  last_len;
-
-static uint8_t   rx_packet_buf[1024];
-static ssize_t   rx_packet_len;
-
-struct  msg_generic   rx_packet;
+struct msg_generic   rx_packet;
 
 
 /** RINGBUFFER <-> UART/DMA */
@@ -109,11 +106,11 @@ static crc16_t msg_calc_crc(const struct msg_header *msg)
 }
 
 
-static int cobs_send(const struct msg_header *msg)
+static int msg_send(const struct msg_header *msg)
 {
     // Encode and write to ringbuf
     //
-    int len = cobsr_encode_rb(
+    int n = cobsr_encode_rb(
         &tx_dma_buf, &msg->crc,
         2 + 2 + msg->data_len       // CRC + ID + data
     );
@@ -121,95 +118,30 @@ static int cobs_send(const struct msg_header *msg)
     if (!(DMA1_Stream3->CR & DMA_SxCR_EN))
         start_next_tx();
 
-    return len;
+    return n;
 }
 
 
-static int cobs_recv(void)
+static int msg_recv(void)
 {
-
-    void emit(uint8_t c)
-    {
-        if (rx_packet_len >= sizeof(rx_packet_buf))
-            rx_packet_len = -1;
-
-        if (rx_packet_len == -1)
-            cobs_stats.rx_overrun++;
-        else
-            rx_packet_buf[rx_packet_len++] = c;
-    }
-
-
-    int decode_char(uint8_t c)
-    {
-        if (c == 0) {
-            if (len > 1)
-                emit(last_len);
-            len = 0;
-            return 1;
-        }
-
-        if (len == 0) {
-            last_len = c;
-            len = c;
-            return 0;
-        }
-
-        if (--len) {
-            emit(c);
-            return 0;
-        }
-        else {
-            emit(0);
-            return decode_char(c);
-        }
-    }
-
-
-
-    // Update write position from DMA hardware
-    //
-    rx_dma_buf.write_pos = rx_dma_buf.buf_size - DMA1_Stream1->NDTR;
-
-    void    *ptr;
-    size_t  len;
-
-    rb_get_pointers(
-        &rx_dma_buf, RB_READ, SIZE_MAX, &ptr, &len, NULL, NULL
+    int n = cobsr_decode_rb(
+        &rx_dma_buf, &rx_packet, sizeof(rx_packet)
     );
 
-    // TODO: Wenn der Buffer schon eine len2 hat, direkt bearbeiten!!
-    //
-    for (int i=0; i<len; i++) {
-        if (decode_char( ((char*)ptr)[i] )) {
-            int ret = rx_packet_len;
-            rx_packet_len = 0;
-
-            if (ret < 0) {
-                errno = ECOBSR_DECODE_OUT_BUFFER_OVERFLOW;
-            }
-            else if (ret < 4) {
-                errno = EMSG_TOO_SHORT;
-            }
-            else {
-                rx_packet.h.data_len = ret - 2 - 2;
-                memcpy(&rx_packet.h.crc, rx_packet_buf, ret);
-
-                if (msg_calc_crc(&rx_packet.h) != rx_packet.h.crc) {
-                    ret = -1;
-                    errno = EMSG_CRC;
-                }
-            }
-
-            rb_commit(&rx_dma_buf, RB_READ, i+1);
-            return ret;
-        }
+    if (n < 4) {
+        errno = EMSG_TOO_SHORT;
+        return -1;
     }
 
-    rb_commit(&rx_dma_buf, RB_READ, len);
-    return 0;
-}
+    if (msg_calc_crc(&rx_packet.h) != rx_packet.h.crc) {
+        errno = EMSG_CRC;
+        return -1;
+    }
 
+    rx_packet.h.data_len = n - 2 - 2;
+
+    return n;
+}
 
 
 /** TERMINAL messages <-> character device stuff */
@@ -229,7 +161,7 @@ static ssize_t term_cobs_write_r(struct _reent *r, int fd, const void *ptr, size
     memcpy(msg.data, ptr, len);
 
     msg.h.crc = msg_calc_crc(&msg.h);
-    cobs_send(&msg.h);
+    msg_send(&msg.h);
 
     return len;
 }
@@ -446,7 +378,7 @@ static void send_imu_data(void)
     msg.baro_temp   = d.baro_temp;
 
     msg.h.crc = msg_calc_crc(&msg.h);
-    cobs_send(&msg.h);
+    msg_send(&msg.h);
 }
 
 
@@ -467,7 +399,7 @@ static void send_dcm_matrix(void)
     msg.m22 = dcm.matrix.m22;
 
     msg.h.crc = msg_calc_crc(&msg.h);
-    cobs_send(&msg.h);
+    msg_send(&msg.h);
 }
 
 
@@ -485,7 +417,7 @@ static void send_dcm_reference(void)
     msg.north_z = dcm.north.z;
 
     msg.h.crc = msg_calc_crc(&msg.h);
-    cobs_send(&msg.h);
+    msg_send(&msg.h);
 }
 
 
@@ -514,27 +446,32 @@ static void send_periodic(void)
 }
 
 
+static void cobs_task_loop(void)
+{
+    // Update write position from DMA hardware
+    //
+    rx_dma_buf.write_pos = rx_dma_buf.buf_size - DMA1_Stream1->NDTR;
+
+    for(;;) {
+        int len = msg_recv();
+        if (len == 0)
+            break;
+
+        if (len >= 0)
+            handle_messsage(&rx_packet);
+        else
+            printf("recv failed: %s\n", strerror(errno));
+    }
+
+    if (xTaskGetTickCount() > 1000)
+        send_periodic();
+}
+
+
 void cobs_task(void *pv)
 {
     for(;;) {
-
-        for(;;) {
-            ssize_t len = cobs_recv();
-
-            if (len == 0) {
-                break;
-            }
-            else if (len < 0) {
-                printf("recv failed: %s\n", strerror(errno));
-            }
-            else {
-                handle_messsage(&rx_packet);
-            }
-        }
-
-        if (xTaskGetTickCount() > 1000)
-            send_periodic();
-
+        cobs_task_loop();
         vTaskDelay(1);
     }
 }
