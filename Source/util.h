@@ -119,8 +119,8 @@ static inline float pid_update(struct pid_ctrl *pid, float e, float ffwd)
 static inline void pid_reset(struct pid_ctrl *pid, float u)
 {
     pid->u   = u;
-    pid->i   = u;
-    pid->e_1 = u;
+    pid->i   = 0;
+    pid->e_1 = 0;
 }
 
 
