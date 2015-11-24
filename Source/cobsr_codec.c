@@ -36,16 +36,45 @@
 
 #include "cobsr_codec.h"
 #include "errors.h"
-
 #include <limits.h>
 #include <stdbool.h>
-
 #include <stdint.h>
 #include <unistd.h>
 
 
 #define COBSR_ENCODE_DST_BUF_LEN_MAX(SRC_LEN)   ((SRC_LEN) + ((SRC_LEN)/254u) + 1)
 #define COBSR_DECODE_DST_BUF_LEN_MAX(SRC_LEN)   (SRC_LEN)
+
+
+struct cobsr_encoder_state {
+    const void *in;
+    ssize_t in_remain;
+    struct  ringbuf  *out;
+    uint8_t code, state;
+};
+
+
+struct cobsr_decoder_state {
+    struct  ringbuf *in;
+    void    *out;
+    ssize_t out_remain;
+    uint8_t code, state;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // Same structure for encoder and decoder
