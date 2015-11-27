@@ -18,8 +18,8 @@ uint8_t  tx_dma_mem[DMA_IO_TX_SIZE] __attribute__ ((aligned(16)));
 STATIC_ASSERT((unsigned)rx_dma_mem % 16 == 0 && sizeof(rx_dma_mem) % 16 == 0);
 STATIC_ASSERT((unsigned)tx_dma_mem % 16 == 0 && sizeof(tx_dma_mem) % 16 == 0);
 
-static struct ringbuf rx_buf = { rx_dma_mem, sizeof(rx_dma_mem) };
-static struct ringbuf tx_buf = { tx_dma_mem, sizeof(tx_dma_mem) };
+static struct ringbuf rx_buf = { (void*)rx_dma_mem, sizeof(rx_dma_mem) };
+static struct ringbuf tx_buf = { (void*)tx_dma_mem, sizeof(tx_dma_mem) };
 
 
 static uint8_t  dma_tx_ws2812_bits = 0x80;
