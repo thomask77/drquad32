@@ -5,8 +5,6 @@
 
 #include "errors.h"
 #include "ringbuf.h"
-#include "cobsr.h"
-
 #include "cobsr_codec.h"
 
 #include "crc16.h"
@@ -44,10 +42,9 @@ static void start_next_tx(void)
     void    *ptr1;
     size_t  len1;
 
-    rb_get_pointers(&tx_dma_buf, RB_READ, SIZE_MAX, &ptr1, &len1, NULL, NULL);
+    tx_dma_len = rb_get_pointers(&tx_dma_buf, RB_READ, SIZE_MAX, &ptr1, &len1, NULL, NULL);
 
-    if (len1 > 0) {
-        tx_dma_len = len1;
+    if (tx_dma_len > 0) {
         DMA1_Stream3->M0AR = (uint32_t)ptr1;
         DMA1_Stream3->NDTR = tx_dma_len;
         DMA1_Stream3->CR |= DMA_SxCR_EN;
@@ -89,45 +86,90 @@ static crc16_t msg_calc_crc(const struct msg_header *msg)
 
 static int msg_send(const struct msg_header *msg)
 {
-    // Encode and write to ringbuf
-    //
-    int n = cobsr_encode_rb(
-        &tx_dma_buf, &msg->crc,
-        2 + 2 + msg->data_len       // CRC + ID + data
-    );
+    void   *ptr1, *ptr2;
+    size_t len1, len2;
+
+    rb_get_pointers(&tx_dma_buf, RB_WRITE, SIZE_MAX, &ptr1, &len1, &ptr2, &len2);
+
+    struct cobsr_encoder_state enc = {
+        .in      = (char*)&msg->crc,
+        .in_end  = (char*)&msg->crc + 2 + 2 + msg->data_len,   // CRC + ID + data
+        .out     = (char*)ptr1,
+        .out_end = (char*)ptr1 + len1
+    };
+
+    int complete = cobsr_encode(&enc);
+    size_t  len = enc.out - (char*)ptr1;
+
+    if (!complete) {
+        enc.out = ptr2;
+        enc.out_end = ptr2 + len2;
+        complete = cobsr_encode(&enc);
+        len += enc.out - (char*)ptr2;
+    }
+
+    if (!complete) {
+        errno = EWOULDBLOCK;
+        return -1;
+    }
+
+    rb_commit(&tx_dma_buf, RB_WRITE, len);
 
     // Keep DMA running
     //
     if (!(DMA1_Stream3->CR & DMA_SxCR_EN))
         start_next_tx();
 
-    return n;
+    return 1;
 }
 
 
 static int msg_recv(void)
 {
-    int n = cobsr_decode_rb(
-        &rx_dma_buf, &rx_packet.h.crc, 
-        2 + 2 + sizeof(rx_packet.data)
-    );
+    static  struct cobsr_decoder_state dec;
 
-    if (n == 0)
+    if (dec.out == dec.out_end) {
+        // reset decoder if full
+        dec.out     = (char*)&rx_packet.h.crc;
+        dec.out_end = (char*)&rx_packet.h.crc + 2 + 2 + sizeof(rx_packet.data);
+    }
+
+    void   *ptr1, *ptr2;
+    size_t len1, len2;
+
+    rb_get_pointers(&rx_dma_buf, RB_READ, SIZE_MAX, &ptr1, &len1, &ptr2, &len2);
+
+    dec.in = (char*)ptr1,
+    dec.in_end = (char*)ptr1 + len1;
+
+    int complete = cobsr_decode(&dec);
+    size_t len = dec.in - (char*)ptr1;
+
+    if (!complete) {
+        dec.in = (char*)ptr2,
+        dec.in_end = (char*)ptr2 + len2;
+        complete = cobsr_decode(&dec);
+        len += dec.in - (char*)ptr2;
+    }
+
+    rb_commit(&rx_dma_buf, RB_READ, len);
+
+    if (!complete)
         return 0;
 
-    if (n < 4) {
+    if (len < 4) {
         errno = EMSG_TOO_SHORT;
         return -1;
     }
 
-    rx_packet.h.data_len = n - 2 - 2;
+    rx_packet.h.data_len = len - 2 - 2;
 
     if (msg_calc_crc(&rx_packet.h) != rx_packet.h.crc) {
         errno = EMSG_CRC;
         return -1;
     }
 
-    return n;
+    return 1;
 }
 
 
