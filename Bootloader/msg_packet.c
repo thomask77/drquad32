@@ -39,16 +39,15 @@ int msg_recv(struct msg_header *msg)
         .out_end = (char*)&msg->crc + 2 + 2 + MSG_MAX_DATA_SIZE
     };
 
-    while (dec.out != dec.out_end) {
+    for (;;) {
         if (uart_bytes_avail()) {
             char c;
             uart_read(&c, 1);
+
             dec.in = &c;
             dec.in_end = &c + 1;
-            if (cobsr_decode(&dec) && dec.out != (char*)&msg->crc) {
-                //                      ^^   why??? sendet QuadControl 0-byte-packets?
+            if (cobsr_decode(&dec))
                 break;
-            }
         }
 
         if (tickcount - t0 > PACKET_TIMEOUT) {
@@ -57,14 +56,14 @@ int msg_recv(struct msg_header *msg)
         }
     }
 
-    size_t rx_len = dec.out - (char*)&msg->crc;
+    size_t out_len = dec.out - (char*)&msg->crc;
 
-    if (rx_len < 2 + 2) {
+    if (out_len < 2 + 2) {
         errno = EMSG_TOO_SHORT;
         return -1;
     }
 
-    msg->data_len = rx_len -2 -2;     // -CRC -ID
+    msg->data_len = out_len -2 -2;     // -CRC -ID
 
     if (msg_calc_crc(msg) != msg->crc) {
         errno = EMSG_CRC;

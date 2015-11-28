@@ -103,11 +103,11 @@ static inline int cobsr_decode(struct cobsr_decoder_state *s)
 }
 
 
-enum cobsr_encoder_mode {
+typedef enum {
     COBSR_NORMAL,
     COBSR_LONG,
     COBSR_SPECIAL
-};
+} cobsr_encoder_mode;
 
 
 struct cobsr_encoder_state {
