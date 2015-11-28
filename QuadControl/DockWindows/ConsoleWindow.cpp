@@ -118,7 +118,7 @@ void ConsoleWindow::timer_timeout()
 
         msg.h.id = MSG_ID_SHELL_FROM_PC;
         msg.h.data_len = buf.length();
-        memcpy(msg.h.data, buf.toLatin1(), msg.h.data_len);
+        memcpy(msg.data, buf.toLatin1(), msg.h.data_len);
 
         mainWindow->connection.sendMessage(&msg.h);
     }

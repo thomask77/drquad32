@@ -103,16 +103,18 @@ static inline int cobsr_decode(struct cobsr_decoder_state *s)
 }
 
 
+enum cobsr_encoder_mode {
+    COBSR_NORMAL,
+    COBSR_LONG,
+    COBSR_SPECIAL
+};
+
+
 struct cobsr_encoder_state {
     const char  *in,  *in_end;
     char        *out, *out_end;
 
-    enum {
-        COBSR_NORMAL,
-        COBSR_LONG,
-        COBSR_SPECIAL
-    } mode;
-
+    cobsr_encoder_mode mode;
     unsigned char   run;
 };
 

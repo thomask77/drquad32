@@ -21,7 +21,7 @@
 #include <QTcpSocket>
 #include <QFile>
 
-#include "cobsr.h"
+#include "cobsr_codec.h"
 #include "crc16.h"
 #include "errors.h"
 
@@ -109,6 +109,8 @@ bool Connection::openFile(const QString &fileName)
 
 bool Connection::openIoDevice(QIODevice *ioDevice)
 {
+    resetDecoder();
+
     this->ioDevice = ioDevice;
     connect(ioDevice, &QIODevice::readyRead, this, &Connection::ioDevice_readyRead);
 
@@ -158,19 +160,42 @@ QString hexdump(QByteArray a)
 }
 
 
+QByteArray Connection::encodeMessage(msg_header *msg)
+{
+    msg->crc = crc16_init();
+    msg->crc = crc16_update(msg->crc, (uchar*)&msg->id, 2 + msg->data_len);
+    msg->crc = crc16_finalize(msg->crc);
+
+    QByteArray packet;
+
+    packet.resize( COBSR_ENCODE_DST_BUF_LEN_MAX(2 + 2 + msg->data_len) );
+
+    cobsr_encoder_state enc = {
+        /* in */        (char*)&msg->crc,
+        /* in_end */    (char*)&msg->crc + 2 + 2 + msg->data_len,
+        /* out */       (char*)packet.data(),
+        /* out_end */   (char*)packet.data() + packet.size(),
+        /* mode, run */ COBSR_NORMAL, 0
+    };
+
+    cobsr_encode(&enc);
+
+    packet.resize(enc.out - packet.data());
+
+    return packet;
+}
+
+
 bool Connection::sendMessage(msg_header *msg)
 {
     if (!isOpen())
         return false;
 
-    QByteArray packet;
-
-    encodeMessage(msg, &packet);
-    packet += '\0';
+    auto packet = encodeMessage(msg);
 
     /*
-    qDebug() << "raw:  " << hexdump(QByteArray((char*)&msg->crc, 2 + 2 + msg->data_len));
-    qDebug() << "cobs: " << hexdump(packet);
+    qDebug() << "RAW:   " << hexdump(QByteArray((char*)&msg->crc, 2 + 2 + msg->data_len));
+    qDebug() << "COBSR: " << hexdump(packet);
     */
 
     int res = ioDevice->write(packet);
@@ -187,6 +212,59 @@ bool Connection::sendMessage(msg_header *msg)
 }
 
 
+void Connection::resetDecoder()
+{
+    decoder_state.out = (char*)&rx_message.h.crc;
+    decoder_state.out_end = (char*)&rx_message.h.crc + 2 + 2 + sizeof(rx_message.data);
+    decoder_state.code = 0;
+    decoder_state.run = 0;
+}
+
+
+bool Connection::decodeMessage(QByteArray *buf)
+{
+    decoder_state.in = buf->data();
+    decoder_state.in_end = buf->data() + buf->size();
+
+    int complete = cobsr_decode(&decoder_state);
+
+    size_t in_len = decoder_state.in - buf->data();
+    size_t out_len = decoder_state.out - (char*)&rx_message.h.crc;
+
+    stats.rx_bytes += in_len;
+    *buf = buf->mid(in_len);
+
+    if (!complete)
+        return false;
+
+    // Message received, check length and CRC
+    //
+    resetDecoder();
+
+    if (out_len < 2 + 2) {
+        qDebug() << "Message too short";
+        stats.rx_errors++;
+        return false;
+    }
+
+    rx_message.h.data_len = out_len -2 -2;
+
+    uint16_t crc;
+    crc = crc16_init();
+    crc = crc16_update(crc, (uchar*)&rx_message.h.id, 2 + rx_message.h.data_len);
+    crc = crc16_finalize(crc);
+
+    if (crc != rx_message.h.crc) {
+        qDebug() << QByteArray((char*)&rx_message.h.crc, 2 + 2 + rx_message.h.data_len).toHex();
+        qDebug() << QString().sprintf("CRC expected 0x%04x, got 0x%04x", crc, rx_message.h.crc);
+        return false;
+    }
+
+    stats.rx_packets++;
+    return true;
+}
+
+
 void Connection::ioDevice_readyRead()
 {
     if (!isOpen())
@@ -194,91 +272,8 @@ void Connection::ioDevice_readyRead()
 
     auto buf = ioDevice->readAll();
 
-    rx_buf.append(buf);
-    stats.rx_bytes += buf.size();
-
-    parseMessages();
-}
-
-
-void Connection::parseMessages()
-{
-    for (;;) {
-        int pos = rx_buf.indexOf('\0');
-        if (pos < 0)
-            return;
-
-        msg_generic msg;
-
-        if (decodeMessage(rx_buf.left(pos), &msg)) {
-            stats.rx_packets++;
-            emit messageReceived(msg);
-        }
-        else {
-            qDebug() << m_errorString;
-            stats.rx_errors++;
-        }
-
-        rx_buf = rx_buf.mid(pos + 1);
+    while (buf.size()) {
+        if (decodeMessage(&buf))
+            emit messageReceived(rx_message);
     }
-}
-
-
-bool Connection::encodeMessage(msg_header *msg, QByteArray *packet)
-{
-    msg->crc = crc16_init();
-    msg->crc = crc16_update(msg->crc, (uchar*)&msg->id, 2 + msg->data_len);
-    msg->crc = crc16_finalize(msg->crc);
-
-    packet->resize(
-        COBSR_ENCODE_DST_BUF_LEN_MAX(2 + 2 + msg->data_len)
-    );
-
-    auto res = cobsr_encode(
-        packet->data(), packet->size(),
-        &msg->crc, 2 + 2 + msg->data_len
-    );
-
-    if (res < 0) {
-        m_errorString = _user_strerror(errno);
-        return false;
-    }
-
-    packet->resize(res);
-
-    return true;
-}
-
-
-bool Connection::decodeMessage(const QByteArray &packet, msg_generic *msg)
-{
-    auto res = cobsr_decode(
-        &msg->h.crc, 2 + 2 + sizeof(msg_generic::data),
-        packet.data(), packet.size()
-    );
-
-    if (res < 0) {
-        m_errorString = _user_strerror(errno);
-        return false;
-    }
-
-    if (res < 2 + 2) {
-        m_errorString = _user_strerror(EMSG_TOO_SHORT);
-        return false;
-    }
-
-    msg->h.data_len = res -2 -2;
-
-    uint16_t crc;
-    crc = crc16_init();
-    crc = crc16_update(crc, (uchar*)&msg->h.id, 2 + msg->h.data_len);
-    crc = crc16_finalize(crc);
-
-    if (crc != msg->h.crc) {
-        qDebug() << QByteArray((char*)&msg->h.crc, 2 + 2 + msg->h.data_len).toHex();
-        m_errorString = QString().sprintf("CRC expected 0x%04x, got 0x%04x", crc, msg->h.crc);
-        return false;
-    }
-
-    return true;
 }

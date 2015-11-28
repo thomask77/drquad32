@@ -36,7 +36,6 @@ SOURCES += main.cpp \
     PuTTYLauncher.cpp \
     Libraries/qcustomplot-1.3.0/qcustomplot.cpp \
     DockWindows/AddConnectionDialog.cpp \
-    ../Shared/cobsr.c \
     ../Shared/crc16.c \
     ../Shared/crc32.c \
     ../Shared/errors.c \
@@ -62,7 +61,6 @@ HEADERS += MainWindow.h \
     DockWindows/AddConnectionDialog.h \
     TryAction.h \
     InterleavedFuture.h \
-    ../Shared/cobsr.h \
     ../Shared/crc16.h \
     ../Shared/crc32.h \
     ../Shared/errors.h \
@@ -72,7 +70,8 @@ HEADERS += MainWindow.h \
     DockWindows/GLWindow.h \
     DockWindows/MyGLWidget.h \
     GLTools.h \
-    TerminalWidget.h
+    TerminalWidget.h \
+    ../Shared/cobsr_codec.h
 
 FORMS += MainWindow.ui \
     DockWindows/ConnectionWindow.ui \

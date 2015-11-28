@@ -7,7 +7,7 @@
 #include <QUrl>
 
 #include "msg_structs.h"
-
+#include "cobsr_codec.h"
 
 class Connection : public QObject
 {
@@ -46,18 +46,20 @@ private:
     QIODevice   *ioDevice = NULL;
     QUrl        m_url;
     QString     m_errorString;
-    QByteArray  rx_buf;
+
+    msg_generic rx_message;
+    cobsr_decoder_state decoder_state;
 
     bool openIoDevice(QIODevice *ioDevice);
     bool openSerial(const QString &getUrl, int baudRate);
     bool openSocket(const QString &address, quint16 port);
     bool openFile(const QString &fileName);
 
+    void resetDecoder();
     void ioDevice_readyRead();
-    void parseMessages();
 
-    bool encodeMessage(msg_header *msg, QByteArray *packet);
-    bool decodeMessage(const QByteArray &packet, msg_generic *msg);
+    bool       decodeMessage(QByteArray *buf);
+    QByteArray encodeMessage(msg_header *msg);
 };
 
 
