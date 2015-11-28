@@ -86,15 +86,15 @@ static crc16_t msg_calc_crc(const struct msg_header *msg)
 
 static int msg_send(const struct msg_header *msg)
 {
-    void   *ptr1, *ptr2;
-    size_t len1, len2;
-
-    rb_get_pointers(&tx_dma_buf, RB_WRITE, SIZE_MAX, &ptr1, &len1, &ptr2, &len2);
-
     struct cobsr_encoder_state enc = {
         .in      = (char*)&msg->crc,
         .in_end  = (char*)&msg->crc + 2 + 2 + msg->data_len,   // CRC + ID + data
     };
+
+    void   *ptr1, *ptr2;
+    size_t len1, len2;
+
+    rb_get_pointers(&tx_dma_buf, RB_WRITE, SIZE_MAX, &ptr1, &len1, &ptr2, &len2);
 
     enc.out     = (char*)ptr1;
     enc.out_end = (char*)ptr1 + len1;
@@ -138,13 +138,13 @@ static void reset_decoder(void)
 
 static int msg_recv(void)
 {
-    if (dec.out == dec.out_end)
-        reset_decoder();
-
     void   *ptr1, *ptr2;
     size_t len1, len2;
 
     rb_get_pointers(&rx_dma_buf, RB_READ, SIZE_MAX, &ptr1, &len1, &ptr2, &len2);
+
+    if (dec.out == dec.out_end)
+        reset_decoder();
 
     dec.in = (char*)ptr1;
     dec.in_end = (char*)ptr1 + len1;
