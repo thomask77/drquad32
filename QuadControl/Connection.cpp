@@ -237,9 +237,10 @@ bool Connection::decodeMessage(QByteArray *buf)
     if (!complete)
         return false;
 
+    resetDecoder();
+
     // Message received, check length and CRC
     //
-    resetDecoder();
 
     if (out_len < 2 + 2) {
         qDebug() << "Message too short";

@@ -38,8 +38,14 @@ struct msg_generic   rx_packet;
 
 /** RINGBUFFER <-> UART/DMA */
 
-static void start_next_tx(void)
+static void tx_dma_update(void)
 {
+    if (DMA1_Stream3->CR & DMA_SxCR_EN) {
+        // Transfer still in progress
+        //
+        return;
+    }
+
     void    *ptr1;
     size_t  len1;
 
@@ -53,19 +59,26 @@ static void start_next_tx(void)
 }
 
 
+static void rx_dma_update(void)
+{
+    // Update write position from DMA hardware
+    //
+    rx_dma_buf.write_pos = rx_dma_buf.buf_size - DMA1_Stream1->NDTR;
+}
+
+
 void DMA1_Stream3_IRQHandler(void)
 {
-    rb_commit(&tx_dma_buf, RB_READ, tx_dma_len);
-
     // Clear all flags
     //
     DMA1->LIFCR = DMA_LIFCR_CTCIF3 | DMA_LIFCR_CHTIF3  |
                   DMA_LIFCR_CTEIF3 | DMA_LIFCR_CDMEIF3 |
                   DMA_LIFCR_CFEIF3;
 
-    // Start next transfer (if any)
+    // Commit last transfer and start next (if any)
     //
-    start_next_tx();
+    rb_commit(&tx_dma_buf, RB_READ, tx_dma_len);
+    tx_dma_update();
 
     portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
     xSemaphoreGiveFromISR(tx_irq_sem, &xHigherPriorityTaskWoken);
@@ -97,7 +110,8 @@ static int msg_send(const struct msg_header *msg)
         .in_end  = (char*)&msg->crc + 2 + 2 + msg->data_len,   // CRC + ID + data
     };
 
-    while (enc.in != enc.in_end) {
+    int complete = 0;
+    while (!complete) {
         // TODO do not busy loop!
         //
         void   *ptr1;
@@ -109,14 +123,12 @@ static int msg_send(const struct msg_header *msg)
             enc.out     = (char*)ptr1;
             enc.out_end = (char*)ptr1 + len1;
 
-            cobsr_encode(&enc);
+            complete = cobsr_encode(&enc);
 
-            rb_commit(&tx_dma_buf, RB_WRITE, enc.out - (char*)ptr1);
-
-            // Keep DMA running
+            // Commit and update DMA
             //
-            if (!(DMA1_Stream3->CR & DMA_SxCR_EN))
-                start_next_tx();
+            rb_commit(&tx_dma_buf, RB_WRITE, enc.out - (char*)ptr1);
+            tx_dma_update();
         }
     }
 
@@ -135,15 +147,13 @@ static void reset_decoder(void)
     dec.out_end = (char*)&rx_packet.h.crc + 2 + 2 + sizeof(rx_packet.data);
 }
 
+
 static int msg_recv(void)
 {
     void   *ptr1, *ptr2;
     size_t len1, len2;
 
     rb_get_pointers(&rx_dma_buf, RB_READ, SIZE_MAX, &ptr1, &len1, &ptr2, &len2);
-
-    if (dec.out == dec.out_end)
-        reset_decoder();
 
     dec.in = (char*)ptr1;
     dec.in_end = (char*)ptr1 + len1;
@@ -367,8 +377,6 @@ struct  file_ops   term_cobs_ops = {
 };
 
 
-
-
 /** Debug message handling, periodic send */
 
 
@@ -486,9 +494,7 @@ static void send_periodic(void)
 
 static void cobs_task_loop(void)
 {
-    // Update write position from DMA hardware
-    //
-    rx_dma_buf.write_pos = rx_dma_buf.buf_size - DMA1_Stream1->NDTR;
+    rx_dma_update();
 
     for(;;) {
         int len = msg_recv();
@@ -508,6 +514,8 @@ static void cobs_task_loop(void)
 
 void cobs_task(void *pv)
 {
+    reset_decoder();
+
     for(;;) {
         cobs_task_loop();
         vTaskDelay(1);
