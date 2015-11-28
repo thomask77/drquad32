@@ -94,18 +94,19 @@ static int msg_send(const struct msg_header *msg)
     struct cobsr_encoder_state enc = {
         .in      = (char*)&msg->crc,
         .in_end  = (char*)&msg->crc + 2 + 2 + msg->data_len,   // CRC + ID + data
-        .out     = (char*)ptr1,
-        .out_end = (char*)ptr1 + len1
     };
 
-    int complete = cobsr_encode(&enc);
-    size_t len = enc.out - (char*)ptr1;
+    enc.out     = (char*)ptr1;
+    enc.out_end = (char*)ptr1 + len1;
 
-    if (!complete) {
-        enc.out = ptr2;
-        enc.out_end = ptr2 + len2;
+    int complete = cobsr_encode(&enc);
+    size_t len_out = enc.out - (char*)ptr1;
+
+    if (!complete && len2) {
+        enc.out = (char*)ptr2;
+        enc.out_end = (char*)ptr2 + len2;
         complete = cobsr_encode(&enc);
-        len += enc.out - (char*)ptr2;
+        len_out += enc.out - (char*)ptr2;
     }
 
     if (!complete) {
@@ -113,7 +114,7 @@ static int msg_send(const struct msg_header *msg)
         return -1;
     }
 
-    rb_commit(&tx_dma_buf, RB_WRITE, len);
+    rb_commit(&tx_dma_buf, RB_WRITE, len_out);
 
     // Keep DMA running
     //
@@ -127,11 +128,13 @@ static int msg_send(const struct msg_header *msg)
 
 static struct cobsr_decoder_state dec;
 
-static int reset_decoder(void)
+
+static void reset_decoder(void)
 {
     dec.out     = (char*)&rx_packet.h.crc;
     dec.out_end = (char*)&rx_packet.h.crc + 2 + 2 + sizeof(rx_packet.data);
 }
+
 
 static int msg_recv(void)
 {
