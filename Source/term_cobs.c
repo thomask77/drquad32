@@ -99,7 +99,7 @@ static int msg_send(const struct msg_header *msg)
     };
 
     int complete = cobsr_encode(&enc);
-    size_t  len = enc.out - (char*)ptr1;
+    size_t len = enc.out - (char*)ptr1;
 
     if (!complete) {
         enc.out = ptr2;
@@ -124,45 +124,53 @@ static int msg_send(const struct msg_header *msg)
 }
 
 
+
+static struct cobsr_decoder_state dec;
+
+static int reset_decoder(void)
+{
+    dec.out     = (char*)&rx_packet.h.crc;
+    dec.out_end = (char*)&rx_packet.h.crc + 2 + 2 + sizeof(rx_packet.data);
+}
+
 static int msg_recv(void)
 {
-    static  struct cobsr_decoder_state dec;
-
-    if (dec.out == dec.out_end) {
-        // reset decoder if full
-        dec.out     = (char*)&rx_packet.h.crc;
-        dec.out_end = (char*)&rx_packet.h.crc + 2 + 2 + sizeof(rx_packet.data);
-    }
+    if (dec.out == dec.out_end)
+        reset_decoder();
 
     void   *ptr1, *ptr2;
     size_t len1, len2;
 
     rb_get_pointers(&rx_dma_buf, RB_READ, SIZE_MAX, &ptr1, &len1, &ptr2, &len2);
 
-    dec.in = (char*)ptr1,
+    dec.in = (char*)ptr1;
     dec.in_end = (char*)ptr1 + len1;
 
     int complete = cobsr_decode(&dec);
-    size_t len = dec.in - (char*)ptr1;
+    size_t in_len = dec.in - (char*)ptr1;
 
-    if (!complete) {
-        dec.in = (char*)ptr2,
+    if (!complete && len2) {
+        dec.in = (char*)ptr2;
         dec.in_end = (char*)ptr2 + len2;
         complete = cobsr_decode(&dec);
-        len += dec.in - (char*)ptr2;
+        in_len += dec.in - (char*)ptr2;
     }
 
-    rb_commit(&rx_dma_buf, RB_READ, len);
+    rb_commit(&rx_dma_buf, RB_READ, in_len);
 
     if (!complete)
         return 0;
 
-    if (len < 4) {
+    size_t out_len = dec.out - (char*)&rx_packet.h.crc;
+
+    reset_decoder();
+
+    if (out_len < 4) {
         errno = EMSG_TOO_SHORT;
         return -1;
     }
 
-    rx_packet.h.data_len = len - 2 - 2;
+    rx_packet.h.data_len = out_len - 2 - 2;
 
     if (msg_calc_crc(&rx_packet.h) != rx_packet.h.crc) {
         errno = EMSG_CRC;
@@ -379,7 +387,7 @@ static void handle_messsage(const struct msg_generic *msg)
 
     default:
         printf("unknown message(0x%04x, %d)\n", msg->h.id, msg->h.data_len);
-        hexdump(&msg->h.data, msg->h.data_len);
+        hexdump(&msg->data, msg->h.data_len);
         break;
     }
 }

@@ -70,7 +70,6 @@ struct msg_header {
     //
     uint16_t    crc;            //  message crc
     uint16_t    id;             //  message id
-    uint8_t     data[/* data_len */];
 };
 
 
