@@ -20,9 +20,6 @@ enum error_id {
 #endif
 
 _ERR_GROUP( EUSER_BASE, __ELASTERROR )
-_ERR_NAME( ECOBSR_ENCODE_OUT_BUFFER_OVERFLOW, "Encode buffer overflow" )
-_ERR_NAME( ECOBSR_DECODE_OUT_BUFFER_OVERFLOW, "Decode buffer overflow" )
-_ERR_NAME( ECOBSR_DECODE_ZERO_BYTE_IN_INPUT , "Zero byte in input" )
 _ERR_NAME( EMSG_TIMEOUT,        "Message timed out" )
 _ERR_NAME( EMSG_TOO_LONG,       "Message too long" )
 _ERR_NAME( EMSG_TOO_SHORT,      "Message too short" )

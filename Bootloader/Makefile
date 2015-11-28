@@ -29,7 +29,6 @@ SOURCES += Bootloader/uart.c
 SOURCES += Bootloader/msg_packet.c
 SOURCES += Bootloader/version.c
 
-SOURCES += Shared/cobsr.c
 SOURCES += Shared/errors.c
 SOURCES += Shared/crc16.c
 SOURCES += Shared/crc32.c

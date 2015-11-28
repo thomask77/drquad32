@@ -1,20 +1,19 @@
 #include "msg_packet.h"
 #include "uart.h"
 #include "board.h"
-
 #include "crc16.h"
-#include "cobsr.h"
+#include "cobsr_codec.h"
 #include "errors.h"
 
 #define PACKET_TIMEOUT  1000     // [ms]
 
-// COBSR(CRC + ID + MSG_MAX_DATA_SIZE) + End-of-packet
+
+// COBSR(CRC + ID + MSG_MAX_DATA_SIZE)
 //
 #define MAX_BUF_LENGTH  \
-    ( COBSR_ENCODE_DST_BUF_LEN_MAX(2 + 2 + MSG_MAX_DATA_SIZE) + 1 )
+    ( COBSR_ENCODE_DST_BUF_LEN_MAX(2 + 2 + MSG_MAX_DATA_SIZE) )
 
 
-static uint8_t rx_buf[MAX_BUF_LENGTH];
 static uint8_t tx_buf[MAX_BUF_LENGTH];
 
 
@@ -34,26 +33,21 @@ static crc16_t msg_calc_crc(const struct msg_header *msg)
 int msg_recv(struct msg_header *msg)
 {
     uint32_t t0 = tickcount;
-    int rx_len = 0;
 
-    for (;;) {
+    struct cobsr_decoder_state dec = {
+        .out = (char*)&msg->crc,
+        .out_end = (char*)&msg->crc + 2 + 2 + MSG_MAX_DATA_SIZE
+    };
+
+    while (dec.out != dec.out_end) {
         if (uart_bytes_avail()) {
             char c;
             uart_read(&c, 1);
-
-            if (c == 0) {
-                // end-of packet marker
-                //
+            dec.in = &c;
+            dec.in_end = &c + 1;
+            if (cobsr_decode(&dec) && dec.out != (char*)&msg->crc) {
+                //                      ^^   why??? sendet QuadControl 0-byte-packets?
                 break;
-            }
-            else {
-                rx_buf[rx_len++] = c;
-                if (rx_len == 1) {
-                    // Restart packet timeout after first received byte.
-                    // This way, we won't interrupt a late arriving packet.
-                    //
-                    t0 = tickcount;
-                }
             }
         }
 
@@ -61,29 +55,16 @@ int msg_recv(struct msg_header *msg)
             errno = EMSG_TIMEOUT;
             return -1;
         }
-
-        if (rx_len >= MAX_BUF_LENGTH) {
-            errno = EMSG_TOO_LONG;
-            return -1;
-        }
     }
 
-    // decode COBS/R
-    //
-    int res = cobsr_decode(
-        &msg->crc, 2 + 2 + MSG_MAX_DATA_SIZE,   // +CRC +ID
-        rx_buf, rx_len
-    );
+    size_t rx_len = dec.out - (char*)&msg->crc;
 
-    if (res < 0)
-        return -1;
-
-    if (res < 2 + 2) {
+    if (rx_len < 2 + 2) {
         errno = EMSG_TOO_SHORT;
         return -1;
     }
 
-    msg->data_len = res -2 -2;     // -CRC -ID
+    msg->data_len = rx_len -2 -2;     // -CRC -ID
 
     if (msg_calc_crc(msg) != msg->crc) {
         errno = EMSG_CRC;
@@ -98,18 +79,16 @@ int  msg_send(struct msg_header *msg)
 {
     msg->crc = msg_calc_crc(msg);
 
-    int res = cobsr_encode(
-        tx_buf, sizeof(tx_buf) - 1,         // 1 byte for end-of-packet
-        &msg->crc, 2 + 2 + msg->data_len    // +CRC +ID
-    );
+    struct cobsr_encoder_state enc = {
+        .in = (char*)&msg->crc,
+        .in_end = (char*)&msg->crc + 2 + 2 + msg->data_len,
+        .out = (char*)tx_buf,
+        .out_end = (char*)tx_buf + sizeof(tx_buf)
+    };
 
-    if (res < 0)
-        return -1;
+    cobsr_encode(&enc);
 
-    // add end-of-packet marker
-    //
-    tx_buf[res++] = 0;
-    uart_write(tx_buf, res);
+    uart_write(tx_buf, enc.out - (char*)tx_buf);
 
     return msg->data_len;
 }

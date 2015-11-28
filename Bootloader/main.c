@@ -75,7 +75,7 @@ static int send_shell_to_pc(const char *buf, size_t len)
 
 
 __attribute__((format(printf, 1, 2)))
-static int msg_printf(const char *fmt, ...)
+/*static*/ int msg_printf(const char *fmt, ...)
 {
     char buf[256];
 
