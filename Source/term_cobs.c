@@ -28,8 +28,9 @@ static struct ringbuf tx_dma_buf = RINGBUF(1024);
 
 static size_t tx_dma_len;
 
-static SemaphoreHandle_t  rx_sem;
-static SemaphoreHandle_t  tx_sem;
+static SemaphoreHandle_t  rx_irq_sem;
+static SemaphoreHandle_t  tx_irq_sem;
+static SemaphoreHandle_t  tx_buf_mtx;
 
 static QueueHandle_t rx_queue;
 struct msg_generic   rx_packet;
@@ -67,7 +68,7 @@ void DMA1_Stream3_IRQHandler(void)
     start_next_tx();
 
     portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
-    xSemaphoreGiveFromISR(tx_sem, &xHigherPriorityTaskWoken);
+    xSemaphoreGiveFromISR(tx_irq_sem, &xHigherPriorityTaskWoken);
 
     portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 }
@@ -86,41 +87,40 @@ static crc16_t msg_calc_crc(const struct msg_header *msg)
 
 static int msg_send(const struct msg_header *msg)
 {
+    if (!xSemaphoreTake(tx_buf_mtx, 100)) {
+        errno = ETIMEDOUT;
+        return -1;
+    }
+
     struct cobsr_encoder_state enc = {
         .in      = (char*)&msg->crc,
         .in_end  = (char*)&msg->crc + 2 + 2 + msg->data_len,   // CRC + ID + data
     };
 
-    void   *ptr1, *ptr2;
-    size_t len1, len2;
+    while (enc.in != enc.in_end) {
+        // TODO do not busy loop!
+        //
+        void   *ptr1;
+        size_t len1;
 
-    rb_get_pointers(&tx_dma_buf, RB_WRITE, SIZE_MAX, &ptr1, &len1, &ptr2, &len2);
+        rb_get_pointers(&tx_dma_buf, RB_WRITE, SIZE_MAX, &ptr1, &len1, NULL, NULL);
 
-    enc.out     = (char*)ptr1;
-    enc.out_end = (char*)ptr1 + len1;
+        if (len1) {
+            enc.out     = (char*)ptr1;
+            enc.out_end = (char*)ptr1 + len1;
 
-    int complete = cobsr_encode(&enc);
-    size_t len_out = enc.out - (char*)ptr1;
+            cobsr_encode(&enc);
 
-    if (!complete && len2) {
-        enc.out = (char*)ptr2;
-        enc.out_end = (char*)ptr2 + len2;
-        complete = cobsr_encode(&enc);
-        len_out += enc.out - (char*)ptr2;
+            rb_commit(&tx_dma_buf, RB_WRITE, enc.out - (char*)ptr1);
+
+            // Keep DMA running
+            //
+            if (!(DMA1_Stream3->CR & DMA_SxCR_EN))
+                start_next_tx();
+        }
     }
 
-    if (!complete) {
-        errno = EWOULDBLOCK;
-        return -1;
-    }
-
-    rb_commit(&tx_dma_buf, RB_WRITE, len_out);
-
-    // Keep DMA running
-    //
-    if (!(DMA1_Stream3->CR & DMA_SxCR_EN))
-        start_next_tx();
-
+    xSemaphoreGive(tx_buf_mtx);
     return 1;
 }
 
@@ -134,7 +134,6 @@ static void reset_decoder(void)
     dec.out     = (char*)&rx_packet.h.crc;
     dec.out_end = (char*)&rx_packet.h.crc + 2 + 2 + sizeof(rx_packet.data);
 }
-
 
 static int msg_recv(void)
 {
@@ -201,8 +200,8 @@ static ssize_t term_cobs_write_r(struct _reent *r, int fd, const void *ptr, size
     memcpy(msg.data, ptr, len);
 
     msg.h.crc = msg_calc_crc(&msg.h);
-    msg_send(&msg.h);
 
+    msg_send(&msg.h);
     return len;
 }
 
@@ -250,11 +249,10 @@ static ssize_t term_cobs_chars_avail_r(struct _reent *r, int fd)
 
 void term_cobs_init(void)
 {
-    if (!rx_sem)    rx_sem = xSemaphoreCreateBinary();
-    if (!tx_sem)    tx_sem = xSemaphoreCreateBinary();
-    if (!rx_queue)  rx_queue = xQueueCreate(RX_QUEUE_SIZE, 1);
-
-    xSemaphoreGive(tx_sem);
+    if (!rx_irq_sem)    rx_irq_sem = xSemaphoreCreateBinary();
+    if (!tx_irq_sem)    tx_irq_sem = xSemaphoreCreateBinary();
+    if (!tx_buf_mtx)    tx_buf_mtx = xSemaphoreCreateMutex();
+    if (!rx_queue)      rx_queue   = xQueueCreate(RX_QUEUE_SIZE, 1);
 
     // Enable peripheral clocks
     //

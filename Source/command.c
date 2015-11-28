@@ -164,8 +164,8 @@ int cmd_completion(char *line, int cursor, int n)
         return cursor;
     }
 
-    bool isUnique = cmd_find(cmd1 + 1, line, cursor) == NULL;
-    if (!isUnique) {
+    bool unique = cmd_find(cmd1 + 1, line, cursor) == NULL;
+    if (!unique) {
         // more than one completion found
         //
         printf("\r" ANSI_ERASE_EOL);
@@ -195,7 +195,7 @@ int cmd_completion(char *line, int cursor, int n)
 
     // and add a trailing space if the command was unique
     //
-    if (isUnique && !line[prefix_len]) {
+    if (unique && !line[prefix_len]) {
         line[prefix_len++] = ' ';
         line[prefix_len] = 0;
     }
@@ -347,6 +347,7 @@ int cmd_system(char *s)
 
 // -------------------- Shell commands --------------------
 //
+
 /**
  * Print all commands and their short help texts.
  *

@@ -38,6 +38,12 @@
 #define COBSR_CODEC_H
 
 
+// Maximum buffer lengths including end-of-packet zero byte
+//
+#define COBSR_ENCODE_DST_BUF_LEN_MAX(SRC_LEN)   ((SRC_LEN) + ((SRC_LEN)/254u) + 1 + 1)
+#define COBSR_DECODE_DST_BUF_LEN_MAX(SRC_LEN)   (SRC_LEN + 1)
+
+
 struct cobsr_decoder_state {
     const char  *in,  *in_end;
     char        *out, *out_end;
