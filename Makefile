@@ -260,7 +260,7 @@ MKDIR    = mkdir
 DOXYGEN  = doxygen
 STLINK_WIN = Tools/st-link/ST-LINK_CLI.exe
 STLINK_LNX = st-flash
-POSTLD   = Tools/add_version_info/add_version_info.py -v
+POSTLD   = Tools/add_version_info-2.1.0/add_version_info.py -v
 
 # Compiler flags to generate dependency files
 #
