@@ -14,7 +14,12 @@ static int board_address;
 
 extern int foo;
 
+char ccc;
+
 const struct param_info  param_table[] = {
+    
+    {   20, P_TEST(&board_address), READONLY, .name = "woohoo!" },
+
     {    1, P_INT32(&board_address    ), READONLY, .name = "board_address" },
     {    4, P_INT32((int*)&warnings.w ), NOEEPROM, .name = "warning_flags" },
     {    6, P_INT32((int*)&errors.w   ), NOEEPROM, .name = "error_flags" },

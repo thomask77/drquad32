@@ -31,6 +31,13 @@
     .name = #_ptr
 
 
+#define P_TEST(_ptr)                \
+    .type = _Generic( _ptr,         \
+        int*    : PTYPE_INT32,      \
+        float*  : PTYPE_FLOAT       \
+    )
+
+
 #define NOINIT      .noinit=1
 #define READONLY    .readonly=1
 #define NOEEPROM    .noeeprom=1
@@ -60,7 +67,7 @@ struct param_info {
             unsigned    readonly : 1;
             unsigned    noeeprom : 1;
         };
-        uint32_t    flags;
+        uint32_t flags;
     };
 
     union {
