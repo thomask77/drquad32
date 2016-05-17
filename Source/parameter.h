@@ -31,11 +31,14 @@
     .name = #_ptr
 
 
-#define P_TEST(_ptr)                \
-    .type = _Generic( _ptr,         \
-        int*    : PTYPE_INT32,      \
-        float*  : PTYPE_FLOAT       \
-    )
+#define P_TEST(_ptr, def_min_max...)                                        \
+    .type     = _Generic( _ptr, int*: PTYPE_INT32, float*: PTYPE_FLOAT ),   \
+    .noinit   = sizeof(#def_min_max) == 1,                                  \
+    .i32.def  = 0,                                                          \
+    .i32.min  = _Generic( _ptr, int*: INT_MIN, float*: -INFINITY),          \
+    .i32.max  = _Generic( _ptr, int*: INT_MIN, float*:  INFINITY),          \
+    .i32.ptr  = _ptr,                                                       \
+    .name     = #_ptr
 
 
 #define NOINIT      .noinit=1

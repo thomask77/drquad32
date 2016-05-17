@@ -17,7 +17,6 @@ extern int foo;
 char ccc;
 
 const struct param_info  param_table[] = {
-    
     {   20, P_TEST(&board_address), READONLY, .name = "woohoo!" },
 
     {    1, P_INT32(&board_address    ), READONLY, .name = "board_address" },
