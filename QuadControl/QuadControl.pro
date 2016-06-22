@@ -85,7 +85,7 @@ RESOURCES += \
     resources.qrc
 
 ADD_VERSION_INFO = \
-    ../Tools/add_version_info/add_version_info.py -rv --no-crc
+    ../Tools/add_version_info-2.1.0/add_version_info.py -rv --no-crc
 
 # this is insane :/
 #

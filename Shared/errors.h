@@ -1,60 +1,42 @@
-#if     !defined(ERRORS_H) || defined(_ERR_MAKE_STRING_TABLE)
-#define ERRORS_H
-
+#pragma once
 
 #include <errno.h>
 
-#ifndef _ERR_MAKE_STRING_TABLE
-
-#ifndef __ELASTERROR
-// newlib has this defined, glibc has not
+// newlib defines __ELASTERROR as 2000
 //
-#define __ELASTERROR    2000
-#endif
 
-#define _ERR_GROUP(id, value)   id = value,
-#define _ERR_NAME(id, desc)     id,
+#define ERROR_ID_MAP(X) \
+    /* Message Errors */ \
+    X( 2000, EMSG_TIMEOUT,        "Message timed out" ) \
+    X( 2001, EMSG_TOO_LONG,       "Message too long" ) \
+    X( 2002, EMSG_TOO_SHORT,      "Message too short" ) \
+    X( 2003, EMSG_CRC,            "Message checksum failure" ) \
+    X( 2004, EMSG_UNKNOWN,        "Unknown message" ) \
+    /* Bootloader errors */ \
+    X( 2100, EBOOT_INACTIVE,      "Bootloader not active" ) \
+    X( 2101, EBOOT_FLASH,         "Flash error" ) \
+    X( 2102, EBOOT_RANGE,         "Invalid address range" ) \
+    X( 2103, EBOOT_CHECKSUM,      "Invalid checksum" ) \
+    X( 2104, EBOOT_MAGIC,         "Invalid magic" ) \
+    /* STM32 Flash controller errors */ \
+    X( 2200, EFLASH_BUSY,         "STM32 Flash busy" ) \
+    X( 2201, EFLASH_RD,           "STM32 Flash proprietary readout protection error" ) \
+    X( 2202, EFLASH_PGS,          "STM32 Flash programming sequence error" ) \
+    X( 2203, EFLASH_PGP,          "STM32 Flash programming parallelism error " ) \
+    X( 2204, EFLASH_PGA,          "STM32 Flash programming alignment error" ) \
+    X( 2205, EFLASH_WRP,          "STM32 Flash write protection error" ) \
+    X( 2206, EFLASH_PROGRAM,      "STM32 Flash programming error" ) \
+    X( 2207, EFLASH_OPERATION,    "STM32 Flash operation error" ) \
+    X( 2208, EFLASH_COMPLETE,     "STM32 Flash complete (no error)" ) \
+
+
+#define ERROR_ID_ENUM_FN(ID, NAME,  HELP)   \
+    NAME = ID,
+
 
 enum error_id {
-
-#endif
-
-_ERR_GROUP( EUSER_BASE, __ELASTERROR )
-_ERR_NAME( EMSG_TIMEOUT,        "Message timed out" )
-_ERR_NAME( EMSG_TOO_LONG,       "Message too long" )
-_ERR_NAME( EMSG_TOO_SHORT,      "Message too short" )
-_ERR_NAME( EMSG_CRC,            "Message checksum failure" )
-_ERR_NAME( EMSG_UNKNOWN,        "Unknown message" )
-
-_ERR_GROUP( EBOOT_BASE, EUSER_BASE + 0x100 )
-_ERR_NAME( EBOOT_INACTIVE,      "Bootloader not active" )
-_ERR_NAME( EBOOT_FLASH,         "Flash error" )
-_ERR_NAME( EBOOT_RANGE,         "Invalid address range" )
-_ERR_NAME( EBOOT_CHECKSUM,      "Invalid checksum" )
-_ERR_NAME( EBOOT_MAGIC,         "Invalid magic" )
-
-
-_ERR_GROUP( EFLASH_BASE, EUSER_BASE + 0x200 )
-_ERR_NAME( EFLASH_BUSY,         "EFLASH_BUSY" )
-_ERR_NAME( EFLASH_RD,           "EFLASH_RD" )
-_ERR_NAME( EFLASH_PGS,          "EFLASH_PGS" )
-_ERR_NAME( EFLASH_PGP,          "EFLASH_PGP" )
-_ERR_NAME( EFLASH_PGA,          "EFLASH_PGA" )
-_ERR_NAME( EFLASH_WRP,          "EFLASH_WRP" )
-_ERR_NAME( EFLASH_PROGRAM,      "EFLASH_PROGRAM" )
-_ERR_NAME( EFLASH_OPERATION,    "EFLASH_OPERATION" )
-_ERR_NAME( EFLASH_COMPLETE,     "EFLASH_COMPLETE" )
-
-
-#ifndef _ERR_MAKE_STRING_TABLE
+    ERROR_ID_MAP(ERROR_ID_ENUM_FN)
 };
-
-#undef _ERR_GROUP
-#undef _ERR_NAME
-
-// Translate FLASH_Status (see stm32f4xx_flash.h)
-//
-#define FLASH_Status_TO_ERRNO(x)    ((x) + EFLASH_BASE)
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,6 +48,3 @@ const char *_user_strerror(int errnum);
 }
 #endif
 
-#endif
-
-#endif

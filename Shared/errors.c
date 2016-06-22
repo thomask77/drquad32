@@ -22,19 +22,11 @@
 
 const char *_user_strerror(int errnum)
 {
-    static char buf[80];
-
     switch (errnum) {
+        #define ERROR_ID_CASE_FN(ID, NAME, HELP) \
+        case ID: return HELP;
 
-    #define _ERR_MAKE_STRING_TABLE
-    #define _ERR_GROUP(id, value)
-    #define _ERR_NAME(id, desc)  case id: return desc;
-
-    #include "errors.h"
-
-    default:
-        sprintf(buf, "Unknown error %d", errnum);
-        return buf;
+        ERROR_ID_MAP(ERROR_ID_CASE_FN)
     }
 
     return NULL;

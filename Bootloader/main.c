@@ -41,6 +41,12 @@
 // #define DBG_PRINTF  msg_printf
 
 
+static int FLASH_Status_to_errno(FLASH_Status s)
+{
+    return s + EFLASH_BUSY;
+}
+
+
 static int send_response(int error, const void *data, size_t len)
 {
     struct msg_boot_response msg;
@@ -119,7 +125,7 @@ static bool check_empty(const void *mem, size_t size)
     return true;
 }
 
-/*
+
 static bool set_option_bytes(void)
 {
     if (FLASH_OB_GetWRP() == 0xFFC  &&
@@ -136,15 +142,15 @@ static bool set_option_bytes(void)
     FLASH_OB_Launch();
     FLASH_OB_Lock();
 
-    int res = FLASH_GetStatus();
+    FLASH_Status res = FLASH_GetStatus();
     if (res != FLASH_COMPLETE) {
-        errno = FLASH_Status_TO_ERRNO(res);
+        errno = FLASH_Status_to_errno(res);
         return false;
     }
 
     return true;
 }
-*/
+
 
 static bool check_app(const struct version_info *info)
 {
@@ -285,10 +291,10 @@ static bool handle_boot_write_data(const struct msg_boot_write_data *msg)
     uint32_t *s = (uint32_t*)msg->data;
 
     for (int i=0; i < size; i+=4) {
-        int res = FLASH_ProgramWord(addr + i, *s++);
+        FLASH_Status res = FLASH_ProgramWord(addr + i, *s++);
         if (res != FLASH_COMPLETE) {
             FLASH_Lock();
-            RETURN_ERROR(FLASH_Status_TO_ERRNO(res));
+            RETURN_ERROR(FLASH_Status_to_errno(res));
         }
     }
 
@@ -321,11 +327,11 @@ static bool handle_boot_erase_sector(const struct msg_boot_erase_sector *msg)
     }
     else {
         FLASH_Unlock();
-        int res = FLASH_EraseSector(msg->sector << 3, VoltageRange_3);
+        FLASH_Status res = FLASH_EraseSector(msg->sector << 3, VoltageRange_3);
         FLASH_Lock();
 
         if (res != FLASH_COMPLETE)
-            RETURN_ERROR(FLASH_Status_TO_ERRNO(res));
+            RETURN_ERROR(FLASH_Status_to_errno(res));
 
         msg_printf("ok\n");
     }
@@ -414,7 +420,7 @@ int main(void)
     msg_printf(
         "\n\n"
         "\033[1;36m%s\033[0;39m v%d.%d.%d %s %s %s\n"
-        "Copyright (c)2015 Thomas Kindler <mail@t-kindler.de>\n"
+        "Copyright (c)2016 Thomas Kindler <mail@t-kindler.de>\n"
         "\n",
         version_info.product_name, version_info.major,
         version_info.minor, version_info.patch, version_info.vcs_id,
@@ -424,7 +430,7 @@ int main(void)
     // Sigh.  Flash loader demonstrator 2.5.0
     // and OpenOCD 0.6.1 can't unlock the flash m(
     //
-    // set_option_bytes();
+    if (0) set_option_bytes();
 
     message_loop();
 
@@ -434,3 +440,4 @@ int main(void)
     uart_flush();
     NVIC_SystemReset();
 }
+
