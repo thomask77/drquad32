@@ -12,51 +12,25 @@
 
 // #define I2C_DEBUG
 
+
 #ifdef I2C_DEBUG
 
 static struct {
-    uint16_t    t;
-    enum  {
-        I2C_LOG_EVT,
-        I2C_LOG_ERR,
-        I2C_LOG_RXTC,
-        I2C_LOG_TXTC
-    } ev;
-    uint16_t  sr1, sr2;
-}  i2c_log[16];
+    uint16_t    t, line;
+    uint16_t    sr1, sr2;
+} i2c_log[16];
 
 static int i2c_log_cur;
-
-static void i2c_log_event(int ev, uint16_t sr1, uint16_t sr2)
-{
-    if (i2c_log_cur < ARRAY_SIZE(i2c_log)) {
-        i2c_log[i2c_log_cur].t   = TIM7->CNT;
-        i2c_log[i2c_log_cur].ev  = ev;
-        i2c_log[i2c_log_cur].sr1 = sr1;
-        i2c_log[i2c_log_cur].sr2 = sr2;
-        i2c_log_cur++;
-    }
-}
 
 static void i2c_show_log(void)
 {
     uint16_t t0 = i2c_log[0].t;
 
     for (int i=0; i<i2c_log_cur; i++) {
-        printf("%4d %s: %04x %04x%s%s%s%s%s%s%s %s%s%s%s%s%s%s%s%s%s%s%s%s%s\n",
-            (uint16_t)(i2c_log[i].t - t0),
-            i2c_log[i].ev == I2C_LOG_EVT    ? "EVT " :
-            i2c_log[i].ev == I2C_LOG_ERR    ? "ERR " :
-            i2c_log[i].ev == I2C_LOG_RXTC   ? "RXTC" :
-            i2c_log[i].ev == I2C_LOG_TXTC   ? "TXTC" : "???",
-            i2c_log[i].sr2, i2c_log[i].sr1,
-            i2c_log[i].sr2 & I2C_SR2_DUALF      ? " DUALF"      : "",
-            i2c_log[i].sr2 & I2C_SR2_SMBHOST    ? " SMBHOST"    : "",
-            i2c_log[i].sr2 & I2C_SR2_SMBDEFAULT ? " SMBDEFAULT" : "",
-            i2c_log[i].sr2 & I2C_SR2_GENCALL    ? " GENCALL"    : "",
-            i2c_log[i].sr2 & I2C_SR2_TRA        ? " TRA"        : "",
-            i2c_log[i].sr2 & I2C_SR2_BUSY       ? " BUSY"       : "",
-            i2c_log[i].sr2 & I2C_SR2_MSL        ? " MSL"        : "",
+        printf("%4d %4d: SR1=%04x %s%s%s%s%s%s%s SR2=%04x %s%s%s%s%s%s%s%s%s%s%s%s%s%s\n",
+            (uint16_t)(i2c_log[i].t - t0), line
+
+            i2c_log[i].sr1,
             i2c_log[i].sr1 & I2C_SR1_SMBALERT   ? " SMBALERT"   : "",
             i2c_log[i].sr1 & I2C_SR1_TIMEOUT    ? " TIMEOUT"    : "",
             i2c_log[i].sr1 & I2C_SR1_PECERR     ? " PECERR"     : "",
@@ -71,15 +45,35 @@ static void i2c_show_log(void)
             i2c_log[i].sr1 & I2C_SR1_BTF        ? " BTF"        : "",
             i2c_log[i].sr1 & I2C_SR1_ADDR       ? " ADDR"       : "",
             i2c_log[i].sr1 & I2C_SR1_SB         ? " SB"         : ""
+
+            i2c_log[i].sr2,
+            i2c_log[i].sr2 & I2C_SR2_DUALF      ? " DUALF"      : "",
+            i2c_log[i].sr2 & I2C_SR2_SMBHOST    ? " SMBHOST"    : "",
+            i2c_log[i].sr2 & I2C_SR2_SMBDEFAULT ? " SMBDEFAULT" : "",
+            i2c_log[i].sr2 & I2C_SR2_GENCALL    ? " GENCALL"    : "",
+            i2c_log[i].sr2 & I2C_SR2_TRA        ? " TRA"        : "",
+            i2c_log[i].sr2 & I2C_SR2_BUSY       ? " BUSY"       : "",
+            i2c_log[i].sr2 & I2C_SR2_MSL        ? " MSL"        : "",
         );
     }
 
     i2c_log_cur = 0;
 }
 
+
+#define I2C_LOG_EVENT()                         \
+    if (i2c_log_cur < ARRAY_SIZE(i2c_log)) {    \
+        i2c_log[i2c_log_cur].t    = TIM7->CNT;  \
+        i2c_log[i2c_log_cur].line = __LINE__;   \
+        i2c_log[i2c_log_cur].sr1  = I2C1->SR1;  \
+        i2c_log[i2c_log_cur].sr2  = I2C1->SR2;  \
+        i2c_log_cur++;                          \
+    }                                           \
+
+
 #else
 
-#define i2c_log_event(...)
+#define I2C_LOG_EVENT()
 #define i2c_show_log()
 
 #endif
@@ -120,22 +114,23 @@ static void i2c_stop(void)
 
 void DMA1_Stream0_IRQHandler(void)
 {
-    i2c_log_event(I2C_LOG_RXTC, I2C1->SR1, I2C1->SR2);
+    I2C_LOG_EVENT();
     i2c_stop();
 }
 
 
 void I2C1_ER_IRQHandler(void)
 {
-    i2c_log_event(I2C_LOG_ERR, I2C1->SR1, I2C1->SR2);
+    I2C_LOG_EVENT();
     i2c_stop();
 }
 
 
 void I2C1_EV_IRQHandler(void)
 {
+    I2C_LOG_EVENT();
+
     uint16_t  sr1 = I2C1->SR1;
-    i2c_log_event(I2C_LOG_EVT, sr1, 0);
 
     if (sr1 & I2C_SR1_SB) {
         // Clear flag by sending device address
@@ -172,9 +167,7 @@ static int i2c_transfer(uint8_t addr, void *buf, size_t len)
     static void   *hack_old;
     static int dma_hack;
 
-
     // assert(addr >= SRAM_BASE || addr+len < SRAM_BASE + 0x20000);
-
 
     if ((uint32_t)buf < SRAM_BASE || (uint32_t)buf + len >= SRAM_BASE + 0x20000) {
         dma_hack = 1;

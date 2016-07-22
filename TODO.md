@@ -1,3 +1,14 @@
+# 2016-07-22
+
+## QuadControl
+
+  * Qt Charts 5.7 statt qcustomplot
+  * Qt 3D und/oder three.js statt eigenem OpenGL-View
+  * Gamepad-Input
+
+  * https://github.com/Riateche/toolwindowmanager
+
+
 # 2016-01-04
 
 

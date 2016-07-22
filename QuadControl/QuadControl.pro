@@ -71,7 +71,8 @@ HEADERS += MainWindow.h \
     DockWindows/MyGLWidget.h \
     GLTools.h \
     TerminalWidget.h \
-    ../Shared/cobsr_codec.h
+    ../Shared/cobsr_codec.h \
+    Libraries/half-1.11.0/include/half.hpp
 
 FORMS += MainWindow.ui \
     DockWindows/ConnectionWindow.ui \
