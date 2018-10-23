@@ -57,7 +57,7 @@ typedef enum {
 /**
  * Allocate a ring buffer.
  *
- * \note  can later be freed using free()
+ * \note  can be freed by using rb_free()
  *
  * \param   buf_size    requested buffer size
  * \return  pointer to allocated buffer or NULL
@@ -75,6 +75,16 @@ static inline struct ringbuf *rb_alloc(size_t buf_size)
     rb->write_pos = 0;
 
     return rb;
+}
+
+/**
+ * Free a ring buffer allocated by rb_alloc()
+ *
+ * \param   rb      pointer to ringbuf struct
+ */
+static inline void rb_free(struct ringbuf *rb)
+{
+    free(rb);
 }
 
 
