@@ -1,3 +1,11 @@
+# 2018-10-23
+
+Serial port (and therefore serial Bluetooth and XBee) connections have some reliability problems.
+-> This may be caused by a Bug in QSerialPort!!!
+
+Use QuadControl/Attic/SerialThread2.cpp as a possible fix!
+
+
 # 2016-07-22
 
 ## QuadControl
