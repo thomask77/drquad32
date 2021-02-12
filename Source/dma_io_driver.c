@@ -42,7 +42,7 @@ void DMA2_Stream7_IRQHandler(void)
     uint16_t tim7_cnt = TIM7->CNT;
     uint32_t hisr = DMA2->HISR;
 
-    const int len_2 = DMA_IO_RX_SIZE / 2;
+    const unsigned int len_2 = DMA_IO_RX_SIZE / 2;
     const uint8_t mask = ~dma_tx_ws2812_bits;
 
     if (hisr & DMA_HISR_HTIF7) {

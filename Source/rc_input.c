@@ -76,7 +76,7 @@ static void cmd_rc_show(void)
         rc_strmode(rc_config.mode), rc.valid, rc.rssi, rc.num_channels
     );
 
-    for (int i=0; i<RC_MAX_CHANNELS; i++) {
+    for (unsigned int i=0; i<RC_MAX_CHANNELS; i++) {
         char bar[31];
         strnbar(bar, sizeof(bar), rc.channels[i], 1000, 2000);
 
