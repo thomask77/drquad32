@@ -29,7 +29,7 @@ struct device_info  device_table[16];
 
 int dev_register(const char *name, const struct file_ops *ops)
 {
-    for (int i=0; i<ARRAY_SIZE(device_table); i++) {
+    for (unsigned int i=0; i<ARRAY_SIZE(device_table); i++) {
         if (!device_table[i].name) {
             device_table[i].name = name;
             device_table[i].ops  = ops;

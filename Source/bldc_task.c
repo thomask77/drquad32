@@ -4,7 +4,6 @@
 #include "util.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include <math.h>
 
 // Block commutation scheme
 // ========================
@@ -232,7 +231,6 @@ static void update_motor(struct motor_state *m)
     case STATE_ERROR:
         break;
     }
-
 }
 
 
@@ -265,7 +263,7 @@ static void rpm_update(void)
     for (int id=0; id<4; id++) {
         struct motor_state *m = &bldc_state.motors[id];
 
-        float f_el = configTICK_RATE_HZ * (m->pos - m->rpm_old_pos) / 6.0;
+        float f_el = configTICK_RATE_HZ * ((float) m->rpm_old_pos - (float) m->pos) / 6.0;
         float rpm  = f_el * 60 / bldc_params.polepairs;
 
         m->rpm_old_pos = m->pos;
